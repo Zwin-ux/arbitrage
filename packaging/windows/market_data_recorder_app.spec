@@ -14,7 +14,7 @@ datas = [
 block_cipher = None
 
 a = Analysis(
-    [str(project_root / "src" / "market_data_recorder_desktop" / "main.py")],
+    [str(project_root / "packaging" / "windows" / "desktop_entry.py")],
     pathex=[str(project_root / "src")],
     binaries=[],
     datas=datas,
