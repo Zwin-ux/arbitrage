@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 import platform
 from datetime import datetime, timezone
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from .app_types import AppProfile, CredentialStatus, EngineStatus
+from . import __version__
 from .paths import AppPaths
 
 
@@ -77,7 +77,4 @@ class DiagnosticsService:
 
     @staticmethod
     def app_version() -> str:
-        try:
-            return version("market-data-recorder")
-        except PackageNotFoundError:
-            return "0.1.0-dev"
+        return __version__

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication
 
 from market_data_recorder.config import RecorderSettings
@@ -19,7 +20,7 @@ from .window import DesktopMainWindow
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="market-data-recorder desktop app")
+    parser = argparse.ArgumentParser(description="Superior desktop app")
     parser.add_argument("--auto-launch", action="store_true", help="Launch from OS startup.")
     parser.add_argument("--profile-id", default=None, help="Optional profile ID to auto-run.")
     return parser
@@ -48,81 +49,124 @@ def create_window(*, auto_launch: bool = False, profile_id: str | None = None) -
 
 
 def _apply_style(app: QApplication) -> None:
-    app.setApplicationName("market-data-recorder")
-    app.setOrganizationName("OpenRecorder")
+    app.setApplicationName("Superior")
+    app.setApplicationDisplayName("Superior")
+    app.setOrganizationName("Superior")
     app.setFont(QFont("Segoe UI", 10))
+    icon_path = _app_icon_path()
+    if icon_path is not None:
+        app.setWindowIcon(QIcon(str(icon_path)))
     app.setStyleSheet(
         """
+        QWidget {
+          color: #edf3ff;
+        }
         QMainWindow {
-          background: #f7f2e7;
-          color: #102542;
+          background: #05101f;
+          color: #edf3ff;
+        }
+        QWidget#centralFrame, QWidget#pageFrame, QWizard, QWizardPage {
+          background: #05101f;
         }
         QTabWidget::pane {
-          border: 1px solid #d9d1c1;
-          border-radius: 10px;
-          background: #fffdf9;
+          border: 1px solid #163151;
+          border-radius: 14px;
+          background: #0a1528;
         }
         QTabBar::tab {
-          background: #ede4d3;
-          padding: 10px 16px;
-          border-top-left-radius: 8px;
-          border-top-right-radius: 8px;
-          margin-right: 4px;
+          background: #0d1b33;
+          color: #93a8c8;
+          padding: 11px 18px;
+          border-top-left-radius: 10px;
+          border-top-right-radius: 10px;
+          margin-right: 6px;
+          border: 1px solid #163151;
         }
         QTabBar::tab:selected {
-          background: #fffdf9;
-          color: #102542;
+          background: #10223f;
+          color: #edf3ff;
         }
         QLabel#heroTitle {
-          font-size: 24px;
+          font-size: 26px;
           font-weight: 700;
-          color: #102542;
+          color: #f5fbff;
         }
         QLabel#heroText {
           font-size: 15px;
-          line-height: 1.4;
+          color: #a6b8d4;
         }
         QPushButton {
-          background: #0f6cbd;
-          color: white;
-          border: none;
+          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4ec6ff, stop:1 #846dff);
+          color: #04111f;
+          border: 1px solid #8ed3ff;
           padding: 10px 16px;
-          border-radius: 10px;
+          border-radius: 12px;
           font-weight: 600;
         }
         QPushButton:hover {
-          background: #0b568f;
+          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #73d4ff, stop:1 #9b88ff);
+        }
+        QPushButton:pressed {
+          padding-top: 11px;
         }
         QGroupBox {
-          border: 1px solid #d9d1c1;
-          border-radius: 10px;
+          border: 1px solid #163151;
+          border-radius: 14px;
           margin-top: 12px;
           padding: 12px;
-          background: #fffdf9;
+          background: #0d1b33;
           font-weight: 600;
         }
         QGroupBox::title {
           subcontrol-origin: margin;
           left: 10px;
           padding: 0 4px;
+          color: #f5fbff;
         }
         QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QListWidget {
-          border: 1px solid #cbbfa8;
-          border-radius: 8px;
+          border: 1px solid #1f3f69;
+          border-radius: 10px;
           padding: 8px;
-          background: white;
+          background: #071425;
+          color: #edf3ff;
+          selection-background-color: #4ec6ff;
+        }
+        QListWidget::item:selected {
+          background: #12335f;
+        }
+        QComboBox::drop-down {
+          border: none;
+        }
+        QCheckBox {
+          color: #c6d5eb;
         }
         QStatusBar {
-          background: #ede4d3;
+          background: #071425;
+          color: #9db3d3;
+          border-top: 1px solid #163151;
         }
         """
     )
 
 
+def _app_icon_path() -> Path | None:
+    candidates: list[Path] = []
+    meipass = getattr(sys, "_MEIPASS", None)
+    if isinstance(meipass, str):
+        candidates.append(Path(meipass) / "superior.ico")
+    if getattr(sys, "frozen", False):
+        candidates.append(Path(sys.executable).resolve().parent / "superior.ico")
+    candidates.append(Path(__file__).resolve().parents[2] / "packaging" / "windows" / "superior.ico")
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    app = QApplication(sys.argv if argv is None else ["market-data-recorder-app", *argv])
+    app = QApplication(sys.argv if argv is None else ["Superior", *argv])
     _apply_style(app)
     window = create_window(auto_launch=args.auto_launch, profile_id=args.profile_id)
     window.show()

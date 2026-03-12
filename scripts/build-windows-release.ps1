@@ -22,7 +22,7 @@ try {
         Remove-Item "$repoRoot\.tmp\build-release" -Recurse -Force
     }
 
-    pyinstaller --noconfirm --distpath dist --workpath .tmp\build-release packaging\windows\market_data_recorder_app.spec
+    python -m PyInstaller --noconfirm --distpath dist --workpath .tmp\build-release packaging\windows\market_data_recorder_app.spec
 
     $portableZip = "$repoRoot\dist\market-data-recorder-app-portable.zip"
     if (Test-Path $portableZip) {

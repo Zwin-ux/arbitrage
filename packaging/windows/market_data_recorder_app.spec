@@ -9,6 +9,7 @@ datas = [
     (str(project_root / "THIRD_PARTY_NOTICES.md"), "."),
     (str(project_root / "README.md"), "."),
     (str(project_root / "docs"), "docs"),
+    (str(project_root / "packaging" / "windows" / "superior.ico"), "."),
 ]
 
 block_cipher = None
@@ -35,6 +36,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="market-data-recorder-app",
+    icon=str(project_root / "packaging" / "windows" / "superior.ico"),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

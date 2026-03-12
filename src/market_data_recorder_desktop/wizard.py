@@ -231,7 +231,7 @@ class SetupWizard(QWizard):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("market-data-recorder setup")
+        self.setWindowTitle("Superior setup")
         self.setWizardStyle(QWizard.WizardStyle.ModernStyle)
         self.resize(860, 620)
 

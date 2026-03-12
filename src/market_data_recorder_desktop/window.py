@@ -47,9 +47,9 @@ class DashboardTab(QWidget):
         super().__init__()
         layout = QVBoxLayout(self)
 
-        self.hero_label = QLabel("Recorder dashboard")
+        self.hero_label = QLabel("Superior control room")
         self.hero_label.setObjectName("heroTitle")
-        self.subtitle_label = QLabel("Choose a profile, then start recording or inspect the latest database.")
+        self.subtitle_label = QLabel("Choose a profile, then record, replay, or verify without touching the terminal.")
         self.subtitle_label.setWordWrap(True)
         layout.addWidget(self.hero_label)
         layout.addWidget(self.subtitle_label)
@@ -386,7 +386,7 @@ class AboutTab(QWidget):
         title.setObjectName("heroTitle")
         layout.addWidget(title)
         text = QLabel(
-            "market-data-recorder is MIT-licensed, open source, and local-first. "
+            "Superior is MIT-licensed, open source, and local-first. "
             "Secrets go to the OS keychain, telemetry is off by default, and build scripts live in the repo."
         )
         text.setWordWrap(True)
@@ -433,7 +433,7 @@ class DesktopMainWindow(QMainWindow):
         self._profiles: list[AppProfile] = []
         self._previous_state = "idle"
 
-        self.setWindowTitle("market-data-recorder")
+        self.setWindowTitle("Superior")
         self.resize(1180, 820)
 
         self.dashboard_tab = DashboardTab()
@@ -552,7 +552,9 @@ class DesktopMainWindow(QMainWindow):
         self.about_tab.security_button.clicked.connect(lambda: self._open_local(_project_root() / "SECURITY.md"))
 
     def _setup_tray(self) -> None:
-        icon = self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon)
+        icon = self.windowIcon()
+        if icon.isNull():
+            icon = self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon)
         self._tray = QSystemTrayIcon(icon, self)
         tray_menu = QMenu(self)
         show_action = QAction("Show", self)
@@ -659,7 +661,7 @@ class DesktopMainWindow(QMainWindow):
             )
         )
         if self._previous_state == "running" and status.state in {"completed", "failed"}:
-            self._tray.showMessage("market-data-recorder", status.last_message, self._tray.icon(), 5000)
+            self._tray.showMessage("Superior", status.last_message, self._tray.icon(), 5000)
         self._previous_state = status.state
 
     def _start_default_preset(self) -> None:
