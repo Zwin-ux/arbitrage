@@ -117,7 +117,8 @@ Railway setup for this monorepo:
 2. Set the service root directory to `/site`.
 3. Set the config-as-code path to `/site/railway.toml`.
 4. Generate a public Railway domain.
-5. Enable `Wait for CI` so deployments wait for the GitHub Actions workflow on `main`.
+5. Set `SITE_URL` to the public Railway URL once the domain exists.
+6. Enable `Wait for CI` so deployments wait for the GitHub Actions workflow on `main`.
 
 ## Development Checks
 

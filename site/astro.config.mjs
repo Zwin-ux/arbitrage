@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   integrations: [react()],
-  site: "https://market-data-recorder.up.railway.app",
+  site: process.env.SITE_URL,
   output: "static",
   vite: {
     plugins: [tailwindcss()]
