@@ -53,7 +53,7 @@ class ArbitrageAnalyzer:
                 )
                 for asset_id, outcome, _timestamp, best_bid, best_ask in rows
             ]
-            buy_total = sum((Decimal(leg.best_ask) for leg in legs), start=Decimal("0"))
+            buy_total = sum([Decimal(leg.best_ask) for leg in legs], Decimal("0"))
             buy_profit = Decimal("1") - buy_total
             if buy_profit >= minimum_edge:
                 opportunities.append(
@@ -67,7 +67,7 @@ class ArbitrageAnalyzer:
                         legs=legs,
                     )
                 )
-            sell_total = sum((Decimal(leg.best_bid) for leg in legs), start=Decimal("0"))
+            sell_total = sum([Decimal(leg.best_bid) for leg in legs], Decimal("0"))
             sell_profit = sell_total - Decimal("1")
             if sell_profit >= minimum_edge:
                 opportunities.append(
