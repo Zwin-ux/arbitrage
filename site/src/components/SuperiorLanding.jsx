@@ -12,8 +12,15 @@ const particles = [
 export default function SuperiorLanding({ variant }) {
   return (
     <div className="relative overflow-hidden bg-[#050612] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-pixel-grid opacity-25 [mask-image:radial-gradient(circle_at_center,black,transparent_80%)]" />
-      <div className="pointer-events-none absolute inset-0">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-pixel-grid opacity-25 [mask-image:radial-gradient(circle_at_center,black,transparent_80%)]"
+      />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         {particles.map((particle, index) => (
           <span
             key={`particle-${index}`}
@@ -31,7 +38,7 @@ export default function SuperiorLanding({ variant }) {
         ))}
       </div>
 
-      <div className="pointer-events-none absolute inset-0">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-8%] top-[10%] h-[24rem] w-[24rem] rounded-full bg-cyan-400/10 blur-[120px]" />
         <div className="absolute right-[-10%] top-[4%] h-[28rem] w-[28rem] rounded-full bg-fuchsia-500/10 blur-[140px]" />
         <div className="absolute bottom-[-14%] left-[26%] h-[26rem] w-[26rem] rounded-full bg-indigo-500/10 blur-[130px]" />
@@ -51,7 +58,7 @@ export default function SuperiorLanding({ variant }) {
             </div>
           </a>
 
-          <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-300/80">
+          <nav aria-label="Primary navigation" className="flex flex-wrap items-center gap-2 text-sm text-slate-300/80">
             <a className="rounded-full px-4 py-2 transition hover:bg-white/5 hover:text-cyan-100" href="#features">
               Features
             </a>
@@ -70,21 +77,27 @@ export default function SuperiorLanding({ variant }) {
           </nav>
         </header>
 
-        <main className="relative z-10 flex flex-1 flex-col justify-center pt-12 lg:pt-20">
-          <section className="grid items-center gap-12 lg:grid-cols-[0.92fr_1.08fr]">
+        <main id="main-content" className="relative z-10 flex flex-1 flex-col justify-center pt-12 lg:pt-20">
+          <section
+            aria-labelledby="landing-headline"
+            className="grid items-center gap-12 lg:grid-cols-[0.92fr_1.08fr]"
+          >
             <div className="space-y-8">
               <p className="font-display text-xs uppercase tracking-[0.32em] text-cyan-200/66">
                 {variant.eyebrow}
               </p>
 
               <div className="space-y-5">
-                <h1 className="font-display text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl lg:text-7xl">
+                <h1
+                  id="landing-headline"
+                  className="font-display text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl lg:text-7xl"
+                >
                   {variant.headlineLead}
                   <span className="block bg-[linear-gradient(135deg,#f8fbff_0%,#88ebff_40%,#d79dff_100%)] bg-clip-text text-transparent">
                     {variant.headlineAccent}
                   </span>
                 </h1>
-                <p className="max-w-2xl text-lg leading-8 text-slate-300/76">
+                <p className="max-w-2xl text-lg leading-8 text-slate-300/88">
                   {variant.subhead}
                 </p>
               </div>
@@ -104,25 +117,37 @@ export default function SuperiorLanding({ variant }) {
                 </a>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <ul
+                className="m-0 flex list-none flex-wrap gap-3 p-0"
+                aria-label="Product features and licensing information"
+              >
                 {variant.badges.map((item) => (
-                  <span
+                  <li
                     key={item}
                     className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300/78"
                   >
                     {item}
-                  </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
             <div className="relative mx-auto flex max-w-[640px] justify-center">
-              <div className="absolute inset-x-6 bottom-14 top-14 rounded-[40px] bg-[radial-gradient(circle_at_center,rgba(76,202,255,0.12),transparent_66%)] blur-3xl" />
-              <div className="absolute inset-x-18 bottom-10 top-10 rounded-[999px] border border-cyan-300/10" />
-              <div className="absolute inset-x-26 bottom-16 top-16 rounded-[999px] border border-fuchsia-300/8" />
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-6 bottom-14 top-14 rounded-[40px] bg-[radial-gradient(circle_at_center,rgba(76,202,255,0.12),transparent_66%)] blur-3xl"
+              />
+              <div aria-hidden="true" className="absolute inset-x-18 bottom-10 top-10 rounded-[999px] border border-cyan-300/10" />
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-26 bottom-16 top-16 rounded-[999px] border border-fuchsia-300/8"
+              />
 
               <div className="glass-panel pixel-frame summon-ring shadow-aura relative w-full rounded-[40px] px-6 py-10 sm:px-8 sm:py-12">
-                <div className="pointer-events-none absolute inset-0 rounded-[40px] bg-[radial-gradient(circle_at_top,rgba(96,226,255,0.08),transparent_40%)]" />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 rounded-[40px] bg-[radial-gradient(circle_at_top,rgba(96,226,255,0.08),transparent_40%)]"
+                />
                 <div className="flex items-center justify-between text-xs uppercase tracking-[0.28em] text-slate-400/58">
                   <span>{variant.heroTopLeft}</span>
                   <span>{variant.heroTopRight}</span>
@@ -142,8 +167,8 @@ export default function SuperiorLanding({ variant }) {
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
                   {variant.heroPanels.map((panel) => (
                     <div key={panel.title} className="rounded-[20px] border border-white/8 bg-slate-950/42 px-4 py-4">
-                      <p className="font-display text-xs uppercase tracking-[0.22em] text-cyan-200/70">{panel.title}</p>
-                      <p className="mt-2 text-sm leading-7 text-slate-300/72">{panel.body}</p>
+                      <p className="font-display text-xs uppercase tracking-[0.22em] text-cyan-200/84">{panel.title}</p>
+                      <p className="mt-2 text-sm leading-7 text-slate-300/86">{panel.body}</p>
                     </div>
                   ))}
                 </div>
@@ -151,22 +176,55 @@ export default function SuperiorLanding({ variant }) {
             </div>
           </section>
 
-          <section id="features" className="mt-20 grid gap-4 md:grid-cols-3">
+          <section id="features" aria-labelledby="features-title" className="mt-20 grid gap-4 md:grid-cols-3">
+            <div className="md:col-span-3 max-w-3xl">
+              <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">Key features</p>
+              <h2 id="features-title" className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+                What operators should understand fast before they download.
+              </h2>
+            </div>
             {variant.featureCards.map((card) => (
               <article key={card.title} className="glass-panel pixel-frame rounded-[28px] p-6">
                 <p className="font-display text-sm uppercase tracking-[0.24em] text-cyan-200/72">{card.title}</p>
-                <p className="mt-3 text-base leading-7 text-slate-300/74">{card.body}</p>
+                <p className="mt-3 text-base leading-7 text-slate-300/86">{card.body}</p>
               </article>
             ))}
           </section>
 
-          <section id="product" className="mt-20 grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
+          <section aria-labelledby="proof-title" className="mt-20">
+            <div className="glass-panel pixel-frame rounded-[34px] p-7 sm:p-8">
+              <div className="max-w-3xl">
+                <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">{variant.proofEyebrow}</p>
+                <h2 id="proof-title" className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+                  {variant.proofTitle}
+                </h2>
+                <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300/86">
+                  {variant.proofBody}
+                </p>
+              </div>
+
+              <div className="mt-8 grid gap-4 lg:grid-cols-3">
+                {variant.proofCards.map((card) => (
+                  <article key={card.title} className="rounded-[28px] border border-white/8 bg-slate-950/36 p-6">
+                    <h3 className="font-display text-xl font-semibold tracking-[-0.04em] text-white">{card.title}</h3>
+                    <p className="mt-3 text-base leading-7 text-slate-300/84">{card.body}</p>
+                    <a className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-100 transition hover:text-white" href={card.href}>
+                      {card.cta}
+                      <span aria-hidden="true">→</span>
+                    </a>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section id="product" aria-labelledby="product-title" className="mt-20 grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
             <article className="glass-panel pixel-frame rounded-[34px] p-7 sm:p-8">
               <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">Product surface</p>
-              <h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+              <h2 id="product-title" className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
                 {variant.productTitle}
               </h2>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300/76">
+              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300/86">
                 {variant.productBody}
               </p>
             </article>
@@ -175,21 +233,43 @@ export default function SuperiorLanding({ variant }) {
               {variant.productNotes.map((note) => (
                 <article key={note.title} className="glass-panel pixel-frame rounded-[28px] p-6">
                   <p className="font-display text-sm uppercase tracking-[0.24em] text-fuchsia-200/72">{note.title}</p>
-                  <p className="mt-3 text-base leading-7 text-slate-300/74">{note.body}</p>
+                  <p className="mt-3 text-base leading-7 text-slate-300/86">{note.body}</p>
                 </article>
               ))}
             </div>
           </section>
 
-          <section className="mt-20">
+          <section aria-labelledby="workflow-title" className="mt-20">
+            <div className="glass-panel pixel-frame rounded-[34px] px-6 py-8 sm:px-10">
+              <div className="max-w-3xl">
+                <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">{variant.workflowEyebrow}</p>
+                <h2 id="workflow-title" className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+                  {variant.workflowTitle}
+                </h2>
+                <p className="mt-4 text-base leading-8 text-slate-300/84">{variant.workflowBody}</p>
+              </div>
+
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {variant.workflowSteps.map((step) => (
+                  <article key={step.step} className="rounded-[28px] border border-white/8 bg-slate-950/36 p-6">
+                    <p className="font-display text-sm uppercase tracking-[0.24em] text-cyan-200/84">{step.step}</p>
+                    <h3 className="mt-3 font-display text-2xl font-semibold tracking-[-0.04em] text-white">{step.title}</h3>
+                    <p className="mt-3 text-base leading-7 text-slate-300/84">{step.body}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby="download-title" className="mt-20">
             <div className="glass-panel pixel-frame rounded-[34px] px-6 py-8 sm:px-10">
               <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-3xl">
                   <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">Download</p>
-                  <h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+                  <h2 id="download-title" className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
                     {variant.downloadTitle}
                   </h2>
-                  <p className="mt-4 text-base leading-8 text-slate-300/78">
+                  <p className="mt-4 text-base leading-8 text-slate-300/88">
                     {variant.downloadBody}
                   </p>
                 </div>
