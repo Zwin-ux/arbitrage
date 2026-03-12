@@ -4,7 +4,7 @@ const windowsInstallerUrl =
 const shared = {
   windowsInstallerUrl,
   secondaryCtaHref: "/download",
-  badges: ["MIT licensed", "Local-first", "Smoke-tested packaging"],
+  badges: ["MIT licensed", "Local-first", "Windows first"],
   proofEyebrow: "Proof before download",
   proofTitle: "Everything important stays visible before you commit to the install.",
   proofBody:

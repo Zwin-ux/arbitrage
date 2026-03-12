@@ -195,13 +195,15 @@
       scroll-behavior: auto;
     }
 
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
+    .particle,
+    .pixel-star,
+    .animate-float-slow,
+    .animate-float-delay,
+    .animate-ring-pulse,
+    .animate-ring-pulse-delayed,
+    .shine-border::after {
+      animation: none;
+      transition: none;
     }
   }
 }

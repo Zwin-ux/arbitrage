@@ -58,7 +58,7 @@ export default function SuperiorLanding({ variant }) {
             </div>
           </a>
 
-          <nav aria-label="Landing navigation" className="flex flex-wrap items-center gap-2 text-sm text-slate-300/80">
+          <nav aria-label="Primary navigation" className="flex flex-wrap items-center gap-2 text-sm text-slate-300/80">
             <a className="rounded-full px-4 py-2 transition hover:bg-white/5 hover:text-cyan-100" href="#features">
               Features
             </a>
@@ -117,7 +117,10 @@ export default function SuperiorLanding({ variant }) {
                 </a>
               </div>
 
-              <ul className="m-0 flex list-none flex-wrap gap-3 p-0" aria-label="Product badges">
+              <ul
+                className="m-0 flex list-none flex-wrap gap-3 p-0"
+                aria-label="Product features and licensing information"
+              >
                 {variant.badges.map((item) => (
                   <li
                     key={item}
@@ -174,9 +177,12 @@ export default function SuperiorLanding({ variant }) {
           </section>
 
           <section id="features" aria-labelledby="features-title" className="mt-20 grid gap-4 md:grid-cols-3">
-            <h2 id="features-title" className="sr-only">
-              Key features
-            </h2>
+            <div className="md:col-span-3 max-w-3xl">
+              <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">Key features</p>
+              <h2 id="features-title" className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+                What operators should understand fast before they download.
+              </h2>
+            </div>
             {variant.featureCards.map((card) => (
               <article key={card.title} className="glass-panel pixel-frame rounded-[28px] p-6">
                 <p className="font-display text-sm uppercase tracking-[0.24em] text-cyan-200/72">{card.title}</p>
