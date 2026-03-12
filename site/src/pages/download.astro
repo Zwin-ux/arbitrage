@@ -1,0 +1,46 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Download | market-data-recorder">
+  <section class="page-hero compact">
+    <p class="eyebrow">Downloads</p>
+    <h1>Windows now. macOS planned.</h1>
+    <p class="lead">
+      The recommended install path today is the signed-off Windows release flow from GitHub Releases.
+      The repo also publishes a portable bundle for users who want a no-installer path.
+    </p>
+    <div class="hero-actions">
+      <a class="button primary" href="https://github.com/Zwin-ux/arbitrage/releases" target="_blank" rel="noreferrer">Open GitHub Releases</a>
+      <a class="button secondary" href="/docs">Read local build docs</a>
+    </div>
+  </section>
+
+  <section class="download-grid">
+    <article class="download-card">
+      <p class="eyebrow">Recommended</p>
+      <h2>Windows installer</h2>
+      <p>Look for <code>market-data-recorder-setup.exe</code> in the latest release.</p>
+      <ul class="signal-list">
+        <li>Creates shortcuts and uninstall support</li>
+        <li>Includes app docs, license, and notices</li>
+        <li>Supports launch-at-login during install</li>
+      </ul>
+    </article>
+    <article class="download-card">
+      <p class="eyebrow">Portable</p>
+      <h2>Windows bundle zip</h2>
+      <p>Look for <code>market-data-recorder-app-portable.zip</code> if you want the portable app folder instead of the installer.</p>
+      <ul class="signal-list">
+        <li>Contains the app executable and runtime files</li>
+        <li>No installer required</li>
+        <li>Best for testing and isolated environments</li>
+      </ul>
+    </article>
+    <article class="download-card muted">
+      <p class="eyebrow">Planned</p>
+      <h2>macOS service path</h2>
+      <p>The backend is being kept compatible with a future macOS service/LaunchAgent flow, but there is no public macOS build yet.</p>
+    </article>
+  </section>
+</BaseLayout>

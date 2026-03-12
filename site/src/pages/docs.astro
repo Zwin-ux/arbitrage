@@ -1,0 +1,52 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Docs | market-data-recorder">
+  <section class="page-hero compact">
+    <p class="eyebrow">Docs</p>
+    <h1>Build, install, and verify with the same repo.</h1>
+    <p class="lead">
+      The public site is intentionally thin. The real source of truth stays in the monorepo and the desktop/CLI code paths.
+    </p>
+  </section>
+
+  <section class="docs-grid">
+    <article class="doc-card">
+      <h2>Quick start</h2>
+      <pre><code>python -m pip install -e ".[dev]"
+market-data-recorder-app
+market-data-recorder record</code></pre>
+    </article>
+    <article class="doc-card">
+      <h2>Release build</h2>
+      <pre><code>powershell -ExecutionPolicy Bypass -File scripts/bootstrap-iscc.ps1
+powershell -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1</code></pre>
+    </article>
+    <article class="doc-card">
+      <h2>Quality gates</h2>
+      <pre><code>pytest -q
+python -m mypy src tests
+npm --prefix site ci
+npm --prefix site run build</code></pre>
+    </article>
+  </section>
+
+  <section class="section-grid">
+    <article class="feature-card">
+      <p class="eyebrow">Key repo docs</p>
+      <h3>Trust surface</h3>
+      <p>Read the license, security policy, privacy/secrets notes, release process, and third-party notices directly in the repo.</p>
+    </article>
+    <article class="feature-card">
+      <p class="eyebrow">Railway setup</p>
+      <h3>Deploy only the site</h3>
+      <p>Connect the GitHub repo to Railway, set the service root to <code>/site</code>, set the config path to <code>/site/railway.toml</code>, use the default Railway domain, and enable "Wait for CI".</p>
+    </article>
+    <article class="feature-card">
+      <p class="eyebrow">Config-as-code</p>
+      <h3>Railway config path</h3>
+      <p>If you use Railway config-as-code, point the service to <code>/site/railway.toml</code>. The recorder runtime itself should not be deployed there.</p>
+    </article>
+  </section>
+</BaseLayout>

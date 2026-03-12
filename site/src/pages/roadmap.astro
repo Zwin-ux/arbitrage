@@ -1,0 +1,38 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Roadmap | market-data-recorder">
+  <section class="page-hero compact">
+    <p class="eyebrow">Roadmap</p>
+    <h1>Ship the boring-important parts first.</h1>
+    <p class="lead">
+      The goal is a trustworthy recorder and distribution story before any larger trading or hosted-service ambitions.
+    </p>
+  </section>
+
+  <section class="workflow-band roadmap-band">
+    <div class="workflow-steps">
+      <article>
+        <span>Now</span>
+        <h3>Windows release hardening</h3>
+        <p>Installer automation, GitHub Releases, public docs, and a polished Railway site.</p>
+      </article>
+      <article>
+        <span>Next</span>
+        <h3>macOS support</h3>
+        <p>Service-friendly packaging and a first public macOS install path once the runtime story is stable.</p>
+      </article>
+      <article>
+        <span>Later</span>
+        <h3>Richer recorder UX</h3>
+        <p>More diagnostics, release telemetry controls, better exports, and deeper user-owned presets.</p>
+      </article>
+      <article>
+        <span>Not now</span>
+        <h3>No hosted recorder runtime</h3>
+        <p>Railway is for the public site only. Live recorder data and secrets remain out of scope for hosted deployment.</p>
+      </article>
+    </div>
+  </section>
+</BaseLayout>

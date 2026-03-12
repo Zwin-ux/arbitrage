@@ -1,0 +1,26 @@
+{
+  "name": "market-data-recorder-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "serve": "serve -s dist -l ${PORT:-4321}"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.3.0",
+    "@tailwindcss/vite": "^4.1.12",
+    "astro": "^5.14.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "serve": "^14.2.4"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.12"
+  }
+}
