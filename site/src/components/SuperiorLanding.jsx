@@ -1,3 +1,6 @@
+const windowsInstallerUrl =
+  "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe";
+
 const particles = [
   { left: "9%", top: "18%", size: 4, color: "rgba(101, 225, 255, 0.88)", duration: "11s" },
   { left: "18%", top: "68%", size: 3, color: "rgba(192, 122, 255, 0.78)", duration: "13s" },
@@ -123,17 +126,15 @@ export default function SuperiorLanding() {
               <div className="flex flex-wrap items-center gap-4">
                 <a
                   className="rounded-full bg-[linear-gradient(135deg,#67e4ff_0%,#7e63ff_56%,#f273dc_100%)] px-6 py-3.5 font-semibold text-slate-950 shadow-[0_0_34px_rgba(99,201,255,0.32)] transition hover:translate-y-[-1px]"
-                  href="/download"
+                  href={windowsInstallerUrl}
                 >
-                  Get the Windows build
+                  Download for Windows
                 </a>
                 <a
                   className="rounded-full border border-white/12 bg-white/5 px-6 py-3.5 font-medium text-slate-100 transition hover:border-cyan-200/30 hover:bg-white/10"
-                  href="https://github.com/Zwin-ux/arbitrage"
-                  target="_blank"
-                  rel="noreferrer"
+                  href="/download"
                 >
-                  View source
+                  All download options
                 </a>
               </div>
 
@@ -233,15 +234,15 @@ export default function SuperiorLanding() {
                 <div className="flex flex-wrap gap-4">
                   <a
                     className="rounded-full border border-cyan-200/24 bg-cyan-300/12 px-6 py-3.5 font-medium text-cyan-100 transition hover:border-cyan-200/42 hover:bg-cyan-200/18"
-                    href="/download"
+                    href={windowsInstallerUrl}
                   >
-                    Open downloads
+                    Download for Windows
                   </a>
                   <a
                     className="rounded-full border border-white/10 bg-white/5 px-6 py-3.5 font-medium text-slate-100 transition hover:bg-white/10"
-                    href="/docs"
+                    href="/download"
                   >
-                    Build from source
+                    Other options
                   </a>
                 </div>
               </div>

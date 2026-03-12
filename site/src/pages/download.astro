@@ -1,5 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const installerUrl = "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe";
+const portableUrl = "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-app-portable.zip";
 ---
 
 <BaseLayout title="Download | market-data-recorder">
@@ -10,8 +13,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       GitHub Releases is the place to download packaged builds. If the latest release is not live yet, the source path below works immediately.
     </p>
     <div class="hero-actions">
-      <a class="button primary" href="https://github.com/Zwin-ux/arbitrage/releases" target="_blank" rel="noreferrer">Open GitHub Releases</a>
-      <a class="button secondary" href="/docs">Build from source</a>
+      <a class="button primary" href={installerUrl}>Download installer</a>
+      <a class="button secondary" href={portableUrl}>Download portable zip</a>
     </div>
   </section>
 
@@ -20,6 +23,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p class="eyebrow">Recommended</p>
       <h2>Windows installer</h2>
       <p>Look for <code>market-data-recorder-setup.exe</code> in the latest GitHub release.</p>
+      <div class="hero-actions">
+        <a class="button primary" href={installerUrl}>Download installer</a>
+      </div>
       <ul class="signal-list">
         <li>Creates shortcuts and uninstall support</li>
         <li>Includes app docs, license, and notices</li>
@@ -30,6 +36,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <p class="eyebrow">Portable</p>
       <h2>Windows bundle zip</h2>
       <p>Look for <code>market-data-recorder-app-portable.zip</code> if you want the portable app folder instead of the installer.</p>
+      <div class="hero-actions">
+        <a class="button secondary" href={portableUrl}>Download portable zip</a>
+      </div>
       <ul class="signal-list">
         <li>Contains the app executable and runtime files</li>
         <li>No installer required</li>
