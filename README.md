@@ -67,6 +67,12 @@ Verify stored hashes and stream consistency:
 market-data-recorder verify
 ```
 
+Find latest market-level arbitrage opportunities from recorded best bid/ask data:
+
+```bash
+market-data-recorder arbitrage --min-edge 0.02
+```
+
 ## Desktop App
 
 Launch the GUI:
