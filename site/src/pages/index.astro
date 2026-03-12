@@ -2,11 +2,12 @@
 import LandingLayout from "../layouts/LandingLayout.astro";
 import "../styles/tailwind.css";
 import SuperiorLanding from "../components/SuperiorLanding.jsx";
+import { landingVariants } from "../data/landingVariants.js";
 ---
 
 <LandingLayout
-  title="Superior | Intelligent Arbitrage, Summoned Calmly"
-  description="Superior scans markets, detects edge, and acts with precision. An open-source, local-first arbitrage interface with rare-summon presence."
+  title={landingVariants.control.pageTitle}
+  description={landingVariants.control.pageDescription}
 >
-  <SuperiorLanding />
+  <SuperiorLanding variant={landingVariants.control} />
 </LandingLayout>

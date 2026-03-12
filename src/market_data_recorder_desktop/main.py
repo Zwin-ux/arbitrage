@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
 from market_data_recorder.config import RecorderSettings
 from market_data_recorder.logging import configure_logging
@@ -23,10 +25,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Superior desktop app")
     parser.add_argument("--auto-launch", action="store_true", help="Launch from OS startup.")
     parser.add_argument("--profile-id", default=None, help="Optional profile ID to auto-run.")
+    parser.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Launch the desktop app in smoke-test mode and exit after writing a JSON report.",
+    )
+    parser.add_argument(
+        "--smoke-output",
+        default=None,
+        help="Optional JSON path used by --smoke-test to persist startup results.",
+    )
     return parser
 
 
-def create_window(*, auto_launch: bool = False, profile_id: str | None = None) -> DesktopMainWindow:
+def create_window(
+    *,
+    auto_launch: bool = False,
+    profile_id: str | None = None,
+    smoke_test: bool = False,
+) -> DesktopMainWindow:
     settings = RecorderSettings()
     configure_logging(settings.log_level)
     paths = AppPaths.for_current_user()
@@ -42,6 +59,8 @@ def create_window(*, auto_launch: bool = False, profile_id: str | None = None) -
         controller=controller,
         diagnostics=diagnostics,
         startup_manager=startup_manager,
+        allow_setup_wizard_on_empty_profiles=not smoke_test,
+        show_tray_icon=not smoke_test,
     )
     if auto_launch:
         window.handle_auto_launch(profile_id)
@@ -163,13 +182,62 @@ def _app_icon_path() -> Path | None:
     return None
 
 
+def _smoke_report(app: QApplication, window: DesktopMainWindow) -> dict[str, object]:
+    return {
+        "app_name": app.applicationName(),
+        "display_name": app.applicationDisplayName(),
+        "window_title": window.windowTitle(),
+        "window_visible": window.isVisible(),
+        "app_icon_present": not app.windowIcon().isNull(),
+        "window_icon_present": not window.windowIcon().isNull(),
+        "system_tray_available": QSystemTrayIcon.isSystemTrayAvailable(),
+    }
+
+
+def _run_smoke_test(
+    app: QApplication,
+    window: DesktopMainWindow,
+    *,
+    output_path: Path | None,
+) -> int:
+    result: dict[str, object] = {}
+    error_message: str | None = None
+
+    def finish() -> None:
+        nonlocal result, error_message
+        try:
+            result = _smoke_report(app, window)
+            if output_path is not None:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+        except Exception as exc:  # pragma: no cover - smoke mode failure path
+            error_message = str(exc)
+        finally:
+            window.close()
+            app.quit()
+
+    QTimer.singleShot(400, finish)
+    exit_code = app.exec()
+    if error_message is not None:
+        raise RuntimeError(error_message)
+    return exit_code
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.smoke_test and args.smoke_output is None:
+        parser.error("--smoke-output is required when --smoke-test is used.")
     app = QApplication(sys.argv if argv is None else ["Superior", *argv])
     _apply_style(app)
-    window = create_window(auto_launch=args.auto_launch, profile_id=args.profile_id)
+    window = create_window(auto_launch=args.auto_launch, profile_id=args.profile_id, smoke_test=args.smoke_test)
     window.show()
+    if args.smoke_test:
+        return _run_smoke_test(
+            app,
+            window,
+            output_path=Path(args.smoke_output) if args.smoke_output is not None else None,
+        )
     return app.exec()
 
 

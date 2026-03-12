@@ -102,12 +102,15 @@ Secrets are not stored in those paths.
 - Inno Setup script: [`packaging/windows/installer.iss`](packaging/windows/installer.iss)
 - Official Inno Setup bootstrap: [`scripts/bootstrap-iscc.ps1`](scripts/bootstrap-iscc.ps1)
 - Release build script: [`scripts/build-windows-release.ps1`](scripts/build-windows-release.ps1)
+- Packaged app smoke test: [`scripts/smoke-test-windows-release.py`](scripts/smoke-test-windows-release.py)
+- Installer smoke test: [`scripts/smoke-test-installer.ps1`](scripts/smoke-test-installer.ps1)
 
 ## Public Site
 
 - Site source: [`site/`](site/)
 - Railway config: [`site/railway.toml`](site/railway.toml)
 - Release/download target: [GitHub Releases](https://github.com/Zwin-ux/arbitrage/releases)
+- Variant lab: `/lab`, `/lab/control`, `/lab/focus`
 
 Railway should host only the public site. The recorder runtime, secrets, and user data should not be deployed there.
 
@@ -126,7 +129,10 @@ Railway setup for this monorepo:
 pytest -q
 python -m mypy src tests
 npm.cmd --prefix site run build
+npm.cmd --prefix site run test:browser
 ```
+
+See [`docs/testing.md`](docs/testing.md) for the full release and variant-testing workflow.
 
 ## Notes
 

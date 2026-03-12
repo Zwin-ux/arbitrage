@@ -2,6 +2,12 @@
 #define AppVersion "0.1.2"
 #define AppPublisher "Superior"
 #define AppExeName "market-data-recorder-app.exe"
+#ifndef SourceBundleDir
+  #define SourceBundleDir "..\..\dist\market-data-recorder-app"
+#endif
+#ifndef OutputDirPath
+  #define OutputDirPath "..\..\dist\installer"
+#endif
 
 [Setup]
 AppId={{1D6083E8-1E45-4A3E-8A0C-AB2CF9918B5E}
@@ -11,7 +17,7 @@ AppPublisher={#AppPublisher}
 DefaultDirName={localappdata}\Programs\{#AppName}
 DefaultGroupName={#AppName}
 UninstallDisplayIcon={app}\{#AppExeName}
-OutputDir=..\..\dist\installer
+OutputDir={#OutputDirPath}
 OutputBaseFilename=market-data-recorder-setup
 Compression=lzma
 SolidCompression=yes
@@ -25,7 +31,7 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Name: "runatlogin"; Description: "Launch at login"; GroupDescription: "Startup:"
 
 [Files]
-Source: "..\..\dist\market-data-recorder-app\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourceBundleDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "superior.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

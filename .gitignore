@@ -1,10 +1,15 @@
 .tmp/
 data/
+!site/src/data/
+!site/src/data/**
 dist/
+dist-stale-*/
 build/
 site/dist/
 site/.astro/
 site/node_modules/
+site/playwright-report/
+site/test-results/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

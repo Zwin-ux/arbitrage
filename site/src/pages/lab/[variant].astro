@@ -1,0 +1,19 @@
+---
+import LandingLayout from "../../layouts/LandingLayout.astro";
+import "../../styles/tailwind.css";
+import SuperiorLanding from "../../components/SuperiorLanding.jsx";
+import { landingVariantOrder, landingVariants } from "../../data/landingVariants.js";
+
+export function getStaticPaths() {
+  return landingVariantOrder.map((variant) => ({
+    params: { variant },
+    props: { variant: landingVariants[variant] }
+  }));
+}
+
+const { variant } = Astro.props;
+---
+
+<LandingLayout title={variant.pageTitle} description={variant.pageDescription}>
+  <SuperiorLanding variant={variant} />
+</LandingLayout>

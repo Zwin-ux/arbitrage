@@ -1,6 +1,3 @@
-const windowsInstallerUrl =
-  "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe";
-
 const particles = [
   { left: "9%", top: "18%", size: 4, color: "rgba(101, 225, 255, 0.88)", duration: "11s" },
   { left: "18%", top: "68%", size: 3, color: "rgba(192, 122, 255, 0.78)", duration: "13s" },
@@ -12,37 +9,7 @@ const particles = [
   { left: "91%", top: "28%", size: 2, color: "rgba(255, 235, 150, 0.64)", duration: "8.5s" }
 ];
 
-const featureCards = [
-  {
-    title: "Market scan",
-    body: "Reads fragmented markets without turning the interface into noise."
-  },
-  {
-    title: "Edge detection",
-    body: "Highlights what matters and leaves the rest in the background."
-  },
-  {
-    title: "Precise action",
-    body: "Designed around deliberate execution, not constant motion."
-  }
-];
-
-const productNotes = [
-  {
-    title: "Local-first",
-    body: "Your data, logs, and credentials stay in your environment."
-  },
-  {
-    title: "Open-source",
-    body: "The code, packaging flow, and site are all inspectable."
-  },
-  {
-    title: "Windows-ready",
-    body: "Desktop app, installer flow, and release pipeline are already in place."
-  }
-];
-
-export default function SuperiorLanding() {
+export default function SuperiorLanding({ variant }) {
   return (
     <div className="relative overflow-hidden bg-[#050612] text-white">
       <div className="pointer-events-none absolute inset-0 bg-pixel-grid opacity-25 [mask-image:radial-gradient(circle_at_center,black,transparent_80%)]" />
@@ -107,39 +74,38 @@ export default function SuperiorLanding() {
           <section className="grid items-center gap-12 lg:grid-cols-[0.92fr_1.08fr]">
             <div className="space-y-8">
               <p className="font-display text-xs uppercase tracking-[0.32em] text-cyan-200/66">
-                Open-source market recorder
+                {variant.eyebrow}
               </p>
 
               <div className="space-y-5">
                 <h1 className="font-display text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl lg:text-7xl">
-                  Scan markets.
+                  {variant.headlineLead}
                   <span className="block bg-[linear-gradient(135deg,#f8fbff_0%,#88ebff_40%,#d79dff_100%)] bg-clip-text text-transparent">
-                    Find edge. Act with precision.
+                    {variant.headlineAccent}
                   </span>
                 </h1>
                 <p className="max-w-2xl text-lg leading-8 text-slate-300/76">
-                  Superior is a calm interface for an intelligent arbitrage system. The logo does the heavy lifting. The page
-                  stays clean.
+                  {variant.subhead}
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
                 <a
                   className="rounded-full bg-[linear-gradient(135deg,#67e4ff_0%,#7e63ff_56%,#f273dc_100%)] px-6 py-3.5 font-semibold text-slate-950 shadow-[0_0_34px_rgba(99,201,255,0.32)] transition hover:translate-y-[-1px]"
-                  href={windowsInstallerUrl}
+                  href={variant.windowsInstallerUrl}
                 >
                   Download for Windows
                 </a>
                 <a
                   className="rounded-full border border-white/12 bg-white/5 px-6 py-3.5 font-medium text-slate-100 transition hover:border-cyan-200/30 hover:bg-white/10"
-                  href="/download"
+                  href={variant.secondaryCtaHref}
                 >
                   All download options
                 </a>
               </div>
 
               <div className="flex flex-wrap gap-3">
-                {["MIT licensed", "Local-first", "Windows first"].map((item) => (
+                {variant.badges.map((item) => (
                   <span
                     key={item}
                     className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300/78"
@@ -158,8 +124,8 @@ export default function SuperiorLanding() {
               <div className="glass-panel pixel-frame summon-ring shadow-aura relative w-full rounded-[40px] px-6 py-10 sm:px-8 sm:py-12">
                 <div className="pointer-events-none absolute inset-0 rounded-[40px] bg-[radial-gradient(circle_at_top,rgba(96,226,255,0.08),transparent_40%)]" />
                 <div className="flex items-center justify-between text-xs uppercase tracking-[0.28em] text-slate-400/58">
-                  <span>Superior</span>
-                  <span>quiet interface</span>
+                  <span>{variant.heroTopLeft}</span>
+                  <span>{variant.heroTopRight}</span>
                 </div>
 
                 <div className="relative mt-8 flex items-center justify-center">
@@ -174,21 +140,19 @@ export default function SuperiorLanding() {
                 </div>
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[20px] border border-white/8 bg-slate-950/42 px-4 py-4">
-                    <p className="font-display text-xs uppercase tracking-[0.22em] text-cyan-200/70">Signal</p>
-                    <p className="mt-2 text-sm leading-7 text-slate-300/72">Readable market context without dashboard clutter.</p>
-                  </div>
-                  <div className="rounded-[20px] border border-white/8 bg-slate-950/42 px-4 py-4">
-                    <p className="font-display text-xs uppercase tracking-[0.22em] text-fuchsia-200/70">Execution</p>
-                    <p className="mt-2 text-sm leading-7 text-slate-300/72">A product surface built around clarity and control.</p>
-                  </div>
+                  {variant.heroPanels.map((panel) => (
+                    <div key={panel.title} className="rounded-[20px] border border-white/8 bg-slate-950/42 px-4 py-4">
+                      <p className="font-display text-xs uppercase tracking-[0.22em] text-cyan-200/70">{panel.title}</p>
+                      <p className="mt-2 text-sm leading-7 text-slate-300/72">{panel.body}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </section>
 
           <section id="features" className="mt-20 grid gap-4 md:grid-cols-3">
-            {featureCards.map((card) => (
+            {variant.featureCards.map((card) => (
               <article key={card.title} className="glass-panel pixel-frame rounded-[28px] p-6">
                 <p className="font-display text-sm uppercase tracking-[0.24em] text-cyan-200/72">{card.title}</p>
                 <p className="mt-3 text-base leading-7 text-slate-300/74">{card.body}</p>
@@ -200,16 +164,15 @@ export default function SuperiorLanding() {
             <article className="glass-panel pixel-frame rounded-[34px] p-7 sm:p-8">
               <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">Product surface</p>
               <h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
-                Built to stay readable under pressure.
+                {variant.productTitle}
               </h2>
               <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300/76">
-                The design keeps the atmosphere from the logo, then removes everything that does not help comprehension. It should
-                feel rare, but still usable.
+                {variant.productBody}
               </p>
             </article>
 
             <div className="grid gap-4">
-              {productNotes.map((note) => (
+              {variant.productNotes.map((note) => (
                 <article key={note.title} className="glass-panel pixel-frame rounded-[28px] p-6">
                   <p className="font-display text-sm uppercase tracking-[0.24em] text-fuchsia-200/72">{note.title}</p>
                   <p className="mt-3 text-base leading-7 text-slate-300/74">{note.body}</p>
@@ -224,17 +187,17 @@ export default function SuperiorLanding() {
                 <div className="max-w-3xl">
                   <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">Download</p>
                   <h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
-                    Windows build on GitHub Releases. Source build available today.
+                    {variant.downloadTitle}
                   </h2>
                   <p className="mt-4 text-base leading-8 text-slate-300/78">
-                    If the packaged release is not published yet, the docs page shows the local build path. No dead-end button.
+                    {variant.downloadBody}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap gap-4">
                   <a
                     className="rounded-full border border-cyan-200/24 bg-cyan-300/12 px-6 py-3.5 font-medium text-cyan-100 transition hover:border-cyan-200/42 hover:bg-cyan-200/18"
-                    href={windowsInstallerUrl}
+                    href={variant.windowsInstallerUrl}
                   >
                     Download for Windows
                   </a>

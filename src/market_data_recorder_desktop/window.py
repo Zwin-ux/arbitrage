@@ -422,6 +422,8 @@ class DesktopMainWindow(QMainWindow):
         controller: EngineController,
         diagnostics: DiagnosticsService,
         startup_manager: StartupManager,
+        allow_setup_wizard_on_empty_profiles: bool = True,
+        show_tray_icon: bool = True,
     ) -> None:
         super().__init__()
         self._paths = paths
@@ -467,7 +469,7 @@ class DesktopMainWindow(QMainWindow):
         self.setStatusBar(QStatusBar(self))
 
         self._setup_connections()
-        self._setup_tray()
+        self._setup_tray(show_tray_icon=show_tray_icon)
 
         self._refresh_profiles()
         self._refresh_status()
@@ -475,7 +477,7 @@ class DesktopMainWindow(QMainWindow):
         self._refresh_timer.timeout.connect(self._refresh_status)
         self._refresh_timer.start(1000)
 
-        if not self._profiles:
+        if allow_setup_wizard_on_empty_profiles and not self._profiles:
             QTimer.singleShot(0, self._open_setup_wizard)
 
     def handle_auto_launch(self, profile_id: str | None = None) -> None:
@@ -551,7 +553,7 @@ class DesktopMainWindow(QMainWindow):
         )
         self.about_tab.security_button.clicked.connect(lambda: self._open_local(_project_root() / "SECURITY.md"))
 
-    def _setup_tray(self) -> None:
+    def _setup_tray(self, *, show_tray_icon: bool) -> None:
         icon = self.windowIcon()
         if icon.isNull():
             icon = self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon)
@@ -572,7 +574,8 @@ class DesktopMainWindow(QMainWindow):
         tray_menu.addAction(quit_action)
         self._tray.setContextMenu(tray_menu)
         self._tray.activated.connect(self._on_tray_activated)
-        self._tray.show()
+        if show_tray_icon:
+            self._tray.show()
 
     def _show_from_tray(self) -> None:
         self.showNormal()

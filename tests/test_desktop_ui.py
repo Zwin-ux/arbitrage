@@ -4,12 +4,13 @@ import time
 from typing import Any, cast
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLineEdit
+from PySide6.QtWidgets import QApplication, QLineEdit
 
 from market_data_recorder.config import RecorderSettings
 from market_data_recorder_desktop.controller import EngineController
 from market_data_recorder_desktop.credentials import CredentialVault
 from market_data_recorder_desktop.diagnostics import DiagnosticsService
+from market_data_recorder_desktop.main import _smoke_report, main
 from market_data_recorder_desktop.paths import AppPaths
 from market_data_recorder_desktop.profiles import ProfileStore
 from market_data_recorder_desktop.startup import UnsupportedStartupManager
@@ -99,3 +100,46 @@ def test_main_window_runs_default_preset(
     window._refresh_status()  # noqa: SLF001
     assert window.dashboard_tab.state_label.text() == "Completed"
     controller.shutdown()
+
+
+def test_smoke_report_captures_window_state(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    store.create_profile(
+        display_name="Smoke Report",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+    )
+    controller = EngineController(RecorderSettings())
+    window = DesktopMainWindow(
+        paths=app_paths,
+        profile_store=store,
+        credential_vault=CredentialVault(backend=fake_keyring),
+        controller=controller,
+        diagnostics=DiagnosticsService(app_paths),
+        startup_manager=UnsupportedStartupManager(),
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    app = QApplication.instance()
+    assert app is not None
+    report = _smoke_report(cast(QApplication, app), window)
+
+    assert report["app_name"] == "pytest-qt-qapp"
+    assert report["window_title"] == "Superior"
+    assert report["window_visible"] is True
+    assert isinstance(report["window_icon_present"], bool)
+    controller.shutdown()
+
+
+def test_parser_requires_smoke_output_with_smoke_test() -> None:
+    try:
+        main(["--smoke-test"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:  # pragma: no cover - defensive
+        raise AssertionError("expected parser to reject --smoke-test without --smoke-output")
