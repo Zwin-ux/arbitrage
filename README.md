@@ -114,8 +114,8 @@ Railway should host only the public site. The recorder runtime, secrets, and use
 Railway setup for this monorepo:
 
 1. Connect the GitHub repo to a Railway service.
-2. Set the service root directory to `/site`.
-3. Set the config-as-code path to `/site/railway.toml`.
+2. Preferred: set the service root directory to `/site` and the config-as-code path to `/site/railway.toml`.
+3. Safe fallback: if Railway deploys from the repo root, the root [`Dockerfile`](Dockerfile) builds and serves the `site/` app directly.
 4. Generate a public Railway domain.
 5. Set `SITE_URL` to the public Railway URL once the domain exists.
 6. Enable `Wait for CI` so deployments wait for the GitHub Actions workflow on `main`.

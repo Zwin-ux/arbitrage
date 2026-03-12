@@ -41,7 +41,7 @@ npm --prefix site run build</code></pre>
     <article class="feature-card">
       <p class="eyebrow">Railway setup</p>
       <h3>Deploy only the site</h3>
-      <p>Connect the GitHub repo to Railway, set the service root to <code>/site</code>, set the config path to <code>/site/railway.toml</code>, use the default Railway domain, and enable "Wait for CI".</p>
+      <p>Connect the GitHub repo to Railway, set the service root to <code>/site</code>, set the config path to <code>/site/railway.toml</code>, use the default Railway domain, and enable "Wait for CI". If the service builds from repo root instead, the root Dockerfile serves the same static site as a fallback.</p>
     </article>
     <article class="feature-card">
       <p class="eyebrow">Config-as-code</p>

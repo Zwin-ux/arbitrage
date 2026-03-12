@@ -1,0 +1,15 @@
+.git
+.github
+.mypy_cache
+.pytest_cache
+.tmp
+.venv
+build
+data
+dist
+htmlcov
+site/.astro
+site/dist
+site/node_modules
+__pycache__
+*.log
