@@ -4,7 +4,52 @@ const windowsInstallerUrl =
 const shared = {
   windowsInstallerUrl,
   secondaryCtaHref: "/download",
-  badges: ["MIT licensed", "Local-first", "Windows first"]
+  badges: ["MIT licensed", "Local-first", "Smoke-tested packaging"],
+  proofEyebrow: "Proof before download",
+  proofTitle: "Everything important stays visible before you commit to the install.",
+  proofBody:
+    "Use the landing page to verify the release path, inspect the docs, and compare the draft front end before the public route changes.",
+  proofCards: [
+    {
+      title: "Inspect the release path",
+      body: "Choose the Windows installer or portable zip, then compare it against the documented source flow.",
+      href: "/download",
+      cta: "Review download options"
+    },
+    {
+      title: "Read the build notes",
+      body: "The docs keep local setup, release testing, and deployment details in one inspectable place.",
+      href: "/docs",
+      cta: "Read the docs"
+    },
+    {
+      title: "Review the draft",
+      body: "Compare the public homepage against the stronger draft variant before replacing the main route.",
+      href: "/lab/draft",
+      cta: "Open the draft route"
+    }
+  ],
+  workflowEyebrow: "Operator flow",
+  workflowTitle: "Three calm steps from scan to ship.",
+  workflowBody:
+    "Superior keeps the front end focused on signal, verification, and release discipline instead of decorative dashboard clutter.",
+  workflowSteps: [
+    {
+      step: "01",
+      title: "Scan",
+      body: "See active markets and recorder context quickly without sacrificing readability."
+    },
+    {
+      step: "02",
+      title: "Verify",
+      body: "Check docs, source, and packaging details before you trust the release path."
+    },
+    {
+      step: "03",
+      title: "Ship",
+      body: "Use the lab routes to review challengers deliberately before changing the public homepage."
+    }
+  ]
 };
 
 export const landingVariants = {
@@ -127,7 +172,67 @@ export const landingVariants = {
     downloadBody:
       "Use the lab routes to compare variants, then keep the public homepage on the winner once the copy and composition earn it.",
     ...shared
+  },
+  draft: {
+    key: "draft",
+    label: "Draft",
+    pageTitle: "Superior | Draft Front End For Review",
+    pageDescription:
+      "A draft landing page for Superior that prioritizes proof, hierarchy, and reviewable release paths for local-first arbitrage tooling.",
+    eyebrow: "Draft landing page for review",
+    headlineLead: "Review the build",
+    headlineAccent: "before you trust the click.",
+    subhead:
+      "This draft sharpens hierarchy, surfaces proof earlier, and keeps the path from source to installer explicit for operators evaluating Superior.",
+    navLabel: "Draft",
+    heroTopLeft: "Draft review",
+    heroTopRight: "Proof-first",
+    heroPanels: [
+      {
+        title: "Trust",
+        body: "Release links, docs, and source review stay one step away instead of being buried below the fold."
+      },
+      {
+        title: "Calm",
+        body: "The composition puts hierarchy before spectacle so the page reads quickly under pressure."
+      }
+    ],
+    featureCards: [
+      {
+        title: "Clear hierarchy",
+        body: "Hero, proof, workflow, and download sections now tell one coherent story from signal to install."
+      },
+      {
+        title: "Draft ready",
+        body: "The lab exposes this version separately so the public route can stay stable until the copy is approved."
+      },
+      {
+        title: "Accessible motion",
+        body: "Skip navigation, visible focus states, and reduced-motion support keep the experience usable for more operators."
+      }
+    ],
+    productTitle: "A stronger front end draft designed for review, not just admiration.",
+    productBody:
+      "The layout keeps the logo and atmosphere, then earns trust with explicit proof, calmer section order, and shorter paths to real product information.",
+    productNotes: [
+      {
+        title: "Reviewable",
+        body: "The draft route makes composition changes inspectable before they touch the public homepage."
+      },
+      {
+        title: "Transparent",
+        body: "Docs, downloads, and source stay reachable from the first scroll instead of hiding behind marketing copy."
+      },
+      {
+        title: "Deliberate",
+        body: "The page now reads like a product release path rather than a static concept render."
+      }
+    ],
+    downloadTitle: "Approve the draft, then download the build or inspect the source path.",
+    downloadBody:
+      "Start with the draft route if you want to evaluate copy and hierarchy. When you are ready, the installer and source path are both one click away.",
+    ...shared
   }
 };
 
-export const landingVariantOrder = ["control", "focus"];
+export const landingVariantOrder = ["control", "focus", "draft"];
