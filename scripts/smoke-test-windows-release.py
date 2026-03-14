@@ -4,13 +4,9 @@ import argparse
 import json
 import os
 import subprocess
-import sys
 import tempfile
 import time
 from pathlib import Path
-
-CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-DETACHED_PROCESS = getattr(subprocess, "DETACHED_PROCESS", 0)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -54,8 +50,6 @@ def main(argv: list[str] | None = None) -> int:
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            creationflags=CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS,
-            close_fds=True,
         )
 
         deadline = time.monotonic() + args.timeout_seconds
@@ -73,6 +67,10 @@ def main(argv: list[str] | None = None) -> int:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
             raise RuntimeError(
                 f"Packaged app smoke test timed out after {args.timeout_seconds} seconds."
             )
@@ -84,6 +82,10 @@ def main(argv: list[str] | None = None) -> int:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
 
         if process.returncode != 0:
             raise RuntimeError(

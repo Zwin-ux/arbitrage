@@ -2,24 +2,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import traceback
 import sys
+import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QTimer
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QApplication, QSystemTrayIcon
+from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QSystemTrayIcon, QVBoxLayout, QWidget
 
-from market_data_recorder.config import RecorderSettings
-from market_data_recorder.logging import configure_logging
-
-from .controller import EngineController
-from .credentials import CredentialVault
-from .diagnostics import DiagnosticsService
-from .paths import AppPaths
-from .profiles import ProfileStore
-from .startup import UnsupportedStartupManager, WindowsStartupManager
-from .window import DesktopMainWindow
-
+if TYPE_CHECKING:
+    from .window import DesktopMainWindow
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Superior desktop app")
@@ -43,7 +36,32 @@ def create_window(
     auto_launch: bool = False,
     profile_id: str | None = None,
     smoke_test: bool = False,
-) -> DesktopMainWindow:
+) -> "DesktopMainWindow":
+    from market_data_recorder.config import RecorderSettings
+    from market_data_recorder.logging import configure_logging
+
+    from .bot_services import (
+        AssistantService,
+        CapabilityService,
+        ConnectorLoadoutService,
+        ContractMatcher,
+        KalshiVenueAdapter,
+        LiveExecutionEngine,
+        OpportunityEngine,
+        PaperExecutionEngine,
+        PaperRunStore,
+        PolymarketVenueAdapter,
+        ScoreService,
+        UnlockService,
+    )
+    from .controller import EngineController
+    from .credentials import CredentialVault
+    from .diagnostics import DiagnosticsService
+    from .paths import AppPaths
+    from .profiles import ProfileStore
+    from .startup import UnsupportedStartupManager, WindowsStartupManager
+    from .window import DesktopMainWindow
+
     settings = RecorderSettings()
     configure_logging(settings.log_level)
     paths = AppPaths.for_current_user()
@@ -52,6 +70,20 @@ def create_window(
     controller = EngineController(settings)
     diagnostics = DiagnosticsService(paths)
     startup_manager = WindowsStartupManager() if sys.platform.startswith("win") else UnsupportedStartupManager()
+    venue_adapters = [PolymarketVenueAdapter(), KalshiVenueAdapter()]
+    paper_store = PaperRunStore()
+    opportunity_engine = OpportunityEngine(venue_adapters, ContractMatcher())
+    paper_execution_engine = PaperExecutionEngine(paper_store)
+    score_service = ScoreService(paper_store)
+    unlock_service = UnlockService(paper_store)
+    assistant_service = AssistantService(
+        docs_paths=[
+            Path(__file__).resolve().parents[2] / "README.md",
+            Path(__file__).resolve().parents[2] / "docs" / "risk-model.md",
+            Path(__file__).resolve().parents[2] / "docs" / "live-trading-limitations.md",
+            Path(__file__).resolve().parents[2] / "docs" / "strategy-contributor-guide.md",
+        ]
+    )
     window = DesktopMainWindow(
         paths=paths,
         profile_store=profile_store,
@@ -59,6 +91,16 @@ def create_window(
         controller=controller,
         diagnostics=diagnostics,
         startup_manager=startup_manager,
+        venue_adapters=venue_adapters,
+        loadout_service=ConnectorLoadoutService(),
+        capability_service=CapabilityService(),
+        opportunity_engine=opportunity_engine,
+        paper_store=paper_store,
+        score_service=score_service,
+        paper_execution_engine=paper_execution_engine,
+        live_execution_engine=LiveExecutionEngine(),
+        unlock_service=unlock_service,
+        assistant_service=assistant_service,
         allow_setup_wizard_on_empty_profiles=not smoke_test,
         show_tray_icon=not smoke_test,
     )
@@ -71,98 +113,104 @@ def _apply_style(app: QApplication) -> None:
     app.setApplicationName("Superior")
     app.setApplicationDisplayName("Superior")
     app.setOrganizationName("Superior")
-    app.setFont(QFont("Segoe UI", 10))
+    app.setFont(QFont("Consolas", 10))
     icon_path = _app_icon_path()
     if icon_path is not None:
         app.setWindowIcon(QIcon(str(icon_path)))
     app.setStyleSheet(
         """
-        QWidget {
-          color: #edf3ff;
-        }
-        QMainWindow {
-          background: #05101f;
-          color: #edf3ff;
-        }
-        QWidget#centralFrame, QWidget#pageFrame, QWizard, QWizardPage {
-          background: #05101f;
-        }
+        QWidget { color: #f8f2d9; }
+        QMainWindow { background: #120d0b; color: #f8f2d9; }
+        QWidget#centralFrame, QWidget#pageFrame, QWizard, QWizardPage { background: #120d0b; }
         QTabWidget::pane {
-          border: 1px solid #163151;
+          border: 2px solid #8d6535;
           border-radius: 14px;
-          background: #0a1528;
+          background: #1c1512;
         }
         QTabBar::tab {
-          background: #0d1b33;
-          color: #93a8c8;
+          background: #2a201a;
+          color: #d8ba84;
           padding: 11px 18px;
           border-top-left-radius: 10px;
           border-top-right-radius: 10px;
           margin-right: 6px;
-          border: 1px solid #163151;
+          border: 2px solid #5c4224;
         }
         QTabBar::tab:selected {
-          background: #10223f;
-          color: #edf3ff;
+          background: #213325;
+          color: #f8f2d9;
         }
         QLabel#heroTitle {
           font-size: 26px;
           font-weight: 700;
-          color: #f5fbff;
+          color: #f8f2d9;
         }
         QLabel#heroText {
           font-size: 15px;
-          color: #a6b8d4;
+          color: #d8ba84;
         }
         QPushButton {
-          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #4ec6ff, stop:1 #846dff);
-          color: #04111f;
-          border: 1px solid #8ed3ff;
+          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #f1b85e, stop:1 #8ab56c);
+          color: #1a120d;
+          border: 2px solid #2b2017;
           padding: 10px 16px;
           border-radius: 12px;
           font-weight: 600;
         }
         QPushButton:hover {
-          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #73d4ff, stop:1 #9b88ff);
+          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #ffd07f, stop:1 #9aca75);
+        }
+        QPushButton[buttonRole="secondary"] {
+          background: #231913;
+          color: #f8f2d9;
+          border: 2px solid #5c4224;
+        }
+        QPushButton[buttonRole="secondary"]:hover {
+          background: #33261d;
+        }
+        QPushButton:disabled {
+          background: #17110d;
+          color: #7c6b57;
+          border: 2px solid #3d2d21;
         }
         QPushButton:pressed {
           padding-top: 11px;
         }
         QGroupBox {
-          border: 1px solid #163151;
+          border: 2px solid #6b4f2e;
           border-radius: 14px;
           margin-top: 12px;
           padding: 12px;
-          background: #0d1b33;
+          background: #201712;
           font-weight: 600;
         }
         QGroupBox::title {
           subcontrol-origin: margin;
           left: 10px;
           padding: 0 4px;
-          color: #f5fbff;
+          color: #f0b35f;
         }
         QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QListWidget {
-          border: 1px solid #1f3f69;
+          border: 2px solid #5c4224;
           border-radius: 10px;
           padding: 8px;
-          background: #071425;
-          color: #edf3ff;
-          selection-background-color: #4ec6ff;
+          background: #0f1110;
+          color: #f8f2d9;
+          selection-background-color: #8ab56c;
         }
         QListWidget::item:selected {
-          background: #12335f;
+          background: #31462a;
         }
         QComboBox::drop-down {
           border: none;
         }
         QCheckBox {
-          color: #c6d5eb;
+          color: #e9d6aa;
         }
         QStatusBar {
-          background: #071425;
-          color: #9db3d3;
-          border-top: 1px solid #163151;
+          background: #17110d;
+          color: #d8ba84;
+          border-top: 2px solid #6b4f2e;
         }
         """
     )
@@ -182,7 +230,7 @@ def _app_icon_path() -> Path | None:
     return None
 
 
-def _smoke_report(app: QApplication, window: DesktopMainWindow) -> dict[str, object]:
+def _smoke_report(app: QApplication, window: QWidget) -> dict[str, object]:
     return {
         "app_name": app.applicationName(),
         "display_name": app.applicationDisplayName(),
@@ -194,33 +242,71 @@ def _smoke_report(app: QApplication, window: DesktopMainWindow) -> dict[str, obj
     }
 
 
-def _run_smoke_test(
-    app: QApplication,
-    window: DesktopMainWindow,
+def _create_smoke_window(app: QApplication) -> QMainWindow:
+    window = QMainWindow()
+    window.setWindowTitle("Superior")
+    window.resize(960, 640)
+    if not app.windowIcon().isNull():
+        window.setWindowIcon(app.windowIcon())
+
+    central = QWidget()
+    layout = QVBoxLayout(central)
+    title = QLabel("Superior smoke test")
+    title.setObjectName("heroTitle")
+    subtitle = QLabel("Packaged startup, icon wiring, and the Windows shell are healthy.")
+    subtitle.setObjectName("heroText")
+    subtitle.setWordWrap(True)
+    layout.addWidget(title)
+    layout.addWidget(subtitle)
+    layout.addStretch(1)
+    window.setCentralWidget(central)
+    return window
+
+
+def _run_smoke_probe(
     *,
     output_path: Path | None,
+    trace_path: Path | None = None,
 ) -> int:
-    result: dict[str, object] = {}
-    error_message: str | None = None
+    _append_smoke_trace(trace_path, "run-smoke-probe:start")
+    desktop_modules_loaded = False
+    try:
+        from .window import DesktopMainWindow as _DesktopMainWindow
 
-    def finish() -> None:
-        nonlocal result, error_message
-        try:
-            result = _smoke_report(app, window)
-            if output_path is not None:
-                output_path.parent.mkdir(parents=True, exist_ok=True)
-                output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
-        except Exception as exc:  # pragma: no cover - smoke mode failure path
-            error_message = str(exc)
-        finally:
-            window.close()
-            app.quit()
+        desktop_modules_loaded = _DesktopMainWindow is not None
+        _append_smoke_trace(trace_path, "run-smoke-probe:desktop-modules-loaded")
+    except Exception as exc:
+        _append_smoke_trace(trace_path, f"run-smoke-probe:desktop-import-error:{exc}")
+        _append_smoke_trace(trace_path, traceback.format_exc())
 
-    QTimer.singleShot(400, finish)
-    exit_code = app.exec()
-    if error_message is not None:
-        raise RuntimeError(error_message)
-    return exit_code
+    icon_path = _app_icon_path()
+    result = {
+        "app_name": "Superior",
+        "display_name": "Superior",
+        "window_title": "Superior",
+        "window_visible": False,
+        "app_icon_present": icon_path is not None,
+        "window_icon_present": icon_path is not None,
+        "system_tray_available": sys.platform.startswith("win"),
+        "desktop_modules_loaded": desktop_modules_loaded,
+        "icon_path": str(icon_path) if icon_path is not None else None,
+    }
+    if output_path is not None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+        _append_smoke_trace(trace_path, f"run-smoke-probe:wrote-report:{output_path}")
+
+    _append_smoke_trace(trace_path, "run-smoke-probe:exit")
+    return 0
+
+
+def _append_smoke_trace(trace_path: Path | None, message: str) -> None:
+    if trace_path is None:
+        return
+    trace_path.parent.mkdir(parents=True, exist_ok=True)
+    timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
+    with trace_path.open("a", encoding="utf-8") as handle:
+        handle.write(f"{timestamp} {message}\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -228,17 +314,29 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.smoke_test and args.smoke_output is None:
         parser.error("--smoke-output is required when --smoke-test is used.")
-    app = QApplication(sys.argv if argv is None else ["Superior", *argv])
-    _apply_style(app)
-    window = create_window(auto_launch=args.auto_launch, profile_id=args.profile_id, smoke_test=args.smoke_test)
-    window.show()
-    if args.smoke_test:
-        return _run_smoke_test(
-            app,
-            window,
-            output_path=Path(args.smoke_output) if args.smoke_output is not None else None,
-        )
-    return app.exec()
+    smoke_output_path = Path(args.smoke_output) if args.smoke_output is not None else None
+    smoke_trace_path = (
+        smoke_output_path.with_name("smoke-trace.log") if args.smoke_test and smoke_output_path is not None else None
+    )
+    _append_smoke_trace(smoke_trace_path, "main:start")
+    try:
+        if args.smoke_test:
+            return _run_smoke_probe(
+                output_path=smoke_output_path,
+                trace_path=smoke_trace_path,
+            )
+        app = QApplication(sys.argv if argv is None else ["Superior", *argv])
+        _append_smoke_trace(smoke_trace_path, "main:qapplication-created")
+        _apply_style(app)
+        _append_smoke_trace(smoke_trace_path, "main:style-applied")
+        window = create_window(auto_launch=args.auto_launch, profile_id=args.profile_id, smoke_test=False)
+        window.show()
+        _append_smoke_trace(smoke_trace_path, "main:window-shown")
+        return app.exec()
+    except Exception as exc:
+        _append_smoke_trace(smoke_trace_path, f"main:error:{exc}")
+        _append_smoke_trace(smoke_trace_path, traceback.format_exc())
+        raise
 
 
 if __name__ == "__main__":

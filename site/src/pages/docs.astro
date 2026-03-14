@@ -2,12 +2,12 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Docs | market-data-recorder">
+<BaseLayout title="Docs | Superior">
   <section class="page-hero compact">
     <p class="eyebrow">Docs</p>
-    <h1>Build, install, and verify with the same repo.</h1>
+    <h1>Build, install, and verify Superior from the same public repo.</h1>
     <p class="lead">
-      The public site is intentionally thin. The real source of truth stays in the monorepo and the desktop/CLI code paths.
+      The site is intentionally light. The real source of truth is still the monorepo, the desktop app, and the trust docs that explain paper-first mode and live gating.
     </p>
   </section>
 
@@ -36,17 +36,17 @@ npm --prefix site run build</code></pre>
     <article class="feature-card">
       <p class="eyebrow">Key repo docs</p>
       <h3>Trust surface</h3>
-      <p>Read the license, security policy, privacy/secrets notes, release process, and third-party notices directly in the repo.</p>
+      <p>Read the risk model, live-trading limitations, privacy/secrets notes, contributor strategy guide, release process, and third-party notices directly in the repo.</p>
+    </article>
+    <article class="feature-card">
+      <p class="eyebrow">Product posture</p>
+      <h3>Paper first, live gated</h3>
+      <p>Superior is stable software with explicit guardrails, not a guarantee of profits. Users onboard, record local books, scan opportunities, and build paper history before any live-gate path appears.</p>
     </article>
     <article class="feature-card">
       <p class="eyebrow">Railway setup</p>
       <h3>Deploy only the site</h3>
-      <p>Connect the GitHub repo to Railway, set the service root to <code>/site</code>, set the config path to <code>/site/railway.toml</code>, use the default Railway domain, and enable "Wait for CI". If the service builds from repo root instead, the root Dockerfile serves the same static site as a fallback.</p>
-    </article>
-    <article class="feature-card">
-      <p class="eyebrow">Config-as-code</p>
-      <h3>Railway config path</h3>
-      <p>If you use Railway config-as-code, point the service to <code>/site/railway.toml</code> and set <code>SITE_URL</code> to the public Railway domain. The recorder runtime itself should not be deployed there.</p>
+      <p>Connect the GitHub repo to Railway, set the service root to <code>/site</code>, set the config path to <code>/site/railway.toml</code>, use the default Railway domain, and enable "Wait for CI". The app runtime, user data, and secrets stay off Railway.</p>
     </article>
   </section>
 </BaseLayout>

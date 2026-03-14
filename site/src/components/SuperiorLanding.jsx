@@ -1,212 +1,328 @@
-const particles = [
-  { left: "9%", top: "18%", size: 4, color: "rgba(101, 225, 255, 0.88)", duration: "11s" },
-  { left: "18%", top: "68%", size: 3, color: "rgba(192, 122, 255, 0.78)", duration: "13s" },
-  { left: "31%", top: "14%", size: 3, color: "rgba(255, 222, 131, 0.7)", duration: "10s" },
-  { left: "44%", top: "76%", size: 5, color: "rgba(86, 246, 181, 0.7)", duration: "12s" },
-  { left: "59%", top: "10%", size: 4, color: "rgba(121, 168, 255, 0.88)", duration: "9s" },
-  { left: "72%", top: "22%", size: 3, color: "rgba(102, 255, 241, 0.8)", duration: "14s" },
-  { left: "84%", top: "58%", size: 4, color: "rgba(243, 122, 214, 0.72)", duration: "11s" },
-  { left: "91%", top: "28%", size: 2, color: "rgba(255, 235, 150, 0.64)", duration: "8.5s" }
+const starField = [
+  { left: "8%", top: "10%", size: 4, color: "var(--white)", delay: "0s" },
+  { left: "18%", top: "24%", size: 6, color: "var(--cyan)", delay: "1s" },
+  { left: "29%", top: "14%", size: 4, color: "var(--purple)", delay: "2s" },
+  { left: "41%", top: "20%", size: 4, color: "var(--white)", delay: "1.5s" },
+  { left: "54%", top: "12%", size: 6, color: "var(--magenta)", delay: "0.6s" },
+  { left: "68%", top: "18%", size: 4, color: "var(--cyan)", delay: "2.2s" },
+  { left: "82%", top: "11%", size: 4, color: "var(--white)", delay: "0.2s" },
+  { left: "90%", top: "26%", size: 6, color: "var(--purple)", delay: "1.1s" },
+  { left: "13%", top: "58%", size: 4, color: "var(--cyan)", delay: "0.8s" },
+  { left: "24%", top: "74%", size: 6, color: "var(--white)", delay: "1.7s" },
+  { left: "36%", top: "66%", size: 4, color: "var(--magenta)", delay: "0.4s" },
+  { left: "49%", top: "78%", size: 4, color: "var(--white)", delay: "2.3s" },
+  { left: "63%", top: "64%", size: 6, color: "var(--cyan)", delay: "1.3s" },
+  { left: "75%", top: "72%", size: 4, color: "var(--purple)", delay: "0.9s" },
+  { left: "88%", top: "60%", size: 4, color: "var(--white)", delay: "2.1s" }
 ];
+
+const palette = {
+  c: "var(--cyan)",
+  m: "var(--magenta)",
+  p: "var(--purple)",
+  w: "var(--white)",
+  g: "var(--green)",
+  y: "var(--gold)"
+};
+
+const sprites = {
+  robot: [
+    "..cccc..",
+    ".cwwwwc.",
+    "cwwppwwc",
+    "cwppppwc",
+    "cwccccwc",
+    ".cwccwc.",
+    ".p....p.",
+    "p......p"
+  ],
+  scanner: [
+    "....c...",
+    "...ccc..",
+    "..ccccc.",
+    ".ccccccc",
+    "cccccccc",
+    ".ppyypp.",
+    "..p..p..",
+    ".p....p."
+  ],
+  docs: [
+    "wwwwww..",
+    "wccccw..",
+    "wccccw..",
+    "wppppw..",
+    "wccccw..",
+    "wccccw..",
+    "wwwwww..",
+    "........"
+  ],
+  chip: [
+    "..yyyy..",
+    ".yccccy.",
+    "ycwwwwcy",
+    "ycwggwcy",
+    "ycwggwcy",
+    "ycwwwwcy",
+    ".yccccy.",
+    "..yyyy.."
+  ],
+  coin: [
+    "..yyyy..",
+    ".ywwwwy.",
+    "ywyyyywy",
+    "ywyyyywy",
+    "ywyyyywy",
+    "ywyyyywy",
+    ".ywwwwy.",
+    "..yyyy.."
+  ]
+};
+
+function PixelSprite({ name, label }) {
+  const rows = sprites[name];
+  return (
+    <div
+      aria-label={label}
+      className="grid grid-cols-8 gap-px border-2 border-white bg-[#0A0F2E] p-2"
+      role="img"
+    >
+      {rows.join("").split("").map((cell, index) => (
+        <span
+          key={`${name}-${index}`}
+          className="block h-2 w-2"
+          style={{ backgroundColor: palette[cell] ?? "transparent" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PanelHeading({ sprite, title, label, accent = "var(--cyan)" }) {
+  return (
+    <div className="mb-4 flex items-center justify-between gap-4 border-b-2 border-white pb-4">
+      <div className="flex items-center gap-4">
+        <PixelSprite name={sprite} label={title} />
+        <div>
+          <p className="font-display text-[8px] uppercase leading-[16px] text-white">{label}</p>
+          <p className="font-body text-[24px] uppercase leading-[24px]" style={{ color: accent }}>
+            {title}
+          </p>
+        </div>
+      </div>
+      <span className="font-display text-[8px] uppercase leading-[16px] text-white">v1</span>
+    </div>
+  );
+}
 
 export default function SuperiorLanding({ variant }) {
   return (
-    <div className="relative overflow-hidden bg-[#050612] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-pixel-grid opacity-25 [mask-image:radial-gradient(circle_at_center,black,transparent_80%)]" />
+    <div className="relative overflow-hidden bg-[var(--space)] text-white">
       <div className="pointer-events-none absolute inset-0">
-        {particles.map((particle, index) => (
+        {starField.map((star, index) => (
           <span
-            key={`particle-${index}`}
-            className="particle absolute rounded-full blur-[1px]"
+            key={`star-${index}`}
+            className="pixel-star absolute"
             style={{
-              left: particle.left,
-              top: particle.top,
-              width: `${particle.size}px`,
-              height: `${particle.size}px`,
-              backgroundColor: particle.color,
-              boxShadow: `0 0 18px ${particle.color}`,
-              "--drift-duration": particle.duration
+              left: star.left,
+              top: star.top,
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              backgroundColor: star.color,
+              animationDelay: star.delay
             }}
           />
         ))}
       </div>
 
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-8%] top-[10%] h-[24rem] w-[24rem] rounded-full bg-cyan-400/10 blur-[120px]" />
-        <div className="absolute right-[-10%] top-[4%] h-[28rem] w-[28rem] rounded-full bg-fuchsia-500/10 blur-[140px]" />
-        <div className="absolute bottom-[-14%] left-[26%] h-[26rem] w-[26rem] rounded-full bg-indigo-500/10 blur-[130px]" />
-      </div>
-
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 pb-20 pt-6 sm:px-8 lg:px-10">
-        <header className="glass-panel pixel-frame sticky top-4 z-20 flex flex-wrap items-center justify-between gap-4 rounded-[24px] px-5 py-4">
-          <a className="flex items-center gap-4" href="/">
-            <div className="grid h-12 w-12 place-items-center rounded-[16px] border border-cyan-200/18 bg-[linear-gradient(135deg,rgba(54,181,230,0.18),rgba(171,88,255,0.22))] shadow-[0_0_22px_rgba(70,223,255,0.2)]">
-              <div className="grid h-9 w-9 place-items-center rounded-[14px] bg-slate-950/76 font-display text-sm font-bold tracking-[0.22em] text-cyan-100">
-                S
-              </div>
-            </div>
-            <div>
-              <p className="font-display text-base font-semibold uppercase tracking-[0.24em] text-cyan-100/92">Superior</p>
-              <p className="text-sm text-slate-300/68">open-source market recorder</p>
-            </div>
-          </a>
-
-          <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-300/80">
-            <a className="rounded-full px-4 py-2 transition hover:bg-white/5 hover:text-cyan-100" href="#features">
-              Features
-            </a>
-            <a className="rounded-full px-4 py-2 transition hover:bg-white/5 hover:text-cyan-100" href="#product">
-              Product
-            </a>
-            <a className="rounded-full px-4 py-2 transition hover:bg-white/5 hover:text-cyan-100" href="/docs">
-              Docs
-            </a>
-            <a
-              className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 font-medium text-cyan-100 transition hover:border-cyan-200/40 hover:bg-cyan-200/15"
-              href="/download"
-            >
-              Download
-            </a>
-          </nav>
-        </header>
-
-        <main className="relative z-10 flex flex-1 flex-col justify-center pt-12 lg:pt-20">
-          <section className="grid items-center gap-12 lg:grid-cols-[0.92fr_1.08fr]">
-            <div className="space-y-8">
-              <p className="font-display text-xs uppercase tracking-[0.32em] text-cyan-200/66">
-                {variant.eyebrow}
-              </p>
-
-              <div className="space-y-5">
-                <h1 className="font-display text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl lg:text-7xl">
-                  {variant.headlineLead}
-                  <span className="block bg-[linear-gradient(135deg,#f8fbff_0%,#88ebff_40%,#d79dff_100%)] bg-clip-text text-transparent">
-                    {variant.headlineAccent}
-                  </span>
-                </h1>
-                <p className="max-w-2xl text-lg leading-8 text-slate-300/76">
-                  {variant.subhead}
+      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-24 pt-4 sm:px-8">
+        <header className="pixel-panel px-4 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <a className="flex items-center gap-4" href="/">
+              <PixelSprite name="chip" label="Superior cartridge icon" />
+              <div>
+                <p className="font-display text-[8px] uppercase leading-[16px] text-white">Superior</p>
+                <p className="font-body text-[24px] uppercase leading-[24px] text-[var(--cyan)]">
+                  paper-first bot cabinet
                 </p>
               </div>
+            </a>
 
-              <div className="flex flex-wrap items-center gap-4">
-                <a
-                  className="rounded-full bg-[linear-gradient(135deg,#67e4ff_0%,#7e63ff_56%,#f273dc_100%)] px-6 py-3.5 font-semibold text-slate-950 shadow-[0_0_34px_rgba(99,201,255,0.32)] transition hover:translate-y-[-1px]"
-                  href={variant.windowsInstallerUrl}
-                >
-                  Download for Windows
-                </a>
-                <a
-                  className="rounded-full border border-white/12 bg-white/5 px-6 py-3.5 font-medium text-slate-100 transition hover:border-cyan-200/30 hover:bg-white/10"
-                  href={variant.secondaryCtaHref}
-                >
-                  All download options
-                </a>
+            <nav className="flex flex-wrap gap-2">
+              <a className="pixel-chip" href="#features">
+                Features
+              </a>
+              <a className="pixel-chip" href="#product">
+                Product
+              </a>
+              <a className="pixel-chip" href="/docs">
+                Docs
+              </a>
+              <a className="pixel-button-secondary" href="/download">
+                Download
+              </a>
+            </nav>
+          </div>
+        </header>
+
+        <main className="flex flex-1 flex-col gap-16 pt-16">
+          <section className="mx-auto flex w-full max-w-[960px] flex-col items-center gap-8 text-center">
+            <div className="pixel-panel-alt pixel-frame pixel-scan w-full max-w-[480px] p-4">
+              <div className="border-b-2 border-white pb-4">
+                <p className="font-display text-[8px] uppercase leading-[16px] text-white">Superior cartridge art</p>
               </div>
+              <div className="mt-4 border-2 border-white bg-[var(--panel-dark)] p-4">
+                <img
+                  alt="Superior cartridge art logo"
+                  className="pixel-art mx-auto block w-full max-w-[320px]"
+                  src="/assets/superior-logo.png"
+                />
+              </div>
+            </div>
 
-              <div className="flex flex-wrap gap-3">
-                {variant.badges.map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300/78"
-                  >
-                    {item}
-                  </span>
+            <div className="flex flex-col items-center gap-6">
+              <p className="font-display text-[8px] uppercase leading-[16px] text-[var(--gold)]">{variant.eyebrow}</p>
+              <h1 className="font-display text-[32px] uppercase leading-[48px] text-white sm:text-[48px] sm:leading-[64px] lg:text-[64px] lg:leading-[80px]">
+                {variant.headlineLead}
+                <span className="mt-4 block text-[var(--cyan)]">{variant.headlineAccent}</span>
+              </h1>
+              <p className="max-w-[720px] font-body text-[24px] leading-[32px] text-white">
+                {variant.subhead}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <a className="pixel-button" href={variant.windowsInstallerUrl}>
+                Download for Windows
+              </a>
+              <a className="pixel-button-secondary" href={variant.secondaryCtaHref}>
+                Open setup menu
+              </a>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-2">
+              {variant.badges.map((item) => (
+                <span key={item} className="pixel-chip">
+                  {item}
+                </span>
+              ))}
+            </div>
+
+            <div className="pixel-screen w-full max-w-[720px] p-4">
+              <p className="font-display text-[8px] uppercase leading-[16px] text-white">Score board</p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <div className="border-2 border-white p-3">
+                  <p className="font-display text-[8px] uppercase leading-[16px] text-white">paper score</p>
+                  <p className="font-body text-[24px] uppercase leading-[24px] text-[var(--green)]">active</p>
+                </div>
+                <div className="border-2 border-white p-3">
+                  <p className="font-display text-[8px] uppercase leading-[16px] text-white">live score</p>
+                  <p className="font-body text-[24px] uppercase leading-[24px] text-[var(--cyan)]">reserved</p>
+                </div>
+                <div className="border-2 border-white p-3">
+                  <p className="font-display text-[8px] uppercase leading-[16px] text-white">loadout</p>
+                  <p className="font-body text-[24px] uppercase leading-[24px] text-[var(--magenta)]">equipped</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="features" className="grid gap-6 lg:grid-cols-3">
+            {variant.featureCards.map((card, index) => {
+              const sprite = ["robot", "scanner", "coin"][index] ?? "robot";
+              const accent = ["var(--cyan)", "var(--magenta)", "var(--gold)"][index] ?? "var(--cyan)";
+              return (
+                <article key={card.title} className="pixel-panel p-6">
+                  <PanelHeading accent={accent} label={`0${index + 1}`} sprite={sprite} title={card.title} />
+                  <p className="font-body text-[24px] leading-[32px] text-white">{card.body}</p>
+                </article>
+              );
+            })}
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <article className="pixel-panel-alt p-6">
+              <PanelHeading accent="var(--cyan)" label="setup flow" sprite="chip" title={variant.setupTitle} />
+              <p className="font-body text-[24px] leading-[32px] text-white">{variant.setupBody}</p>
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                {variant.setupSteps.map((step, index) => (
+                  <article key={step.title} className="border-2 border-white bg-[var(--panel-dark)] p-4">
+                    <p className="font-display text-[8px] uppercase leading-[16px] text-[var(--gold)]">
+                      0{index + 1}
+                    </p>
+                    <p className="mt-2 font-display text-[8px] uppercase leading-[16px] text-white">{step.title}</p>
+                    <p className="mt-4 font-body text-[24px] leading-[32px] text-white">{step.body}</p>
+                  </article>
                 ))}
               </div>
-            </div>
+            </article>
 
-            <div className="relative mx-auto flex max-w-[640px] justify-center">
-              <div className="absolute inset-x-6 bottom-14 top-14 rounded-[40px] bg-[radial-gradient(circle_at_center,rgba(76,202,255,0.12),transparent_66%)] blur-3xl" />
-              <div className="absolute inset-x-18 bottom-10 top-10 rounded-[999px] border border-cyan-300/10" />
-              <div className="absolute inset-x-26 bottom-16 top-16 rounded-[999px] border border-fuchsia-300/8" />
-
-              <div className="glass-panel pixel-frame summon-ring shadow-aura relative w-full rounded-[40px] px-6 py-10 sm:px-8 sm:py-12">
-                <div className="pointer-events-none absolute inset-0 rounded-[40px] bg-[radial-gradient(circle_at_top,rgba(96,226,255,0.08),transparent_40%)]" />
-                <div className="flex items-center justify-between text-xs uppercase tracking-[0.28em] text-slate-400/58">
-                  <span>{variant.heroTopLeft}</span>
-                  <span>{variant.heroTopRight}</span>
-                </div>
-
-                <div className="relative mt-8 flex items-center justify-center">
-                  <div className="absolute h-[74%] w-[74%] rounded-full bg-[radial-gradient(circle,rgba(66,233,255,0.24),transparent_65%)] blur-3xl" />
-                  <div className="absolute h-[86%] w-[86%] rounded-full border border-cyan-300/14" />
-                  <div className="absolute h-[98%] w-[98%] rounded-full border border-fuchsia-300/10" />
-                  <img
-                    src="/assets/superior-logo.png"
-                    alt="Superior logo"
-                    className="animate-float-slow relative z-10 w-full max-w-[500px] drop-shadow-[0_0_48px_rgba(80,225,255,0.32)]"
-                  />
-                </div>
-
-                <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                  {variant.heroPanels.map((panel) => (
-                    <div key={panel.title} className="rounded-[20px] border border-white/8 bg-slate-950/42 px-4 py-4">
-                      <p className="font-display text-xs uppercase tracking-[0.22em] text-cyan-200/70">{panel.title}</p>
-                      <p className="mt-2 text-sm leading-7 text-slate-300/72">{panel.body}</p>
-                    </div>
-                  ))}
+            <aside className="pixel-screen p-6">
+              <PanelHeading accent="var(--green)" label="field note" sprite="docs" title="first launch" />
+              <p className="font-body text-[24px] leading-[32px] text-white">{variant.setupCaption}</p>
+              <div className="mt-6 border-2 border-white p-4">
+                <p className="font-display text-[8px] uppercase leading-[16px] text-white">menu</p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <div className="border-2 border-[var(--cyan)] bg-[var(--cyan)] px-4 py-3 font-display text-[8px] uppercase leading-[16px] text-[var(--space)]">
+                    &gt; guided setup
+                  </div>
+                  <div className="border-2 border-white px-4 py-3 font-display text-[8px] uppercase leading-[16px] text-white">
+                    public data first
+                  </div>
+                  <div className="border-2 border-white px-4 py-3 font-display text-[8px] uppercase leading-[16px] text-white">
+                    credentials later
+                  </div>
                 </div>
               </div>
-            </div>
+            </aside>
           </section>
 
-          <section id="features" className="mt-20 grid gap-4 md:grid-cols-3">
-            {variant.featureCards.map((card) => (
-              <article key={card.title} className="glass-panel pixel-frame rounded-[28px] p-6">
-                <p className="font-display text-sm uppercase tracking-[0.24em] text-cyan-200/72">{card.title}</p>
-                <p className="mt-3 text-base leading-7 text-slate-300/74">{card.body}</p>
-              </article>
-            ))}
-          </section>
-
-          <section id="product" className="mt-20 grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-            <article className="glass-panel pixel-frame rounded-[34px] p-7 sm:p-8">
-              <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">Product surface</p>
-              <h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
-                {variant.productTitle}
-              </h2>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300/76">
-                {variant.productBody}
-              </p>
+          <section id="product" className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <article className="pixel-panel p-6">
+              <PanelHeading accent="var(--magenta)" label="bot interface" sprite="scanner" title={variant.productTitle} />
+              <p className="font-body text-[24px] leading-[32px] text-white">{variant.productBody}</p>
             </article>
 
             <div className="grid gap-4">
-              {variant.productNotes.map((note) => (
-                <article key={note.title} className="glass-panel pixel-frame rounded-[28px] p-6">
-                  <p className="font-display text-sm uppercase tracking-[0.24em] text-fuchsia-200/72">{note.title}</p>
-                  <p className="mt-3 text-base leading-7 text-slate-300/74">{note.body}</p>
-                </article>
-              ))}
+              {variant.productNotes.map((note, index) => {
+                const sprite = ["docs", "robot", "chip"][index] ?? "docs";
+                const accent = ["var(--cyan)", "var(--green)", "var(--gold)"][index] ?? "var(--cyan)";
+                return (
+                  <article key={note.title} className="pixel-screen p-4">
+                    <PanelHeading accent={accent} label={`note 0${index + 1}`} sprite={sprite} title={note.title} />
+                    <p className="font-body text-[24px] leading-[32px] text-white">{note.body}</p>
+                  </article>
+                );
+              })}
             </div>
           </section>
 
-          <section className="mt-20">
-            <div className="glass-panel pixel-frame rounded-[34px] px-6 py-8 sm:px-10">
-              <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-                <div className="max-w-3xl">
-                  <p className="font-display text-sm uppercase tracking-[0.26em] text-cyan-200/70">Download</p>
-                  <h2 className="mt-4 font-display text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
-                    {variant.downloadTitle}
-                  </h2>
-                  <p className="mt-4 text-base leading-8 text-slate-300/78">
-                    {variant.downloadBody}
-                  </p>
+          <section className="pixel-panel-alt p-6">
+            <PanelHeading accent="var(--gold)" label="download menu" sprite="coin" title={variant.downloadTitle} />
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <p className="font-body text-[24px] leading-[32px] text-white">{variant.downloadBody}</p>
+                <div className="mt-6 flex flex-wrap gap-4">
+                  <a className="pixel-button" href={variant.windowsInstallerUrl}>
+                    Download windows build
+                  </a>
+                  <a className="pixel-button-secondary" href="/download">
+                    Open full menu
+                  </a>
                 </div>
+              </div>
 
-                <div className="flex flex-wrap gap-4">
-                  <a
-                    className="rounded-full border border-cyan-200/24 bg-cyan-300/12 px-6 py-3.5 font-medium text-cyan-100 transition hover:border-cyan-200/42 hover:bg-cyan-200/18"
-                    href={variant.windowsInstallerUrl}
-                  >
-                    Download for Windows
-                  </a>
-                  <a
-                    className="rounded-full border border-white/10 bg-white/5 px-6 py-3.5 font-medium text-slate-100 transition hover:bg-white/10"
-                    href="/download"
-                  >
-                    Other options
-                  </a>
+              <div className="pixel-screen p-4">
+                <p className="font-display text-[8px] uppercase leading-[16px] text-white">first mission</p>
+                <div className="mt-4 space-y-2">
+                  <div className="border-2 border-white px-4 py-3 font-body text-[24px] leading-[24px] text-[var(--green)]">
+                    [OK] install windows build
+                  </div>
+                  <div className="border-2 border-white px-4 py-3 font-body text-[24px] leading-[24px] text-[var(--cyan)]">
+                    [OK] equip polymarket
+                  </div>
+                  <div className="border-2 border-white px-4 py-3 font-body text-[24px] leading-[24px] text-[var(--magenta)]">
+                    [RUN] record, scan, score
+                  </div>
                 </div>
               </div>
             </div>

@@ -539,3 +539,35 @@ class DuckDBStorage:
             latest_recorded_at,
             latest_issue,
         )
+
+    def fetch_latest_market_quotes(self) -> list[tuple[Any, ...]]:
+        return self._connection.execute(
+            """
+            WITH latest_best_bid_ask AS (
+              SELECT
+                asset_id,
+                market,
+                recorded_at,
+                best_bid,
+                best_ask,
+                ROW_NUMBER() OVER (PARTITION BY asset_id ORDER BY recorded_at DESC) AS row_num
+              FROM best_bid_ask
+            )
+            SELECT
+              token.asset_id,
+              token.market_id,
+              COALESCE(market.question, token.market_id),
+              COALESCE(market.slug, token.market_id),
+              COALESCE(token.outcome, 'Outcome'),
+              COALESCE(market.neg_risk, FALSE),
+              COALESCE(market.fees_enabled, FALSE),
+              latest.best_bid,
+              latest.best_ask,
+              latest.recorded_at
+            FROM latest_best_bid_ask AS latest
+            INNER JOIN tokens AS token ON token.asset_id = latest.asset_id
+            LEFT JOIN markets AS market ON market.market_id = token.market_id
+            WHERE latest.row_num = 1
+            ORDER BY latest.recorded_at DESC, token.market_id, token.outcome_index
+            """
+        ).fetchall()

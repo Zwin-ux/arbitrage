@@ -3,13 +3,22 @@ import { expect, test } from "@playwright/test";
 test("homepage keeps the primary download path visible", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /scan markets\./i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /equip polymarket\./i })).toBeVisible();
+  await expect(page.getByText(/no exchange account is required to equip polymarket/i)).toBeVisible();
   const downloadLink = page.getByRole("link", { name: /download for windows/i }).first();
   await expect(downloadLink).toBeVisible();
   await expect(downloadLink).toHaveAttribute(
     "href",
     "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe"
   );
+});
+
+test("download page explains the guided setup path", async ({ page }) => {
+  await page.goto("/download/");
+
+  await expect(page.getByRole("heading", { name: /three-minute windows setup/i })).toBeVisible();
+  await expect(page.getByText(/keep the guided template/i)).toBeVisible();
+  await expect(page.getByText(/credentials, acknowledgements, diagnostics, and paper activity/i)).toBeVisible();
 });
 
 test("variant lab exposes both control and focus routes", async ({ page }) => {
@@ -23,10 +32,10 @@ test("variant lab exposes both control and focus routes", async ({ page }) => {
 
 test("control and focus variants stay intentionally different", async ({ page }) => {
   await page.goto("/lab/control/");
-  await expect(page.getByRole("heading", { name: /scan markets\./i })).toBeVisible();
-  await expect(page.getByText(/surface signal, preserve context/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /equip polymarket\./i })).toBeVisible();
+  await expect(page.getByText(/clean windows path to learn polymarket/i)).toBeVisible();
 
   await page.goto("/lab/focus/");
-  await expect(page.getByRole("heading", { name: /see the edge/i })).toBeVisible();
-  await expect(page.getByText(/release tooling in one disciplined surface/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /equip the loadout\./i })).toBeVisible();
+  await expect(page.getByText(/deterministic paper bots/i)).toBeVisible();
 });

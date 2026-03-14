@@ -140,6 +140,49 @@ class KalshiCredentialProvider(CredentialProvider):
         )
 
 
+class CoachCredentialProvider(CredentialProvider):
+    provider_id = "coach"
+    provider_label = "AI coach"
+    docs_url = "https://github.com/Zwin-ux/arbitrage/tree/main/docs"
+
+    def fields(self) -> list[CredentialField]:
+        return [
+            CredentialField(
+                key="provider_name",
+                label="Provider name",
+                help_text="Optional note so you remember which model provider this key belongs to.",
+                placeholder="OpenAI, Anthropic, or your preferred provider",
+            ),
+            CredentialField(
+                key="model_name",
+                label="Model name",
+                help_text="Optional. Used only for coach labeling in v1.",
+                placeholder="gpt-5-mini or similar",
+            ),
+            CredentialField(
+                key="api_key",
+                label="API key",
+                help_text="Stored locally only. The coach never uses this key to place trades.",
+                secret=True,
+                required=True,
+            ),
+        ]
+
+    def validate_payload(self, payload: dict[str, str]) -> CredentialValidationResult:
+        api_key = payload.get("api_key", "").strip()
+        if not api_key:
+            return CredentialValidationResult(
+                ok=False,
+                status="missing",
+                message="No AI coach key stored yet.",
+            )
+        return CredentialValidationResult(
+            ok=True,
+            status="validated",
+            message="AI coach key looks complete. Coach mode still remains read-only.",
+        )
+
+
 class CredentialVault:
     def __init__(
         self,
@@ -154,7 +197,7 @@ class CredentialVault:
             backend = keyring
         self._backend = backend
         self._service_name = service_name
-        provider_items = providers or [PolymarketCredentialProvider(), KalshiCredentialProvider()]
+        provider_items = providers or [PolymarketCredentialProvider(), KalshiCredentialProvider(), CoachCredentialProvider()]
         self._providers = {provider.provider_id: provider for provider in provider_items}
 
     def providers(self) -> list[CredentialProvider]:

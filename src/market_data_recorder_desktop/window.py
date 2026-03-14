@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, Qt, QUrl
+from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -12,7 +12,6 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
@@ -23,14 +22,40 @@ from PySide6.QtWidgets import (
     QStatusBar,
     QSystemTrayIcon,
     QTabWidget,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
-from .app_types import AppProfile, CredentialStatus, EngineStatus, RunPreset
+from .app_types import (
+    AppProfile,
+    AssistantSession,
+    CapabilityState,
+    ConnectorLoadout,
+    CredentialStatus,
+    EngineStatus,
+    LiveUnlockChecklist,
+    OpportunityCandidate,
+    PaperRunResult,
+    PortfolioSummary,
+    ScoreLedgerEntry,
+    ScoreSnapshot,
+    StrategyModule,
+    VenueConnection,
+)
+from .bot_services import (
+    AssistantService,
+    CapabilityService,
+    ConnectorLoadoutService,
+    LiveExecutionEngine,
+    OpportunityEngine,
+    PaperExecutionEngine,
+    PaperRunStore,
+    ScoreService,
+    UnlockService,
+    VenueAdapter,
+)
 from .controller import EngineController
-from .credentials import CredentialProvider, CredentialVault
+from .credentials import CredentialVault
 from .diagnostics import DiagnosticsService
 from .paths import AppPaths
 from .profiles import ProfileStore
@@ -42,324 +67,628 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-class DashboardTab(QWidget):
+class HomeTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
 
-        self.hero_label = QLabel("Superior control room")
-        self.hero_label.setObjectName("heroTitle")
-        self.subtitle_label = QLabel("Choose a profile, then record, replay, or verify without touching the terminal.")
-        self.subtitle_label.setWordWrap(True)
-        layout.addWidget(self.hero_label)
-        layout.addWidget(self.subtitle_label)
+        self.safe_state_label = QLabel("Paper score active | Live gate locked | Lab offline")
+        self.safe_state_label.setObjectName("heroTitle")
+        self.next_step_label = QLabel("Create a loadout and record your first local Polymarket book.")
+        self.next_step_label.setWordWrap(True)
+        layout.addWidget(self.safe_state_label)
+        layout.addWidget(self.next_step_label)
 
-        actions = QHBoxLayout()
-        self.start_button = QPushButton("Start")
+        mission_group = QGroupBox("Mission board")
+        mission_layout = QVBoxLayout(mission_group)
+        self.mission_label = QLabel("Mission: Equip Polymarket and record your first book.")
+        self.mission_label.setObjectName("heroText")
+        self.mission_label.setWordWrap(True)
+        self.score_label = QLabel("Paper score: waiting for first run")
+        self.score_label.setWordWrap(True)
+        mission_layout.addWidget(self.mission_label)
+        mission_layout.addWidget(self.score_label)
+        layout.addWidget(mission_group)
+
+        setup_group = QGroupBox("Launch lane")
+        setup_layout = QVBoxLayout(setup_group)
+        self.setup_progress_label = QLabel("Most users can finish the first-run path in a few minutes.")
+        self.setup_progress_label.setObjectName("heroText")
+        self.setup_progress_label.setWordWrap(True)
+        self.setup_steps_label = QLabel()
+        self.setup_steps_label.setWordWrap(True)
+        self.setup_steps_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        setup_actions = QHBoxLayout()
+        self.open_setup_button = QPushButton("Open guided setup")
+        self.open_setup_button.setProperty("buttonRole", "secondary")
+        self.view_docs_button = QPushButton("View trust docs")
+        self.view_docs_button.setProperty("buttonRole", "secondary")
+        setup_actions.addWidget(self.open_setup_button)
+        setup_actions.addWidget(self.view_docs_button)
+        setup_actions.addStretch(1)
+        setup_layout.addWidget(self.setup_progress_label)
+        setup_layout.addWidget(self.setup_steps_label)
+        setup_layout.addLayout(setup_actions)
+        layout.addWidget(setup_group)
+
+        action_row = QHBoxLayout()
+        self.start_button = QPushButton("Boot recorder")
         self.stop_button = QPushButton("Stop")
+        self.stop_button.setProperty("buttonRole", "secondary")
         self.replay_button = QPushButton("Replay")
+        self.replay_button.setProperty("buttonRole", "secondary")
         self.verify_button = QPushButton("Verify")
-        self.manage_profiles_button = QPushButton("Manage Profiles")
+        self.verify_button.setProperty("buttonRole", "secondary")
+        self.scan_button = QPushButton("Scan edge")
+        self.scan_button.setProperty("buttonRole", "secondary")
+        self.paper_button = QPushButton("Paper top route")
+        self.paper_button.setProperty("buttonRole", "secondary")
         for button in (
             self.start_button,
             self.stop_button,
             self.replay_button,
             self.verify_button,
-            self.manage_profiles_button,
+            self.scan_button,
+            self.paper_button,
         ):
-            actions.addWidget(button)
-        layout.addLayout(actions)
+            action_row.addWidget(button)
+        layout.addLayout(action_row)
 
-        status_group = QGroupBox("Status")
+        status_group = QGroupBox("Hangar state")
         status_layout = QFormLayout(status_group)
+        self.brand_label = QLabel("Superior")
         self.profile_label = QLabel("No profile selected")
-        self.state_label = QLabel("Idle")
-        self.message_label = QLabel("Ready.")
-        self.message_label.setWordWrap(True)
-        self.db_path_label = QLabel("No database yet")
-        self.counts_label = QLabel("0 raw messages | 0 books | 0 health events")
-        self.warning_label = QLabel("No recent warnings")
+        self.goal_label = QLabel("No goal set")
+        self.engine_label = QLabel("Idle")
+        self.data_label = QLabel("No database yet")
+        self.risk_label = QLabel("Starter")
+        self.warning_label = QLabel("No warnings")
         self.warning_label.setWordWrap(True)
+        status_layout.addRow("Brand", self.brand_label)
         status_layout.addRow("Profile", self.profile_label)
-        status_layout.addRow("Engine", self.state_label)
-        status_layout.addRow("Last message", self.message_label)
-        status_layout.addRow("Data path", self.db_path_label)
-        status_layout.addRow("Stored data", self.counts_label)
+        status_layout.addRow("Goal", self.goal_label)
+        status_layout.addRow("Recorder", self.engine_label)
+        status_layout.addRow("Data", self.data_label)
+        status_layout.addRow("Risk preset", self.risk_label)
         status_layout.addRow("Latest warning", self.warning_label)
         layout.addWidget(status_group)
+
+        capability_group = QGroupBox("Capability lights")
+        capability_layout = QVBoxLayout(capability_group)
+        self.capability_text = QPlainTextEdit()
+        self.capability_text.setReadOnly(True)
+        capability_layout.addWidget(self.capability_text)
+        layout.addWidget(capability_group)
+
+        connections_group = QGroupBox("Equipped connectors")
+        connections_layout = QVBoxLayout(connections_group)
+        self.connections_text = QPlainTextEdit()
+        self.connections_text.setReadOnly(True)
+        connections_layout.addWidget(self.connections_text)
+        layout.addWidget(connections_group)
         layout.addStretch(1)
 
-    def update_view(self, profile: AppProfile | None, status: EngineStatus) -> None:
-        self.profile_label.setText(profile.display_name if profile is not None else "No profile selected")
-        self.state_label.setText(status.state.title())
-        self.message_label.setText(status.last_message)
-        if status.summary is None:
-            self.db_path_label.setText("No database yet")
-            self.counts_label.setText("0 raw messages | 0 books | 0 health events")
-            self.warning_label.setText("No recent warnings")
-            return
-        self.db_path_label.setText(str(status.summary.db_path))
-        self.counts_label.setText(
-            f"{status.summary.raw_messages} raw messages | "
-            f"{status.summary.book_snapshots} books | "
-            f"{status.summary.health_events} health events"
-        )
-        self.warning_label.setText(status.summary.latest_warning or "No recent warnings")
-
-
-class ProfilesTab(QWidget):
-    def __init__(self, presets: list[RunPreset]) -> None:
-        super().__init__()
-        self._profiles: dict[str, AppProfile] = {}
-        self._presets = presets
-
-        root = QHBoxLayout(self)
-
-        left = QVBoxLayout()
-        self.profile_list = QListWidget()
-        left.addWidget(self.profile_list)
-        buttons = QHBoxLayout()
-        self.new_button = QPushButton("New")
-        self.duplicate_button = QPushButton("Duplicate")
-        self.delete_button = QPushButton("Delete")
-        buttons.addWidget(self.new_button)
-        buttons.addWidget(self.duplicate_button)
-        buttons.addWidget(self.delete_button)
-        left.addLayout(buttons)
-        export_buttons = QHBoxLayout()
-        self.export_button = QPushButton("Export")
-        self.import_button = QPushButton("Import")
-        export_buttons.addWidget(self.export_button)
-        export_buttons.addWidget(self.import_button)
-        left.addLayout(export_buttons)
-        root.addLayout(left, stretch=1)
-
-        right = QVBoxLayout()
-        form_group = QGroupBox("Profile details")
-        form = QFormLayout(form_group)
-        self.display_name_edit = QLineEdit()
-        self.template_combo = QComboBox()
-        self.template_combo.addItems(["Recorder", "Research", "Custom"])
-        self.data_dir_edit = QLineEdit()
-        browse_button = QPushButton("Browse")
-        browse_button.clicked.connect(self._browse_data_dir)
-        data_dir_row = QHBoxLayout()
-        data_dir_row.addWidget(self.data_dir_edit, stretch=1)
-        data_dir_row.addWidget(browse_button)
-        self.market_filters_edit = QLineEdit()
-        self.market_filters_edit.setPlaceholderText("elections, sports, crypto")
-        self.default_preset_combo = QComboBox()
-        for preset in self._presets:
-            self.default_preset_combo.addItem(preset.label, preset.id)
-        self.notes_edit = QTextEdit()
-        self.auto_start_checkbox = QCheckBox("Run app at login")
-        self.start_minimized_checkbox = QCheckBox("Start minimized to tray")
-        self.polymarket_checkbox = QCheckBox("Polymarket")
-        self.kalshi_checkbox = QCheckBox("Kalshi")
-        venues_row = QHBoxLayout()
-        venues_row.addWidget(self.polymarket_checkbox)
-        venues_row.addWidget(self.kalshi_checkbox)
-
-        form.addRow("Display name", self.display_name_edit)
-        form.addRow("Template", self.template_combo)
-        form.addRow("Data directory", self._wrap_layout(data_dir_row))
-        form.addRow("Market filters", self.market_filters_edit)
-        form.addRow("Default preset", self.default_preset_combo)
-        form.addRow("Venues", self._wrap_layout(venues_row))
-        form.addRow("Notes", self.notes_edit)
-        right.addWidget(form_group)
-        right.addWidget(self.auto_start_checkbox)
-        right.addWidget(self.start_minimized_checkbox)
-        self.startup_hint = QLabel()
-        self.startup_hint.setWordWrap(True)
-        right.addWidget(self.startup_hint)
-        self.save_button = QPushButton("Save Profile")
-        right.addWidget(self.save_button)
-        right.addStretch(1)
-        root.addLayout(right, stretch=2)
-
-        self.profile_list.currentItemChanged.connect(self._on_selection_changed)
-
-    def load_profiles(
+    def update_view(
         self,
-        profiles: list[AppProfile],
         *,
-        selected_profile_id: str | None,
-        startup_description: str,
+        profile: AppProfile | None,
+        status: EngineStatus,
+        connections: list[VenueConnection],
+        checklist: LiveUnlockChecklist | None,
+        score_snapshot: ScoreSnapshot,
+        capability_states: list[CapabilityState],
     ) -> None:
-        self._profiles = {profile.id: profile for profile in profiles}
-        self.startup_hint.setText(startup_description)
-        self.profile_list.blockSignals(True)
-        self.profile_list.clear()
-        selected_item: QListWidgetItem | None = None
-        for profile in profiles:
-            item = QListWidgetItem(profile.display_name)
-            item.setData(Qt.ItemDataRole.UserRole, profile.id)
-            self.profile_list.addItem(item)
-            if profile.id == selected_profile_id:
-                selected_item = item
-        self.profile_list.blockSignals(False)
-        if selected_item is not None:
-            self.profile_list.setCurrentItem(selected_item)
-        elif self.profile_list.count() > 0:
-            self.profile_list.setCurrentRow(0)
-        else:
-            self._clear_form()
-
-    def current_profile(self) -> AppProfile | None:
-        item = self.profile_list.currentItem()
-        if item is None:
-            return None
-        profile_id = item.data(Qt.ItemDataRole.UserRole)
-        return self._profiles.get(profile_id)
-
-    def edited_profile(self) -> AppProfile | None:
-        profile = self.current_profile()
         if profile is None:
-            return None
-        venues: list[str] = []
-        if self.polymarket_checkbox.isChecked():
-            venues.append("Polymarket")
-        if self.kalshi_checkbox.isChecked():
-            venues.append("Kalshi")
-        return profile.model_copy(
-            update={
-                "display_name": self.display_name_edit.text().strip() or profile.display_name,
-                "template": self.template_combo.currentText(),
-                "data_dir": Path(self.data_dir_edit.text().strip() or str(profile.data_dir)),
-                "market_filters": [
-                    item.strip() for item in self.market_filters_edit.text().split(",") if item.strip()
-                ],
-                "default_preset": self.default_preset_combo.currentData(),
-                "enabled_venues": venues or ["Polymarket"],
-                "notes": self.notes_edit.toPlainText().strip() or None,
-                "auto_start": self.auto_start_checkbox.isChecked(),
-                "start_minimized": self.start_minimized_checkbox.isChecked(),
-            }
+            self.brand_label.setText("Superior")
+            self.profile_label.setText("No profile selected")
+            self.goal_label.setText("Create your first loadout")
+            self.engine_label.setText(status.state.title())
+            self.data_label.setText("No database yet")
+            self.risk_label.setText("No risk policy")
+            self.warning_label.setText("No warnings")
+            self.safe_state_label.setText("Paper score active | Live gate locked | Lab offline")
+            self.next_step_label.setText("Use setup to create a Superior profile and equip Polymarket.")
+            self.mission_label.setText("Mission: Equip Polymarket and record your first book.")
+            self.score_label.setText("Paper score: waiting for first run")
+            self.setup_progress_label.setText(
+                "The easiest start is a guided loadout with Polymarket equipped, no credentials yet, and one clean recorder sample."
+            )
+            self.setup_steps_label.setText(
+                "1. Create your first profile with Guided mode on.\n"
+                "2. Equip Polymarket and leave credentials blank if you only want recorder plus paper mode.\n"
+                "3. Boot the recorder, then scan edge after market data appears."
+            )
+            self.open_setup_button.setText("Create first profile")
+            self.capability_text.setPlainText(
+                "Recorder: blocked until Polymarket is equipped.\n"
+                "Scanner: blocked until recorder data exists.\n"
+                "Paper score: blocked until the first paper run lands."
+            )
+            self.connections_text.setPlainText("No active venue connections.")
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(False)
+            self.replay_button.setEnabled(False)
+            self.verify_button.setEnabled(False)
+            self.scan_button.setEnabled(False)
+            self.paper_button.setEnabled(False)
+            return
+        has_data = status.summary is not None and (
+            status.summary.raw_messages > 0 or status.summary.book_snapshots > 0
         )
+        is_running = status.state == "running"
+        live_state = "Live gate clear" if profile.live_unlocked else "Live gate locked"
+        lab_state = "Lab online" if profile.lab_enabled else "Lab offline"
+        self.safe_state_label.setText(f"Paper score active | {live_state} | {lab_state}")
+        if checklist is not None and checklist.outstanding:
+            self.next_step_label.setText(f"Next step: {checklist.outstanding[0].message}")
+        else:
+            self.next_step_label.setText("Loadout is healthy. Keep running the paper-first loop.")
+        self.brand_label.setText(profile.brand_name)
+        self.profile_label.setText(profile.display_name)
+        self.goal_label.setText(profile.primary_goal.replace("_", " ").title())
+        self.engine_label.setText(f"{status.state.title()} - {status.last_message}")
+        self.risk_label.setText(profile.risk_policy_id.title())
+        self.mission_label.setText(f"Mission: {profile.primary_mission}")
+        if score_snapshot.total_runs:
+            self.score_label.setText(
+                f"Paper score ${score_snapshot.paper_realized_pnl_cents / 100:.2f} | "
+                f"Runs {score_snapshot.completed_runs} | Hit rate {score_snapshot.hit_rate:.1f}%"
+            )
+        else:
+            self.score_label.setText("Paper score: waiting for first run")
+        if status.summary is not None:
+            self.data_label.setText(
+                f"{status.summary.raw_messages} raw messages, {status.summary.book_snapshots} books"
+            )
+            self.warning_label.setText(status.summary.latest_warning or "No warnings")
+        else:
+            self.data_label.setText("No database yet")
+            self.warning_label.setText("No warnings")
+        self.connections_text.setPlainText(
+            "\n".join(
+                f"{connection.venue_label}: {connection.mode} - {connection.message}"
+                for connection in connections
+            )
+            or "No active venue connections."
+        )
+        self.capability_text.setPlainText(
+            "\n".join(
+                f"{state.label}: {'ready' if state.ready else 'blocked'} - {state.message}"
+                for state in capability_states
+            )
+        )
+        self.open_setup_button.setText("Edit setup")
+        if profile.live_unlocked:
+            self.setup_progress_label.setText(
+                "This profile has cleared the local gate. Keep score, diagnostics, and connector state explicit."
+            )
+            self.setup_steps_label.setText(
+                "1. Recorder, scanner, and paper score are already in place.\n"
+                "2. Revisit Loadout if you want to change connectors or strategy modules.\n"
+                "3. Treat live execution as a separate decision, not the default workflow."
+            )
+        elif is_running:
+            self.setup_progress_label.setText(
+                "Recorder is running now. Let it gather a sample so the scanner can read real local market data."
+            )
+            self.setup_steps_label.setText(
+                "1. Wait for message and book counts to grow in Hangar state.\n"
+                "2. Scan edge when the recorder finishes or once the data looks healthy.\n"
+                "3. Paper the top route before thinking about live readiness."
+            )
+        elif not has_data:
+            self.setup_progress_label.setText(
+                "Loadout is nearly complete. The next useful step is a first recorder pass so the rest of the product has context."
+            )
+            self.setup_steps_label.setText(
+                "1. Click Boot recorder to build your local database.\n"
+                "2. Watch for raw message and book counts to appear.\n"
+                "3. Scan edge, then run a paper test from Hangar or Scanner."
+            )
+        elif checklist is not None and checklist.outstanding:
+            outstanding = "\n".join(
+                f"- {check.label}: {check.message}" for check in checklist.outstanding[:3]
+            )
+            self.setup_progress_label.setText(
+                "Paper workflow is healthy. The remaining gate items are optional until you intentionally want live readiness."
+            )
+            self.setup_steps_label.setText(
+                "Outstanding live-gate items:\n"
+                f"{outstanding}\n"
+                "You can keep using recorder, scanner, and paper score without finishing these right now."
+            )
+        else:
+            self.setup_progress_label.setText(
+                "This profile is in a clean paper-first state with local data ready for scanning and paper score."
+            )
+            self.setup_steps_label.setText(
+                "1. Scan edge whenever you want the newest candidates.\n"
+                "2. Use Paper Runs or the Hangar quick action to test the top opportunity.\n"
+                "3. Revisit Loadout only if you want to change connectors, coach, or modules."
+            )
+        self.start_button.setEnabled(not is_running)
+        self.stop_button.setEnabled(is_running)
+        self.replay_button.setEnabled(has_data and not is_running)
+        self.verify_button.setEnabled(has_data and not is_running)
+        self.scan_button.setEnabled(True)
+        self.paper_button.setEnabled(True)
 
-    def _on_selection_changed(self, current: QListWidgetItem | None, previous: QListWidgetItem | None) -> None:
-        del previous
-        if current is None:
-            self._clear_form()
-            return
-        profile_id = current.data(Qt.ItemDataRole.UserRole)
-        profile = self._profiles.get(profile_id)
-        if profile is None:
-            self._clear_form()
-            return
-        self.display_name_edit.setText(profile.display_name)
-        self.template_combo.setCurrentText(profile.template)
-        self.data_dir_edit.setText(str(profile.data_dir))
-        self.market_filters_edit.setText(", ".join(profile.market_filters))
-        preset_index = self.default_preset_combo.findData(profile.default_preset)
-        if preset_index >= 0:
-            self.default_preset_combo.setCurrentIndex(preset_index)
-        self.notes_edit.setPlainText(profile.notes or "")
-        self.auto_start_checkbox.setChecked(profile.auto_start)
-        self.start_minimized_checkbox.setChecked(profile.start_minimized)
-        self.polymarket_checkbox.setChecked("Polymarket" in profile.enabled_venues)
-        self.kalshi_checkbox.setChecked("Kalshi" in profile.enabled_venues)
 
-    def _clear_form(self) -> None:
-        self.display_name_edit.clear()
-        self.template_combo.setCurrentIndex(0)
-        self.data_dir_edit.clear()
-        self.market_filters_edit.clear()
-        self.notes_edit.clear()
-        self.auto_start_checkbox.setChecked(False)
-        self.start_minimized_checkbox.setChecked(False)
-        self.polymarket_checkbox.setChecked(True)
-        self.kalshi_checkbox.setChecked(False)
-
-    def _browse_data_dir(self) -> None:
-        directory = QFileDialog.getExistingDirectory(self, "Choose data directory")
-        if directory:
-            self.data_dir_edit.setText(directory)
-
-    @staticmethod
-    def _wrap_layout(layout: QHBoxLayout) -> QWidget:
-        widget = QWidget()
-        widget.setLayout(layout)
-        return widget
-
-
-class CredentialProviderBox(QGroupBox):
-    def __init__(self, provider: CredentialProvider):
-        super().__init__(provider.provider_label)
-        self.provider = provider
-        self.fields: dict[str, QLineEdit | QPlainTextEdit] = {}
-
-        layout = QVBoxLayout(self)
-        form = QFormLayout()
-        for field in provider.fields():
-            if field.multiline:
-                widget: QLineEdit | QPlainTextEdit = QPlainTextEdit()
-                widget.setPlaceholderText(field.placeholder or "")
-            else:
-                widget = QLineEdit()
-                widget.setPlaceholderText(field.placeholder or "")
-                if field.secret:
-                    widget.setEchoMode(QLineEdit.EchoMode.Password)
-            widget.setToolTip(field.help_text)
-            self.fields[field.key] = widget
-            form.addRow(field.label, widget)
-        layout.addLayout(form)
-        button_row = QHBoxLayout()
-        self.save_button = QPushButton("Save")
-        self.validate_button = QPushButton("Validate")
-        self.delete_button = QPushButton("Delete")
-        self.docs_button = QPushButton("Docs")
-        button_row.addWidget(self.save_button)
-        button_row.addWidget(self.validate_button)
-        button_row.addWidget(self.delete_button)
-        button_row.addWidget(self.docs_button)
-        layout.addLayout(button_row)
-        self.status_label = QLabel("Not configured")
-        self.status_label.setWordWrap(True)
-        layout.addWidget(self.status_label)
-
-    def payload(self) -> dict[str, str]:
-        payload: dict[str, str] = {}
-        for key, widget in self.fields.items():
-            if isinstance(widget, QPlainTextEdit):
-                payload[key] = widget.toPlainText()
-            else:
-                payload[key] = widget.text()
-        return payload
-
-    def clear_input(self) -> None:
-        for widget in self.fields.values():
-            widget.clear()
-
-    def update_status(self, status: CredentialStatus) -> None:
-        self.status_label.setText(f"{status.status.title()}: {status.message}")
-
-
-class CredentialsTab(QWidget):
-    def __init__(self, providers: list[CredentialProvider]) -> None:
+class LoadoutTab(QWidget):
+    def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
-        self.profile_label = QLabel("Choose a profile to manage keys.")
-        self.profile_label.setWordWrap(True)
-        layout.addWidget(self.profile_label)
-        self.provider_boxes: dict[str, CredentialProviderBox] = {}
-        for provider in providers:
-            box = CredentialProviderBox(provider)
-            self.provider_boxes[provider.provider_id] = box
-            layout.addWidget(box)
+        self.header_label = QLabel("Equip connectors and modules to shape what the app exposes.")
+        self.header_label.setObjectName("heroTitle")
+        self.header_label.setWordWrap(True)
+        layout.addWidget(self.header_label)
+
+        connectors_group = QGroupBox("Connector loadout")
+        connectors_layout = QVBoxLayout(connectors_group)
+        self.polymarket_checkbox = QCheckBox("Equip Polymarket Connector")
+        self.kalshi_checkbox = QCheckBox("Equip Kalshi Connector")
+        self.coach_checkbox = QCheckBox("Equip Coach Link")
+        for checkbox in (self.polymarket_checkbox, self.kalshi_checkbox, self.coach_checkbox):
+            connectors_layout.addWidget(checkbox)
+        layout.addWidget(connectors_group)
+
+        modules_group = QGroupBox("Strategy loadout")
+        modules_layout = QVBoxLayout(modules_group)
+        self.internal_binary_checkbox = QCheckBox("Equip Internal Binary")
+        self.cross_venue_checkbox = QCheckBox("Equip Cross-Venue")
+        self.neg_risk_checkbox = QCheckBox("Equip Neg Risk Lab")
+        self.maker_lab_checkbox = QCheckBox("Equip Maker Lab")
+        for checkbox in (
+            self.internal_binary_checkbox,
+            self.cross_venue_checkbox,
+            self.neg_risk_checkbox,
+            self.maker_lab_checkbox,
+        ):
+            modules_layout.addWidget(checkbox)
+        layout.addWidget(modules_group)
+
+        action_row = QHBoxLayout()
+        self.save_button = QPushButton("Save loadout")
+        self.refresh_button = QPushButton("Refresh status")
+        self.refresh_button.setProperty("buttonRole", "secondary")
+        action_row.addWidget(self.save_button)
+        action_row.addWidget(self.refresh_button)
+        action_row.addStretch(1)
+        layout.addLayout(action_row)
+
+        self.state_text = QPlainTextEdit()
+        self.state_text.setReadOnly(True)
+        layout.addWidget(self.state_text)
         layout.addStretch(1)
 
-    def set_profile(self, profile: AppProfile | None, statuses: list[CredentialStatus]) -> None:
-        self.profile_label.setText(
-            f"Credentials for {profile.display_name}" if profile is not None else "Choose a profile to manage keys."
+    def update_view(
+        self,
+        profile: AppProfile | None,
+        *,
+        loadout: ConnectorLoadout | None,
+        connector_states: list[CapabilityState],
+        module_states: list[CapabilityState],
+    ) -> None:
+        if profile is None or loadout is None:
+            self.header_label.setText("Create a profile to equip your first connector.")
+            self.state_text.setPlainText("No loadout yet.")
+            for checkbox in (
+                self.polymarket_checkbox,
+                self.kalshi_checkbox,
+                self.coach_checkbox,
+                self.internal_binary_checkbox,
+                self.cross_venue_checkbox,
+                self.neg_risk_checkbox,
+                self.maker_lab_checkbox,
+            ):
+                checkbox.setChecked(False)
+                checkbox.setEnabled(False)
+            self.save_button.setEnabled(False)
+            self.refresh_button.setEnabled(False)
+            return
+        self.header_label.setText(f"Loadout for {profile.display_name}")
+        connector_ids = set(loadout.equipped_connectors)
+        module_ids = set(loadout.equipped_modules)
+        self.polymarket_checkbox.setChecked("polymarket" in connector_ids)
+        self.kalshi_checkbox.setChecked("kalshi" in connector_ids)
+        self.coach_checkbox.setChecked("coach" in connector_ids)
+        self.internal_binary_checkbox.setChecked("internal-binary" in module_ids)
+        self.cross_venue_checkbox.setChecked("cross-venue-complement" in module_ids)
+        self.neg_risk_checkbox.setChecked("negative-risk-basket" in module_ids)
+        self.maker_lab_checkbox.setChecked("maker-rebate-lab" in module_ids)
+        self.polymarket_checkbox.setEnabled(True)
+        self.kalshi_checkbox.setEnabled(True)
+        self.coach_checkbox.setEnabled(True)
+        self.internal_binary_checkbox.setEnabled(True)
+        self.cross_venue_checkbox.setEnabled(True)
+        self.neg_risk_checkbox.setEnabled(profile.lab_enabled)
+        self.maker_lab_checkbox.setEnabled(profile.lab_enabled)
+        self.save_button.setEnabled(True)
+        self.refresh_button.setEnabled(True)
+        lines = [f"Primary mission: {profile.primary_mission}", ""]
+        lines.append("Connector lights:")
+        lines.extend(
+            f"- {state.label}: {'equipped' if state.equipped else 'idle'} / {'ready' if state.ready else 'blocked'}"
+            f" - {state.message}"
+            for state in connector_states
         )
-        status_by_provider = {status.provider_id: status for status in statuses}
-        for provider_id, box in self.provider_boxes.items():
-            if provider_id in status_by_provider:
-                box.update_status(status_by_provider[provider_id])
-            else:
-                box.status_label.setText("Not configured")
+        lines.append("")
+        lines.append("Module lights:")
+        lines.extend(
+            f"- {state.label}: {'equipped' if state.equipped else 'idle'} / {'ready' if state.ready else 'blocked'}"
+            f" - {state.message}"
+            for state in module_states
+        )
+        self.state_text.setPlainText("\n".join(lines))
+
+
+class LearnTab(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+
+        intro_group = QGroupBox("Learn first")
+        intro_layout = QVBoxLayout(intro_group)
+        for line in (
+            "Superior is paper-first by default. The coach can explain what the scanner sees, but it cannot place trades.",
+            "Use the recorder to gather local Polymarket books, then scan edge to surface explainable opportunities.",
+            "Kalshi stays optional until you want to compare exact cross-venue matches.",
+        ):
+            label = QLabel(line)
+            label.setWordWrap(True)
+            intro_layout.addWidget(label)
+        layout.addWidget(intro_group)
+
+        coach_group = QGroupBox("Ask the coach")
+        coach_layout = QVBoxLayout(coach_group)
+        self.prompt_edit = QPlainTextEdit()
+        self.prompt_edit.setPlaceholderText("Why was this route rejected?\nWhat blocks the live gate?\nExplain my loadout.")
+        self.ask_button = QPushButton("Ask coach")
+        self.response_text = QPlainTextEdit()
+        self.response_text.setReadOnly(True)
+        coach_layout.addWidget(self.prompt_edit)
+        coach_layout.addWidget(self.ask_button)
+        coach_layout.addWidget(self.response_text)
+        layout.addWidget(coach_group)
+        layout.addStretch(1)
+
+    def set_response(self, session: AssistantSession) -> None:
+        last_message = session.messages[-1].content if session.messages else ""
+        sources = ", ".join(session.sources) if session.sources else "local profile state"
+        self.response_text.setPlainText(f"{last_message}\n\nSources: {sources}")
+
+
+class ScannerTab(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+        actions = QHBoxLayout()
+        self.refresh_button = QPushButton("Refresh scan")
+        self.paper_button = QPushButton("Paper selected")
+        self.live_preview_button = QPushButton("Preview live lock")
+        actions.addWidget(self.refresh_button)
+        actions.addWidget(self.paper_button)
+        actions.addWidget(self.live_preview_button)
+        layout.addLayout(actions)
+
+        self.candidate_list = QListWidget()
+        self.details_text = QPlainTextEdit()
+        self.details_text.setReadOnly(True)
+        layout.addWidget(self.candidate_list)
+        layout.addWidget(self.details_text)
+
+    def update_candidates(self, candidates: list[OpportunityCandidate]) -> None:
+        self.candidate_list.clear()
+        for candidate in candidates:
+            item = QListWidgetItem(
+                f"{candidate.strategy_label} | {candidate.net_edge_bps} bps | {candidate.status}"
+            )
+            item.setData(32, candidate.id)
+            self.candidate_list.addItem(item)
+        if not candidates:
+            self.details_text.setPlainText("No scanner candidates yet. Run the recorder, then refresh the scanner.")
+
+    def set_details(self, candidate: OpportunityCandidate | None) -> None:
+        if candidate is None:
+            self.details_text.setPlainText("Choose a scanner result to inspect the full explanation.")
+            return
+        self.details_text.setPlainText(
+            "\n".join(
+                [
+                    f"Strategy: {candidate.strategy_label}",
+                    f"Summary: {candidate.summary}",
+                    f"Gross edge: {candidate.gross_edge_bps} bps",
+                    f"Net edge: {candidate.net_edge_bps} bps",
+                    f"Venues: {', '.join(candidate.venues)}",
+                    f"Recommended stake: ${candidate.recommended_stake_cents / 100:.2f}",
+                    f"Why it qualifies: {candidate.explanation.summary}",
+                    "Matched contracts:",
+                    *[f"- {item}" for item in candidate.explanation.matched_contracts],
+                    "Assumptions:",
+                    *[f"- {item}" for item in candidate.explanation.assumptions],
+                    "Cost adjustments:",
+                    *[
+                        f"- {key.replace('_', ' ')}: {value} bps"
+                        for key, value in candidate.explanation.cost_adjustments_bps.items()
+                    ],
+                ]
+            )
+        )
+
+
+class PaperBotsTab(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+        actions = QHBoxLayout()
+        self.run_top_button = QPushButton("Paper top route")
+        self.refresh_button = QPushButton("Refresh runs")
+        actions.addWidget(self.run_top_button)
+        actions.addWidget(self.refresh_button)
+        layout.addLayout(actions)
+
+        self.last_run_text = QPlainTextEdit()
+        self.last_run_text.setReadOnly(True)
+        self.runs_list = QListWidget()
+        layout.addWidget(self.last_run_text)
+        layout.addWidget(self.runs_list)
+
+    def update_runs(self, runs: list[PaperRunResult]) -> None:
+        self.runs_list.clear()
+        for run in reversed(runs[-20:]):
+            self.runs_list.addItem(
+                f"{run.executed_at.isoformat()} | {run.status} | paper ${run.realized_pnl_cents / 100:.2f}"
+            )
+        if not runs:
+            self.last_run_text.setPlainText("No paper runs yet. Use the scanner or the quick action in Hangar.")
+
+    def set_last_run(self, run: PaperRunResult | None) -> None:
+        if run is None:
+            self.last_run_text.setPlainText("No paper run selected.")
+            return
+        self.last_run_text.setPlainText(
+            "\n".join(
+                [
+                    f"Run ID: {run.run_id}",
+                    f"Status: {run.status}",
+                    f"Expected edge: {run.expected_edge_bps} bps",
+                    f"Realized edge: {run.realized_edge_bps} bps",
+                    f"Fill ratio: {run.execution.fill_ratio:.2f}",
+                    f"Deployed capital: ${run.deployed_capital_cents / 100:.2f}",
+                    f"Realized paper PnL: ${run.realized_pnl_cents / 100:.2f}",
+                    f"Notes: {run.notes}",
+                ]
+            )
+        )
+
+
+class ScoreTab(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+        self.summary_label = QLabel("No paper score yet.")
+        self.summary_label.setObjectName("heroTitle")
+        self.summary_label.setWordWrap(True)
+        self.detail_text = QPlainTextEdit()
+        self.detail_text.setReadOnly(True)
+        self.ledger_text = QPlainTextEdit()
+        self.ledger_text.setReadOnly(True)
+        layout.addWidget(self.summary_label)
+        layout.addWidget(self.detail_text)
+        layout.addWidget(self.ledger_text)
+        layout.addStretch(1)
+
+    def update_summary(
+        self,
+        snapshot: ScoreSnapshot,
+        ledger_entries: list[ScoreLedgerEntry],
+        runs: list[PaperRunResult],
+    ) -> None:
+        self.summary_label.setText(
+            f"Paper Score ${snapshot.paper_realized_pnl_cents / 100:.2f} | "
+            f"Runs {snapshot.completed_runs} | Hit {snapshot.hit_rate:.1f}%"
+        )
+        if not runs:
+            self.detail_text.setPlainText("Run one paper route to light up the Superior score board.")
+            self.ledger_text.setPlainText("No ledger entries yet.")
+            return
+        lines = [
+            f"Total paper runs: {snapshot.total_runs}",
+            f"Completed runs: {snapshot.completed_runs}",
+            f"Average expected edge: {snapshot.average_expected_edge_bps} bps",
+            f"Average realized edge: {snapshot.average_realized_edge_bps} bps",
+            f"Current positive streak: {snapshot.current_streak}",
+            f"Opportunity quality: {snapshot.opportunity_quality_score}",
+            "",
+            "Recent paper routes:",
+        ]
+        lines.extend(
+            f"- {run.strategy_ids[0] if run.strategy_ids else 'unknown'} | {run.status} | ${run.realized_pnl_cents / 100:.2f}"
+            for run in reversed(runs[-5:])
+        )
+        self.detail_text.setPlainText("\n".join(lines))
+        self.ledger_text.setPlainText(
+            "\n".join(
+                f"{entry.recorded_at.isoformat()} | {entry.ledger_type} | ${entry.amount_cents / 100:.2f}"
+                for entry in ledger_entries
+            )
+            or "No ledger entries yet."
+        )
+
+
+class LiveUnlockTab(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+        self.summary_label = QLabel("Live mode is locked.")
+        self.summary_label.setObjectName("heroTitle")
+        self.summary_label.setWordWrap(True)
+        self.checklist_text = QPlainTextEdit()
+        self.checklist_text.setReadOnly(True)
+        self.live_rules_checkbox = QCheckBox("I understand that Superior does not guarantee profits and that live trading can lose money.")
+        self.risk_ack_checkbox = QCheckBox("I understand the active risk policy and daily loss caps.")
+        actions = QHBoxLayout()
+        self.save_button = QPushButton("Save acknowledgements")
+        self.refresh_button = QPushButton("Refresh checklist")
+        self.unlock_button = QPushButton("Attempt unlock")
+        actions.addWidget(self.save_button)
+        actions.addWidget(self.refresh_button)
+        actions.addWidget(self.unlock_button)
+        layout.addWidget(self.summary_label)
+        layout.addWidget(self.checklist_text)
+        layout.addWidget(self.live_rules_checkbox)
+        layout.addWidget(self.risk_ack_checkbox)
+        layout.addLayout(actions)
+        layout.addStretch(1)
+
+    def update_view(self, profile: AppProfile | None, checklist: LiveUnlockChecklist | None) -> None:
+        if profile is None or checklist is None:
+            self.summary_label.setText("Live gate is locked.")
+            self.checklist_text.setPlainText("Choose a profile to see the live-gate checklist.")
+            return
+        self.live_rules_checkbox.setChecked(profile.live_rules_accepted)
+        self.risk_ack_checkbox.setChecked(profile.risk_limits_acknowledged)
+        self.summary_label.setText("Live gate clear." if checklist.live_ready else "Live gate is locked.")
+        lines = []
+        for check in checklist.checks:
+            status = "PASS" if check.passed else "BLOCKED"
+            lines.append(f"[{status}] {check.label}")
+            lines.append(f"  {check.message}")
+        self.checklist_text.setPlainText("\n".join(lines))
+
+
+class LabTab(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+        self.status_label = QLabel("Lab is disabled.")
+        self.status_label.setObjectName("heroTitle")
+        self.enable_checkbox = QCheckBox("Enable Lab for this profile")
+        self.save_button = QPushButton("Save Lab setting")
+        self.modules_text = QPlainTextEdit()
+        self.modules_text.setReadOnly(True)
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.enable_checkbox)
+        layout.addWidget(self.save_button)
+        layout.addWidget(self.modules_text)
+        layout.addStretch(1)
+
+    def update_view(self, profile: AppProfile | None, modules: list[StrategyModule]) -> None:
+        if profile is None:
+            self.status_label.setText("Lab is disabled.")
+            self.modules_text.setPlainText("Choose a profile to inspect Lab modules.")
+            return
+        self.enable_checkbox.setChecked(profile.lab_enabled)
+        self.status_label.setText("Lab is enabled." if profile.lab_enabled else "Lab is disabled.")
+        lines = [
+            "High-risk and experimental strategies stay paper-only in v1.",
+            "",
+        ]
+        for module in modules:
+            if module.tier != "lab":
+                continue
+            lines.append(f"{module.label}: {module.description}")
+        self.modules_text.setPlainText("\n".join(lines))
 
 
 class DiagnosticsTab(QWidget):
@@ -368,7 +697,7 @@ class DiagnosticsTab(QWidget):
         layout = QVBoxLayout(self)
         actions = QHBoxLayout()
         self.refresh_button = QPushButton("Refresh")
-        self.export_button = QPushButton("Export Bundle")
+        self.export_button = QPushButton("Export bundle")
         actions.addWidget(self.refresh_button)
         actions.addWidget(self.export_button)
         layout.addLayout(actions)
@@ -380,14 +709,13 @@ class DiagnosticsTab(QWidget):
 class AboutTab(QWidget):
     def __init__(self, paths: AppPaths) -> None:
         super().__init__()
-        self._paths = paths
         layout = QVBoxLayout(self)
         title = QLabel("Trust and About")
         title.setObjectName("heroTitle")
         layout.addWidget(title)
         text = QLabel(
-            "Superior is MIT-licensed, open source, and local-first. "
-            "Secrets go to the OS keychain, telemetry is off by default, and build scripts live in the repo."
+            "Superior is MIT-licensed, Windows-first, and local-first. It is built to teach and paper-test first, "
+            "with explicit guardrails around live unlock."
         )
         text.setWordWrap(True)
         layout.addWidget(text)
@@ -398,16 +726,16 @@ class AboutTab(QWidget):
         info_form.addRow("Logs", QLabel(str(paths.log_dir)))
         layout.addWidget(info_group)
         buttons = QHBoxLayout()
-        self.source_button = QPushButton("Source Tree")
+        self.source_button = QPushButton("Source tree")
         self.readme_button = QPushButton("README")
-        self.license_button = QPushButton("LICENSE")
-        self.notices_button = QPushButton("3rd Party Notices")
-        self.security_button = QPushButton("Security")
+        self.risk_button = QPushButton("Risk model")
+        self.live_button = QPushButton("Live limits")
+        self.contrib_button = QPushButton("Strategy guide")
         buttons.addWidget(self.source_button)
         buttons.addWidget(self.readme_button)
-        buttons.addWidget(self.license_button)
-        buttons.addWidget(self.notices_button)
-        buttons.addWidget(self.security_button)
+        buttons.addWidget(self.risk_button)
+        buttons.addWidget(self.live_button)
+        buttons.addWidget(self.contrib_button)
         layout.addLayout(buttons)
         layout.addStretch(1)
 
@@ -422,6 +750,16 @@ class DesktopMainWindow(QMainWindow):
         controller: EngineController,
         diagnostics: DiagnosticsService,
         startup_manager: StartupManager,
+        venue_adapters: list[VenueAdapter],
+        loadout_service: ConnectorLoadoutService,
+        capability_service: CapabilityService,
+        opportunity_engine: OpportunityEngine,
+        paper_store: PaperRunStore,
+        score_service: ScoreService,
+        paper_execution_engine: PaperExecutionEngine,
+        live_execution_engine: LiveExecutionEngine,
+        unlock_service: UnlockService,
+        assistant_service: AssistantService,
         allow_setup_wizard_on_empty_profiles: bool = True,
         show_tray_icon: bool = True,
     ) -> None:
@@ -432,21 +770,39 @@ class DesktopMainWindow(QMainWindow):
         self._controller = controller
         self._diagnostics = diagnostics
         self._startup_manager = startup_manager
+        self._venue_adapters = venue_adapters
+        self._loadout_service = loadout_service
+        self._capability_service = capability_service
+        self._opportunity_engine = opportunity_engine
+        self._paper_store = paper_store
+        self._score_service = score_service
+        self._paper_execution_engine = paper_execution_engine
+        self._live_execution_engine = live_execution_engine
+        self._unlock_service = unlock_service
+        self._assistant_service = assistant_service
         self._profiles: list[AppProfile] = []
+        self._latest_candidates: list[OpportunityCandidate] = []
+        self._last_paper_run: PaperRunResult | None = None
         self._previous_state = "idle"
 
         self.setWindowTitle("Superior")
-        self.resize(1180, 820)
+        self.resize(1260, 880)
 
-        self.dashboard_tab = DashboardTab()
-        self.profiles_tab = ProfilesTab(controller.presets())
-        self.credentials_tab = CredentialsTab(credential_vault.providers())
+        self.home_tab = HomeTab()
+        self.loadout_tab = LoadoutTab()
+        self.learn_tab = LearnTab()
+        self.scanner_tab = ScannerTab()
+        self.paper_bots_tab = PaperBotsTab()
+        self.score_tab = ScoreTab()
+        self.live_unlock_tab = LiveUnlockTab()
+        self.lab_tab = LabTab()
         self.diagnostics_tab = DiagnosticsTab()
         self.about_tab = AboutTab(paths)
 
         self.profile_selector = QComboBox()
         self.profile_selector.currentIndexChanged.connect(self._on_profile_changed)
-        self.setup_button = QPushButton("Open Setup Wizard")
+        self.setup_button = QPushButton("Open guided setup")
+        self.setup_button.setProperty("buttonRole", "secondary")
         self.setup_button.clicked.connect(self._open_setup_wizard)
 
         header = QHBoxLayout()
@@ -455,9 +811,13 @@ class DesktopMainWindow(QMainWindow):
         header.addWidget(self.setup_button)
 
         self.tabs = QTabWidget()
-        self.tabs.addTab(self.dashboard_tab, "Home")
-        self.tabs.addTab(self.profiles_tab, "Profiles")
-        self.tabs.addTab(self.credentials_tab, "Credentials")
+        self.tabs.addTab(self.home_tab, "Hangar")
+        self.tabs.addTab(self.loadout_tab, "Loadout")
+        self.tabs.addTab(self.learn_tab, "Learn")
+        self.tabs.addTab(self.scanner_tab, "Scanner")
+        self.tabs.addTab(self.paper_bots_tab, "Paper Runs")
+        self.tabs.addTab(self.score_tab, "Score")
+        self.tabs.addTab(self.live_unlock_tab, "Live Gate")
         self.tabs.addTab(self.diagnostics_tab, "Diagnostics")
         self.tabs.addTab(self.about_tab, "About")
 
@@ -470,11 +830,10 @@ class DesktopMainWindow(QMainWindow):
 
         self._setup_connections()
         self._setup_tray(show_tray_icon=show_tray_icon)
-
         self._refresh_profiles()
-        self._refresh_status()
+        self._refresh_all_views()
         self._refresh_timer = QTimer(self)
-        self._refresh_timer.timeout.connect(self._refresh_status)
+        self._refresh_timer.timeout.connect(self._refresh_status_only)
         self._refresh_timer.start(1000)
 
         if allow_setup_wizard_on_empty_profiles and not self._profiles:
@@ -489,7 +848,7 @@ class DesktopMainWindow(QMainWindow):
         selector_index = self.profile_selector.findData(profile.id)
         if selector_index >= 0:
             self.profile_selector.setCurrentIndex(selector_index)
-        self._run_preset(profile.default_preset)
+        self._controller.run_preset(profile, profile.default_preset)
         if profile.start_minimized and self._tray.isVisible():
             self.hide()
 
@@ -499,7 +858,7 @@ class DesktopMainWindow(QMainWindow):
             result = QMessageBox.question(
                 self,
                 "Recorder still running",
-                "The recorder is still running. Keep it alive in the tray?",
+                "The recorder is still running. Keep Superior alive in the tray?",
                 QMessageBox.StandardButton.Yes
                 | QMessageBox.StandardButton.No
                 | QMessageBox.StandardButton.Cancel,
@@ -517,41 +876,46 @@ class DesktopMainWindow(QMainWindow):
         event.accept()
 
     def _setup_connections(self) -> None:
-        self.dashboard_tab.start_button.clicked.connect(self._start_default_preset)
-        self.dashboard_tab.stop_button.clicked.connect(self._stop_run)
-        self.dashboard_tab.replay_button.clicked.connect(lambda: self._run_preset("replay-latest"))
-        self.dashboard_tab.verify_button.clicked.connect(lambda: self._run_preset("verify-latest"))
-        self.dashboard_tab.manage_profiles_button.clicked.connect(
-            lambda: self.tabs.setCurrentWidget(self.profiles_tab)
-        )
+        self.home_tab.open_setup_button.clicked.connect(self._open_setup_wizard)
+        self.home_tab.view_docs_button.clicked.connect(lambda: self._open_local(_project_root() / "README.md"))
+        self.home_tab.start_button.clicked.connect(self._start_default_preset)
+        self.home_tab.stop_button.clicked.connect(self._stop_run)
+        self.home_tab.replay_button.clicked.connect(lambda: self._run_preset("replay-latest"))
+        self.home_tab.verify_button.clicked.connect(lambda: self._run_preset("verify-latest"))
+        self.home_tab.scan_button.clicked.connect(self._refresh_scanner)
+        self.home_tab.paper_button.clicked.connect(self._paper_top_opportunity)
 
-        self.profiles_tab.new_button.clicked.connect(self._open_setup_wizard)
-        self.profiles_tab.duplicate_button.clicked.connect(self._duplicate_profile)
-        self.profiles_tab.delete_button.clicked.connect(self._delete_profile)
-        self.profiles_tab.export_button.clicked.connect(self._export_profile)
-        self.profiles_tab.import_button.clicked.connect(self._import_profile)
-        self.profiles_tab.save_button.clicked.connect(self._save_profile)
+        self.loadout_tab.save_button.clicked.connect(self._save_loadout)
+        self.loadout_tab.refresh_button.clicked.connect(self._refresh_all_views)
 
-        self.diagnostics_tab.refresh_button.clicked.connect(self._refresh_status)
+        self.learn_tab.ask_button.clicked.connect(self._ask_coach)
+
+        self.scanner_tab.refresh_button.clicked.connect(self._refresh_scanner)
+        self.scanner_tab.paper_button.clicked.connect(self._paper_selected_opportunity)
+        self.scanner_tab.live_preview_button.clicked.connect(self._preview_live_lock)
+        self.scanner_tab.candidate_list.currentItemChanged.connect(self._on_candidate_changed)
+
+        self.paper_bots_tab.run_top_button.clicked.connect(self._paper_top_opportunity)
+        self.paper_bots_tab.refresh_button.clicked.connect(self._refresh_portfolio_views)
+
+        self.live_unlock_tab.save_button.clicked.connect(self._save_unlock_preferences)
+        self.live_unlock_tab.refresh_button.clicked.connect(self._refresh_all_views)
+        self.live_unlock_tab.unlock_button.clicked.connect(self._attempt_unlock)
+
+        self.lab_tab.save_button.clicked.connect(self._save_lab_setting)
+
+        self.diagnostics_tab.refresh_button.clicked.connect(self._refresh_all_views)
         self.diagnostics_tab.export_button.clicked.connect(self._export_diagnostics)
-
-        for provider_id, box in self.credentials_tab.provider_boxes.items():
-            box.save_button.clicked.connect(lambda _checked=False, pid=provider_id: self._save_credentials(pid))
-            box.validate_button.clicked.connect(
-                lambda _checked=False, pid=provider_id: self._validate_credentials(pid)
-            )
-            box.delete_button.clicked.connect(lambda _checked=False, pid=provider_id: self._delete_credentials(pid))
-            box.docs_button.clicked.connect(
-                lambda _checked=False, pid=provider_id: self._open_url(self._credential_vault.provider(pid).docs_url)
-            )
 
         self.about_tab.source_button.clicked.connect(lambda: self._open_local(_project_root()))
         self.about_tab.readme_button.clicked.connect(lambda: self._open_local(_project_root() / "README.md"))
-        self.about_tab.license_button.clicked.connect(lambda: self._open_local(_project_root() / "LICENSE"))
-        self.about_tab.notices_button.clicked.connect(
-            lambda: self._open_local(_project_root() / "THIRD_PARTY_NOTICES.md")
+        self.about_tab.risk_button.clicked.connect(lambda: self._open_local(_project_root() / "docs" / "risk-model.md"))
+        self.about_tab.live_button.clicked.connect(
+            lambda: self._open_local(_project_root() / "docs" / "live-trading-limitations.md")
         )
-        self.about_tab.security_button.clicked.connect(lambda: self._open_local(_project_root() / "SECURITY.md"))
+        self.about_tab.contrib_button.clicked.connect(
+            lambda: self._open_local(_project_root() / "docs" / "strategy-contributor-guide.md")
+        )
 
     def _setup_tray(self, *, show_tray_icon: bool) -> None:
         icon = self.windowIcon()
@@ -561,7 +925,7 @@ class DesktopMainWindow(QMainWindow):
         tray_menu = QMenu(self)
         show_action = QAction("Show", self)
         show_action.triggered.connect(self._show_from_tray)
-        start_action = QAction("Start Default", self)
+        start_action = QAction("Start recorder", self)
         start_action.triggered.connect(self._start_default_preset)
         stop_action = QAction("Stop", self)
         stop_action.triggered.connect(self._stop_run)
@@ -586,18 +950,20 @@ class DesktopMainWindow(QMainWindow):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self._show_from_tray()
 
-    def _open_setup_wizard(self) -> None:
-        wizard = SetupWizard(
-            profile_store=self._profile_store,
-            credential_vault=self._credential_vault,
-            startup_manager=self._startup_manager,
-            preset_labels=[(preset.id, preset.label) for preset in self._controller.presets()],
-            parent=self,
-        )
-        if wizard.exec() == SetupWizard.DialogCode.Accepted:
-            self._sync_startup_manager()
-            self._refresh_profiles(wizard.created_profile_id)
-            self.statusBar().showMessage("Profile created.", 4000)
+    def _current_profile_id(self) -> str | None:
+        data = self.profile_selector.currentData()
+        return data if isinstance(data, str) else None
+
+    def _current_profile(self) -> AppProfile | None:
+        return self._find_profile(self._current_profile_id())
+
+    def _find_profile(self, profile_id: str | None) -> AppProfile | None:
+        if profile_id is None:
+            return None
+        for profile in self._profiles:
+            if profile.id == profile_id:
+                return profile
+        return None
 
     def _refresh_profiles(self, preferred_profile_id: str | None = None) -> None:
         current_profile = self._current_profile()
@@ -614,48 +980,43 @@ class DesktopMainWindow(QMainWindow):
             if index < 0:
                 index = 0
             self.profile_selector.setCurrentIndex(index)
-        self.profiles_tab.load_profiles(
-            self._profiles,
-            selected_profile_id=self._current_profile_id(),
-            startup_description=self._startup_manager.description(),
-        )
-        self._refresh_credentials_tab()
 
-    def _refresh_credentials_tab(self) -> None:
-        profile = self._current_profile()
-        statuses = self._credential_vault.statuses_for_profile(profile.id) if profile is not None else []
-        self.credentials_tab.set_profile(profile, statuses)
-
-    def _current_profile_id(self) -> str | None:
-        data = self.profile_selector.currentData()
-        return data if isinstance(data, str) else None
-
-    def _current_profile(self) -> AppProfile | None:
-        return self._find_profile(self._current_profile_id())
-
-    def _find_profile(self, profile_id: str | None) -> AppProfile | None:
-        if profile_id is None:
-            return None
-        for profile in self._profiles:
-            if profile.id == profile_id:
-                return profile
-        return None
-
-    def _on_profile_changed(self) -> None:
-        self.profiles_tab.load_profiles(
-            self._profiles,
-            selected_profile_id=self._current_profile_id(),
-            startup_description=self._startup_manager.description(),
-        )
-        self._refresh_credentials_tab()
-        self._refresh_status()
-
-    def _refresh_status(self) -> None:
+    def _refresh_status_only(self) -> None:
         profile = self._current_profile()
         status = self._controller.status(profile)
-        self.dashboard_tab.update_view(profile, status)
-        credential_statuses = self._credential_vault.statuses_for_profile(profile.id) if profile is not None else []
-        self.credentials_tab.set_profile(profile, credential_statuses)
+        connections = self._venue_connections(profile)
+        credential_statuses = self._credential_statuses(profile)
+        score_snapshot = self._score_service.snapshot(profile)
+        checklist = (
+            self._unlock_service.checklist(
+                profile,
+                venue_connections=connections,
+                engine_status=status,
+                credential_statuses=credential_statuses,
+            )
+            if profile is not None
+            else None
+        )
+        capability_states = (
+            self._capability_service.states(
+                profile=profile,
+                engine_status=status,
+                connections=connections,
+                score_snapshot=score_snapshot,
+                checklist=checklist,
+            )
+            if profile is not None and checklist is not None
+            else []
+        )
+        self.home_tab.update_view(
+            profile=profile,
+            status=status,
+            connections=connections,
+            checklist=checklist,
+            score_snapshot=score_snapshot,
+            capability_states=capability_states,
+        )
+        self.live_unlock_tab.update_view(profile, checklist)
         self.diagnostics_tab.text.setPlainText(
             self._diagnostics.diagnostics_text(
                 profile=profile,
@@ -663,9 +1024,96 @@ class DesktopMainWindow(QMainWindow):
                 credential_statuses=credential_statuses,
             )
         )
+        if profile is not None:
+            self.loadout_tab.update_view(
+                profile,
+                loadout=self._loadout_service.build_loadout(profile),
+                connector_states=self._loadout_service.connector_states(profile, connections, credential_statuses),
+                module_states=self._loadout_service.module_states(profile, self._opportunity_engine.strategy_modules()),
+            )
+        else:
+            self.loadout_tab.update_view(
+                None,
+                loadout=None,
+                connector_states=[],
+                module_states=[],
+            )
         if self._previous_state == "running" and status.state in {"completed", "failed"}:
             self._tray.showMessage("Superior", status.last_message, self._tray.icon(), 5000)
         self._previous_state = status.state
+
+    def _refresh_all_views(self) -> None:
+        self._refresh_status_only()
+        self._refresh_scanner()
+        self._refresh_portfolio_views()
+        profile = self._current_profile()
+        self.lab_tab.update_view(profile, self._opportunity_engine.strategy_modules())
+        self._sync_lab_tab_visibility(profile)
+
+    def _refresh_scanner(self) -> None:
+        profile = self._current_profile()
+        self._latest_candidates = self._opportunity_engine.scan(profile) if profile is not None else []
+        self.scanner_tab.update_candidates(self._latest_candidates)
+        self.scanner_tab.set_details(self._selected_candidate())
+
+    def _refresh_portfolio_views(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            self.paper_bots_tab.update_runs([])
+            self.paper_bots_tab.set_last_run(None)
+            self.score_tab.update_summary(ScoreSnapshot(), [], [])
+            return
+        runs = self._paper_store.list_runs(profile)
+        score_snapshot = self._score_service.snapshot(profile)
+        ledger_entries = self._score_service.ledger(profile, limit=10)
+        last_run = self._last_paper_run or (runs[-1] if runs else None)
+        self.paper_bots_tab.update_runs(runs)
+        self.paper_bots_tab.set_last_run(last_run)
+        self.score_tab.update_summary(score_snapshot, ledger_entries, runs)
+
+    def _venue_connections(self, profile: AppProfile | None) -> list[VenueConnection]:
+        if profile is None:
+            return []
+        return [adapter.connection(profile, self._credential_vault) for adapter in self._venue_adapters]
+
+    def _credential_statuses(self, profile: AppProfile | None) -> list[CredentialStatus]:
+        if profile is None:
+            return []
+        return self._credential_vault.statuses_for_profile(profile.id)
+
+    def _selected_candidate(self) -> OpportunityCandidate | None:
+        current_item = self.scanner_tab.candidate_list.currentItem()
+        if current_item is None:
+            return self._latest_candidates[0] if self._latest_candidates else None
+        candidate_id = current_item.data(32)
+        for candidate in self._latest_candidates:
+            if candidate.id == candidate_id:
+                return candidate
+        return None
+
+    def _on_candidate_changed(self, current: QListWidgetItem | None, previous: QListWidgetItem | None) -> None:
+        del previous
+        if current is None:
+            self.scanner_tab.set_details(self._latest_candidates[0] if self._latest_candidates else None)
+            return
+        self.scanner_tab.set_details(self._selected_candidate())
+
+    def _open_setup_wizard(self) -> None:
+        wizard = SetupWizard(
+            profile_store=self._profile_store,
+            credential_vault=self._credential_vault,
+            startup_manager=self._startup_manager,
+            preset_labels=[(preset.id, preset.label) for preset in self._controller.presets()],
+            parent=self,
+        )
+        if wizard.exec() == SetupWizard.DialogCode.Accepted:
+            self._sync_startup_manager()
+            self._refresh_profiles(wizard.created_profile_id)
+            self._refresh_all_views()
+            self.statusBar().showMessage("Profile created.", 4000)
+
+    def _on_profile_changed(self) -> None:
+        self._refresh_all_views()
 
     def _start_default_preset(self) -> None:
         profile = self._current_profile()
@@ -673,6 +1121,53 @@ class DesktopMainWindow(QMainWindow):
             QMessageBox.information(self, "Create a profile", "Create a profile before starting the recorder.")
             return
         self._run_preset(profile.default_preset)
+
+    def _save_loadout(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            return
+        equipped_connectors: list[str] = []
+        enabled_venues: list[str] = []
+        if self.loadout_tab.polymarket_checkbox.isChecked():
+            equipped_connectors.append("polymarket")
+            enabled_venues.append("Polymarket")
+        if self.loadout_tab.kalshi_checkbox.isChecked():
+            equipped_connectors.append("kalshi")
+            enabled_venues.append("Kalshi")
+        if self.loadout_tab.coach_checkbox.isChecked():
+            equipped_connectors.append("coach")
+        if not enabled_venues:
+            QMessageBox.warning(self, "Equip a connector", "Equip at least one venue connector before saving the loadout.")
+            return
+        equipped_modules: list[str] = []
+        if self.loadout_tab.internal_binary_checkbox.isChecked():
+            equipped_modules.append("internal-binary")
+        if self.loadout_tab.cross_venue_checkbox.isChecked():
+            equipped_modules.append("cross-venue-complement")
+        if self.loadout_tab.neg_risk_checkbox.isChecked():
+            equipped_modules.append("negative-risk-basket")
+        if self.loadout_tab.maker_lab_checkbox.isChecked():
+            equipped_modules.append("maker-rebate-lab")
+        if not equipped_modules:
+            QMessageBox.warning(self, "Equip a module", "Equip at least one strategy module before saving the loadout.")
+            return
+        lab_enabled = any(module in {"negative-risk-basket", "maker-rebate-lab"} for module in equipped_modules)
+        updated = profile.model_copy(
+            update={
+                "enabled_venues": enabled_venues,
+                "equipped_connectors": equipped_connectors,
+                "equipped_modules": equipped_modules,
+                "ai_coach_enabled": "coach" in equipped_connectors,
+                "lab_enabled": lab_enabled or profile.lab_enabled,
+                "default_strategy_tier": "lab" if lab_enabled else "core",
+            }
+        )
+        if "polymarket" in equipped_connectors and not updated.first_run_completed:
+            updated.primary_mission = "Record your first local book, then scan and paper one route."
+        self._profile_store.save_profile(updated)
+        self._refresh_profiles(updated.id)
+        self._refresh_all_views()
+        self.statusBar().showMessage("Loadout saved.", 4000)
 
     def _run_preset(self, preset_id: str) -> None:
         profile = self._current_profile()
@@ -685,112 +1180,143 @@ class DesktopMainWindow(QMainWindow):
             QMessageBox.warning(self, "Unable to start", str(exc))
             return
         self.statusBar().showMessage(f"Started {preset_id} for {profile.display_name}.", 4000)
-        self._refresh_status()
+        self._refresh_status_only()
 
     def _stop_run(self) -> None:
         self._controller.stop()
         self.statusBar().showMessage("Stop requested.", 4000)
 
-    def _save_profile(self) -> None:
-        profile = self.profiles_tab.edited_profile()
-        if profile is None:
-            QMessageBox.information(self, "No profile selected", "Choose a profile to edit first.")
-            return
-        saved = self._profile_store.save_profile(profile)
-        self._sync_startup_manager()
-        self._refresh_profiles(saved.id)
-        self.statusBar().showMessage("Profile saved.", 4000)
-
-    def _duplicate_profile(self) -> None:
-        profile = self.profiles_tab.current_profile()
-        if profile is None:
-            return
-        duplicate = self._profile_store.duplicate_profile(profile.id)
-        self._refresh_profiles(duplicate.id)
-        self.statusBar().showMessage("Profile duplicated.", 4000)
-
-    def _delete_profile(self) -> None:
-        profile = self.profiles_tab.current_profile()
-        if profile is None:
-            return
-        result = QMessageBox.question(
-            self,
-            "Delete profile",
-            f"Delete {profile.display_name}? This does not remove secrets from the OS keychain.",
-        )
-        if result != QMessageBox.StandardButton.Yes:
-            return
-        self._profile_store.delete_profile(profile.id)
-        self._refresh_profiles()
-        self._sync_startup_manager()
-        self.statusBar().showMessage("Profile deleted.", 4000)
-
-    def _export_profile(self) -> None:
-        profile = self.profiles_tab.current_profile()
-        if profile is None:
-            return
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export profile",
-            str(self._paths.exports_dir / f"{profile.display_name.replace(' ', '_')}.json"),
-            "JSON (*.json)",
-        )
-        if not filename:
-            return
-        self._profile_store.export_profile(profile.id, Path(filename))
-        self.statusBar().showMessage("Profile exported.", 4000)
-
-    def _import_profile(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(self, "Import profile", filter="JSON (*.json)")
-        if not filename:
-            return
-        profile = self._profile_store.import_profile(Path(filename))
-        self._refresh_profiles(profile.id)
-        self.statusBar().showMessage("Profile imported.", 4000)
-
-    def _save_credentials(self, provider_id: str) -> None:
+    def _paper_top_opportunity(self) -> None:
         profile = self._current_profile()
         if profile is None:
+            QMessageBox.information(self, "Choose a profile", "Create or choose a profile before running a paper bot.")
             return
-        box = self.credentials_tab.provider_boxes[provider_id]
-        result = self._credential_vault.save(profile.id, provider_id, box.payload())
-        box.update_status(
-            CredentialStatus(
-                provider_id=provider_id,
-                provider_label=self._credential_vault.provider(provider_id).provider_label,
-                status=result.status,
-                message=result.message,
+        candidates = [candidate for candidate in self._latest_candidates if candidate.net_edge_bps > 0]
+        if not candidates:
+            self._refresh_scanner()
+            candidates = [candidate for candidate in self._latest_candidates if candidate.net_edge_bps > 0]
+        if not candidates:
+            QMessageBox.information(self, "No paper candidate", "No current candidate clears the net-edge threshold.")
+            return
+        self._execute_paper_candidate(profile, candidates[0])
+
+    def _paper_selected_opportunity(self) -> None:
+        profile = self._current_profile()
+        candidate = self._selected_candidate()
+        if profile is None or candidate is None:
+            QMessageBox.information(self, "Choose a candidate", "Pick a scanner result before paper-testing it.")
+            return
+        self._execute_paper_candidate(profile, candidate)
+
+    def _execute_paper_candidate(self, profile: AppProfile, candidate: OpportunityCandidate) -> None:
+        self._last_paper_run = self._paper_execution_engine.paper_trade(profile, candidate)
+        if not profile.first_run_completed:
+            updated = profile.model_copy(
+                update={
+                    "first_run_completed": True,
+                    "primary_mission": "Keep recorder data healthy, scan edge, and grow your paper score carefully.",
+                }
             )
-        )
-        if result.status == "invalid":
-            QMessageBox.warning(self, "Credential error", result.message)
-            return
-        box.clear_input()
-        self.statusBar().showMessage("Credentials saved locally.", 4000)
+            self._profile_store.save_profile(updated)
+            self._refresh_profiles(updated.id)
+        self._refresh_portfolio_views()
+        self._refresh_status_only()
+        self.statusBar().showMessage("Paper route recorded.", 4000)
 
-    def _validate_credentials(self, provider_id: str) -> None:
-        profile = self._current_profile()
-        if profile is None:
+    def _preview_live_lock(self) -> None:
+        candidate = self._selected_candidate()
+        if candidate is None:
+            QMessageBox.information(self, "Choose a candidate", "Pick a scanner result first.")
             return
-        status = self._credential_vault.status(profile.id, provider_id)
-        self.credentials_tab.provider_boxes[provider_id].update_status(status)
-        self.statusBar().showMessage(status.message, 4000)
+        QMessageBox.information(self, "Live preview", self._live_execution_engine.preview(candidate))
 
-    def _delete_credentials(self, provider_id: str) -> None:
+    def _ask_coach(self) -> None:
         profile = self._current_profile()
-        if profile is None:
+        question = self.learn_tab.prompt_edit.toPlainText().strip()
+        if not question:
+            QMessageBox.information(self, "Ask something", "Enter a question for the coach first.")
             return
-        self._credential_vault.delete(profile.id, provider_id)
-        self.credentials_tab.provider_boxes[provider_id].clear_input()
-        self.credentials_tab.provider_boxes[provider_id].update_status(
-            CredentialStatus(
-                provider_id=provider_id,
-                provider_label=self._credential_vault.provider(provider_id).provider_label,
-                status="missing",
-                message="No credentials saved.",
+        status = self._controller.status(profile)
+        checklist = (
+            self._unlock_service.checklist(
+                profile,
+                venue_connections=self._venue_connections(profile),
+                engine_status=status,
+                credential_statuses=self._credential_statuses(profile),
             )
+            if profile is not None
+            else None
         )
-        self.statusBar().showMessage("Credentials deleted from the local keychain.", 4000)
+        summary = self._paper_store.summary(profile) if profile is not None else None
+        remote_configured = (
+            profile is not None and self._credential_vault.status(profile.id, "coach").status == "validated"
+        )
+        session = self._assistant_service.answer(
+            question=question,
+            profile=profile,
+            candidates=self._latest_candidates,
+            checklist=checklist,
+            portfolio_summary=summary,
+            remote_configured=remote_configured,
+        )
+        self.learn_tab.set_response(session)
+
+    def _save_unlock_preferences(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            return
+        updated = profile.model_copy(
+            update={
+                "live_rules_accepted": self.live_unlock_tab.live_rules_checkbox.isChecked(),
+                "risk_limits_acknowledged": self.live_unlock_tab.risk_ack_checkbox.isChecked(),
+            }
+        )
+        self._profile_store.save_profile(updated)
+        self._refresh_profiles(updated.id)
+        self._refresh_status_only()
+        self.statusBar().showMessage("Unlock preferences saved.", 4000)
+
+    def _attempt_unlock(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            return
+        self._save_unlock_preferences()
+        updated_profile = self._current_profile()
+        assert updated_profile is not None
+        checklist = self._unlock_service.checklist(
+            updated_profile,
+            venue_connections=self._venue_connections(updated_profile),
+            engine_status=self._controller.status(updated_profile),
+            credential_statuses=self._credential_statuses(updated_profile),
+        )
+        if not checklist.live_ready:
+            QMessageBox.warning(self, "Live gate still locked", "Finish the checklist items before any live path appears.")
+            self._refresh_status_only()
+            return
+        unlocked = updated_profile.model_copy(update={"live_unlocked": True})
+        self._profile_store.save_profile(unlocked)
+        self._refresh_profiles(unlocked.id)
+        self._refresh_status_only()
+        QMessageBox.information(
+            self,
+            "Live gate clear",
+            "This profile has satisfied the local unlock checklist. Superior still keeps consumer live execution as a separate deterministic path.",
+        )
+
+    def _save_lab_setting(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            return
+        updated = profile.model_copy(
+            update={
+                "lab_enabled": self.lab_tab.enable_checkbox.isChecked(),
+                "default_strategy_tier": "lab" if self.lab_tab.enable_checkbox.isChecked() else "core",
+            }
+        )
+        self._profile_store.save_profile(updated)
+        self._refresh_profiles(updated.id)
+        self._refresh_all_views()
+        self.statusBar().showMessage("Lab setting saved.", 4000)
 
     def _export_diagnostics(self) -> None:
         profile = self._current_profile()
@@ -803,7 +1329,7 @@ class DesktopMainWindow(QMainWindow):
         if not filename:
             return
         status = self._controller.status(profile)
-        credential_statuses = self._credential_vault.statuses_for_profile(profile.id) if profile is not None else []
+        credential_statuses = self._credential_statuses(profile)
         self._diagnostics.export_bundle(
             profile=profile,
             status=status,
@@ -811,6 +1337,14 @@ class DesktopMainWindow(QMainWindow):
             output_path=Path(filename),
         )
         self.statusBar().showMessage("Diagnostics bundle exported.", 4000)
+
+    def _sync_lab_tab_visibility(self, profile: AppProfile | None) -> None:
+        tab_index = self.tabs.indexOf(self.lab_tab)
+        should_show = profile is not None and profile.lab_enabled
+        if should_show and tab_index < 0:
+            self.tabs.insertTab(self.tabs.count() - 2, self.lab_tab, "Lab")
+        if not should_show and tab_index >= 0:
+            self.tabs.removeTab(tab_index)
 
     def _sync_startup_manager(self) -> None:
         if not self._startup_manager.supported():

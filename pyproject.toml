@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "market-data-recorder"
-version = "0.1.2"
-description = "Async Polymarket market data recorder with DuckDB storage and replay tooling."
+version = "0.3.0"
+description = "Open-source Superior desktop app for Polymarket learning, explainable scanning, and paper-first prediction-market bots."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

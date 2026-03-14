@@ -3,22 +3,85 @@
 @layer base {
   :root {
     color-scheme: dark;
+    --space: #0a0f2e;
+    --space-deep: #06081a;
+    --panel: #111a4a;
+    --panel-alt: #141f59;
+    --panel-dark: #0b1338;
+    --cyan: #00e5ff;
+    --magenta: #ff00d4;
+    --purple: #8a5cff;
+    --white: #ffffff;
+    --gold: #ffd700;
+    --green: #00ff8c;
+  }
+
+  * {
+    box-sizing: border-box;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    background:
-      radial-gradient(circle at 20% 18%, rgba(68, 211, 255, 0.18), transparent 18%),
-      radial-gradient(circle at 80% 16%, rgba(190, 70, 255, 0.2), transparent 22%),
-      radial-gradient(circle at 52% 58%, rgba(17, 76, 255, 0.15), transparent 30%),
-      linear-gradient(180deg, #03040b 0%, #050814 42%, #03040b 100%);
-    color: #edf6ff;
-    font-family: "IBM Plex Sans", sans-serif;
+    font-family: "VT323", monospace;
+    color: var(--white);
+    background: var(--space);
+    letter-spacing: 0.01em;
   }
 
-  * {
-    box-sizing: border-box;
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  body::before {
+    width: 2px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow:
+      4vw 10vh 0 #ffffff,
+      12vw 18vh 0 #00e5ff,
+      22vw 8vh 0 #8a5cff,
+      31vw 20vh 0 #ffffff,
+      40vw 12vh 0 #ff00d4,
+      48vw 6vh 0 #ffffff,
+      57vw 16vh 0 #00e5ff,
+      66vw 9vh 0 #ffffff,
+      75vw 14vh 0 #8a5cff,
+      84vw 7vh 0 #ffffff,
+      92vw 18vh 0 #00e5ff,
+      8vw 34vh 0 #8a5cff,
+      16vw 28vh 0 #ffffff,
+      27vw 40vh 0 #00e5ff,
+      36vw 32vh 0 #ffffff,
+      45vw 38vh 0 #ff00d4,
+      54vw 26vh 0 #ffffff,
+      63vw 36vh 0 #8a5cff,
+      72vw 29vh 0 #ffffff,
+      82vw 41vh 0 #00e5ff,
+      91vw 33vh 0 #ffffff,
+      6vw 58vh 0 #ffffff,
+      15vw 50vh 0 #00e5ff,
+      25vw 62vh 0 #8a5cff,
+      34vw 54vh 0 #ffffff,
+      43vw 68vh 0 #ff00d4,
+      52vw 48vh 0 #ffffff,
+      61vw 64vh 0 #00e5ff,
+      70vw 56vh 0 #ffffff,
+      79vw 70vh 0 #8a5cff,
+      88vw 52vh 0 #ffffff,
+      95vw 66vh 0 #00e5ff,
+      10vw 82vh 0 #ffffff,
+      21vw 90vh 0 #ff00d4,
+      33vw 78vh 0 #ffffff,
+      46vw 88vh 0 #00e5ff,
+      58vw 80vh 0 #8a5cff,
+      69vw 92vh 0 #ffffff,
+      81vw 84vh 0 #00e5ff,
+      93vw 76vh 0 #ffffff;
+    animation: star-twinkle 5s steps(2, end) infinite;
   }
 
   a {
@@ -29,140 +92,161 @@
 
 @layer utilities {
   .font-display {
-    font-family: "Space Grotesk", sans-serif;
+    font-family: "Press Start 2P", cursive;
   }
 
-  .bg-pixel-grid {
-    background-image:
-      linear-gradient(rgba(111, 222, 255, 0.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(111, 222, 255, 0.07) 1px, transparent 1px);
-    background-size: 28px 28px;
+  .font-body {
+    font-family: "VT323", monospace;
   }
 
-  .glass-panel {
-    background: linear-gradient(180deg, rgba(9, 17, 38, 0.82), rgba(5, 10, 24, 0.72));
-    border: 1px solid rgba(117, 166, 255, 0.16);
+  .pixel-panel {
+    background: var(--panel);
+    border: 2px solid var(--cyan);
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-      0 26px 80px rgba(2, 7, 28, 0.7);
-    backdrop-filter: blur(18px);
+      0 0 0 2px var(--purple),
+      8px 8px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .pixel-panel-alt {
+    background: var(--panel-alt);
+    border: 2px solid var(--magenta);
+    box-shadow:
+      0 0 0 2px var(--cyan),
+      8px 8px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .pixel-screen {
+    background: var(--panel-dark);
+    border: 2px solid var(--green);
+    box-shadow:
+      inset 0 0 0 2px rgba(0, 0, 0, 0.45),
+      0 0 0 2px rgba(138, 92, 255, 0.7);
   }
 
   .pixel-frame {
-    clip-path: polygon(0 12px, 12px 12px, 12px 0, calc(100% - 12px) 0, calc(100% - 12px) 12px, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 12px calc(100% - 12px), 0 calc(100% - 12px));
+    position: relative;
   }
 
-  .summon-ring {
-    box-shadow:
-      0 0 0 1px rgba(132, 232, 255, 0.16) inset,
-      0 0 22px rgba(70, 223, 255, 0.26),
-      0 0 90px rgba(127, 73, 255, 0.18);
+  .pixel-frame::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    pointer-events: none;
   }
 
-  .shine-border {
+  .pixel-button,
+  .pixel-button-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 16px 24px;
+    border: 2px solid var(--white);
+    font-family: "Press Start 2P", cursive;
+    font-size: 8px;
+    line-height: 1.75;
+    text-transform: uppercase;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+    transition: transform 120ms steps(2, end), background-color 120ms steps(2, end), color 120ms steps(2, end), border-color 120ms steps(2, end);
+  }
+
+  .pixel-button {
+    background: var(--cyan);
+    border-color: var(--white);
+    color: var(--space-deep);
+  }
+
+  .pixel-button-secondary {
+    background: transparent;
+    border-color: var(--magenta);
+    color: var(--white);
+  }
+
+  .pixel-button:hover,
+  .pixel-button-secondary:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .pixel-button:hover {
+    background: var(--white);
+    color: var(--space);
+    border-color: var(--cyan);
+  }
+
+  .pixel-button-secondary:hover {
+    background: var(--magenta);
+    color: var(--white);
+    border-color: var(--white);
+  }
+
+  .pixel-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 8px 16px;
+    border: 2px solid var(--white);
+    background: var(--panel-dark);
+    font-family: "Press Start 2P", cursive;
+    font-size: 8px;
+    line-height: 1.5;
+    text-transform: uppercase;
+  }
+
+  .pixel-star {
+    animation: pixel-star 4s steps(2, end) infinite;
+  }
+
+  .pixel-scan {
     position: relative;
     overflow: hidden;
   }
 
-  .shine-border::after {
+  .pixel-scan::after {
     content: "";
     position: absolute;
-    inset: -200% auto auto -40%;
-    width: 42%;
-    height: 300%;
-    transform: rotate(22deg);
-    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    animation: shine-pass 8s linear infinite;
-    pointer-events: none;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: rgba(0, 229, 255, 0.14);
+    animation: pixel-scan 4s steps(12, end) infinite;
   }
 
-  .shadow-aura {
-    box-shadow:
-      0 0 120px rgba(76, 202, 255, 0.22),
-      0 0 180px rgba(173, 74, 255, 0.15);
+  .pixel-art {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
   }
 
-  .particle {
-    animation: drift var(--drift-duration, 12s) ease-in-out infinite;
-  }
-
-  .pixel-star {
-    animation: twinkle var(--twinkle-duration, 4s) ease-in-out infinite;
-  }
-
-  .animate-float-slow {
-    animation: float-slow 8s ease-in-out infinite;
-  }
-
-  .animate-float-delay {
-    animation: float-delay 9.5s ease-in-out infinite;
-  }
-
-  .animate-ring-pulse {
-    animation: ring-pulse 6s ease-in-out infinite;
-  }
-
-  .animate-ring-pulse-delayed {
-    animation: ring-pulse 7.4s ease-in-out infinite 1.8s;
-  }
-
-  @keyframes drift {
-    0%, 100% {
-      transform: translate3d(0, 0, 0) scale(0.95);
-      opacity: 0.4;
+  @keyframes star-twinkle {
+    0%,
+    100% {
+      opacity: 0.9;
     }
+
     50% {
-      transform: translate3d(0, -18px, 0) scale(1.08);
-      opacity: 0.95;
-    }
-  }
-
-  @keyframes twinkle {
-    0%, 100% {
-      opacity: 0.28;
-      transform: scale(0.8);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.15);
-    }
-  }
-
-  @keyframes float-slow {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-14px);
-    }
-  }
-
-  @keyframes float-delay {
-    0%, 100% {
-      transform: translateY(-2px);
-    }
-    50% {
-      transform: translateY(14px);
-    }
-  }
-
-  @keyframes ring-pulse {
-    0%, 100% {
-      transform: scale(1);
       opacity: 0.55;
     }
+  }
+
+  @keyframes pixel-star {
+    0%,
+    100% {
+      opacity: 1;
+    }
+
     50% {
-      transform: scale(1.06);
-      opacity: 0.92;
+      opacity: 0.4;
     }
   }
 
-  @keyframes shine-pass {
+  @keyframes pixel-scan {
     0% {
-      transform: translate3d(0, 0, 0) rotate(22deg);
+      top: 0;
     }
+
     100% {
-      transform: translate3d(220%, 0, 0) rotate(22deg);
+      top: calc(100% - 8px);
     }
   }
 }

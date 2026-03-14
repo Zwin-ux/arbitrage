@@ -4,128 +4,164 @@ const windowsInstallerUrl =
 const shared = {
   windowsInstallerUrl,
   secondaryCtaHref: "/download",
-  badges: ["MIT licensed", "Local-first", "Windows first"]
+  badges: ["MIT licensed", "Paper first", "Windows first"]
 };
 
 export const landingVariants = {
   control: {
     key: "control",
     label: "Control",
-    pageTitle: "Superior | Intelligent Arbitrage, Focused Cleanly",
+    pageTitle: "Superior | Open-Source Prediction-Market Bot",
     pageDescription:
-      "Superior scans markets, detects edge, and acts with precision. An open-source, local-first arbitrage recorder with a calm interface.",
-    eyebrow: "Open-source market recorder",
-    headlineLead: "Scan markets.",
-    headlineAccent: "Find edge. Act with precision.",
+      "Superior is a guided, local-first prediction-market desktop app for equipping Polymarket, scanning edge, and building a paper score before any live gate clears.",
+    eyebrow: "Open-source prediction-market desktop app",
+    headlineLead: "Equip Polymarket.",
+    headlineAccent: "Record books. Build a paper score.",
     subhead:
-      "Superior is a local-first arbitrage recorder built to surface signal, preserve context, and stay readable under pressure.",
+      "Superior gives everyday users a clean Windows path to learn Polymarket, record local books, inspect one explainable route at a time, and keep score without pretending paper and live results are the same thing.",
     navLabel: "Control",
     heroTopLeft: "Superior",
-    heroTopRight: "Local-first",
+    heroTopRight: "Paper-first",
     heroPanels: [
       {
-        title: "Signal",
-        body: "Live market context without forcing you through a wall of noisy widgets."
+        title: "Guided",
+        body: "Beginner-first onboarding, connector loadouts, and clear explanations instead of noisy dashboards."
       },
       {
-        title: "Execution",
-        body: "Recorder, replay, and verification flows built for deliberate operation."
+        title: "Deterministic",
+        body: "Scanner, paper execution, score updates, and live-gate rules stay explicit. The coach never places trades."
       }
     ],
     featureCards: [
       {
-        title: "Market scan",
-        body: "Tracks active markets and local orderbook state with a recorder-first flow."
+        title: "Equip Polymarket first",
+        body: "Start with public data, add your own keys later, and learn the venue before you try to make the product do more."
       },
       {
-        title: "Edge context",
-        body: "Keeps the interface legible so the useful information is easier to act on."
+        title: "Paper score",
+        body: "Run deterministic paper routes against recorded books and watch the score board move from realized paper results only."
       },
       {
-        title: "Release discipline",
-        body: "Open-source packaging, reproducible build steps, and explicit smoke checks."
+        title: "Live gated",
+        body: "Credentials, risk acknowledgements, diagnostics, and paper history all have to clear before any live path appears."
       }
     ],
-    productTitle: "Built to stay readable while the system does real work.",
+    setupTitle: "An arcade-style loadout that stays concrete about what the product is doing.",
+    setupBody:
+      "Install the Windows build, keep Guided mode on, equip Polymarket, and start recording public books before you worry about credentials, live mode, or experimental modules.",
+    setupCaption: "No exchange account is required to equip Polymarket and finish the first recording run.",
+    setupSteps: [
+      {
+        title: "Install the Windows build",
+        body: "Use the installer for shortcuts, uninstall support, and the cleanest first-run path."
+      },
+      {
+        title: "Equip your loadout",
+        body: "Pick your goal, keep conservative defaults, equip Polymarket, and leave credentials blank if you only want recorder plus paper mode."
+      },
+      {
+        title: "Record, scan, score",
+        body: "Run the recorder, inspect explainable scanner output, and paper the top candidate before anything live unlocks."
+      }
+    ],
+    productTitle: "A consumer desktop app for prediction-market learning, explainable routes, and honest scorekeeping.",
     productBody:
-      "The design keeps the atmosphere from the logo, then strips away everything that does not improve comprehension or trust.",
+      "The product is built around guided onboarding, connector loadouts, scanner explanations, paper execution history, and trust. Superior is stable software with explicit guardrails, not a promise of guaranteed profits.",
     productNotes: [
       {
-        title: "Local-first",
-        body: "Profiles, recorder data, diagnostics, and secrets stay under your control."
+        title: "Open source",
+        body: "The app, site, packaging, and trust docs all live in one public repo."
       },
       {
-        title: "Open-source",
-        body: "The code, packaging flow, site, and release scripts are all inspectable."
+        title: "Local first",
+        body: "Profiles, diagnostics, and paper history stay on your machine. Secrets stay in the OS keychain."
       },
       {
-        title: "Release-ready",
-        body: "Windows installer, portable build, and smoke-tested packaging are part of the repo."
+        title: "Lab ready",
+        body: "High-risk experiments live behind an explicit Lab toggle and stay paper-only in v1."
       }
     ],
-    downloadTitle: "Download the Windows build or inspect the source path first.",
+    downloadTitle: "Download the Windows build, then inspect the source if you want the full trust story.",
     downloadBody:
-      "GitHub Releases host the installer. If you want to verify the path yourself, the docs page covers local builds and release testing.",
+      "GitHub Releases hosts the installer. The docs explain loadouts, paper score, local storage, and live gating before you ever click a trade button.",
     ...shared
   },
   focus: {
     key: "focus",
     label: "Focus",
-    pageTitle: "Superior | See The Edge Before It Disappears",
+    pageTitle: "Superior | Scan Markets With Guardrails",
     pageDescription:
-      "Superior is an open-source arbitrage recorder designed to keep edge detection, recorder state, and execution context calm and clear.",
-    eyebrow: "Local-first arbitrage recorder",
-    headlineLead: "See the edge",
-    headlineAccent: "before it disappears.",
+      "Superior helps users equip Polymarket, record local market data, understand edge, and keep live trading behind explicit checklists and risk controls.",
+    eyebrow: "Guided Polymarket onboarding",
+    headlineLead: "Equip the loadout.",
+    headlineAccent: "Explain edge. Keep live gated.",
     subhead:
-      "Superior keeps market scanning, recorder state, and release tooling in one disciplined surface without drifting into dashboard clutter.",
+      "This variant leans harder on trust: local-first storage, deterministic paper bots, and a score board that moves only from realized paper results.",
     navLabel: "Focus",
     heroTopLeft: "Superior",
-    heroTopRight: "Recorder core",
+    heroTopRight: "Guided mode",
     heroPanels: [
       {
-        title: "Recorder",
-        body: "Gamma discovery, local books, replay, and verify behind a desktop flow that stays calm."
+        title: "Trust",
+        body: "Stable recorder, transparent risk policies, and no hidden hosted control plane."
       },
       {
-        title: "Operator",
-        body: "A sharper landing message for people who care more about confidence than spectacle."
+        title: "Clarity",
+        body: "Every candidate shows the match, the assumptions, and the cost adjustments that cut gross edge down to net."
       }
     ],
     featureCards: [
       {
-        title: "Fast setup",
-        body: "Profiles, credential storage, and default presets are all configured from the desktop app."
+        title: "Consumer setup",
+        body: "Profiles, connector loadouts, risk presets, and coach settings all live inside one Windows desktop flow."
       },
       {
-        title: "Clear diagnostics",
-        body: "Recorder state, latest warnings, and exported bundles live in one predictable place."
+        title: "Explainable scanner",
+        body: "The UI explains why a route qualifies, why it fails, and what still blocks the live gate."
       },
       {
-        title: "Stronger shipping loop",
-        body: "The public installer is now gated by packaged-app and installer smoke checks."
+        title: "Public trust docs",
+        body: "Risk model, live limits, local storage, and contributor architecture are documented in the repo."
       }
     ],
-    productTitle: "A tighter front end for users who care about trust and speed.",
+    setupTitle: "A disciplined path from curiosity to one clean recording and one honest score update.",
+    setupBody:
+      "Superior is designed so the first launch feels understandable: guided defaults, optional credentials, connector loadouts, and a paper-first workflow that does not demand trust up front.",
+    setupCaption: "Guided setup, local storage, and paper score all work before live credentials enter the conversation.",
+    setupSteps: [
+      {
+        title: "Download and launch",
+        body: "The Windows installer gets the product onto the machine with the fewest manual decisions."
+      },
+      {
+        title: "Equip the safe defaults",
+        body: "Start with Polymarket, a conservative risk policy, and Guided mode on unless you already know the workflow."
+      },
+      {
+        title: "Use evidence before intent",
+        body: "Record local books, read the scanner explanation, and paper the candidate before you even think about live readiness."
+      }
+    ],
+    productTitle: "Built for users who want a clean path from curiosity to disciplined experimentation and honest scorekeeping.",
     productBody:
-      "This variant reduces mood language and leans harder on clarity, release discipline, and operational confidence.",
+      "Superior is not a black-box money machine. It is an open-source desktop app for studying prediction markets, running paper bots, and deciding when a live path is earned.",
     productNotes: [
       {
-        title: "Deterministic",
-        body: "The app stays local, explicit, and rules-based instead of depending on hidden services."
+        title: "Paper first",
+        body: "No live mode until credentials, risk acknowledgements, diagnostics, and paper history all pass."
       },
       {
-        title: "Inspectable",
-        body: "GitHub holds the source, site, workflows, and release packaging in one public repo."
+        title: "Coach only",
+        body: "The assistant explains venues, logs, and scanner results without gaining control over execution."
       },
       {
-        title: "Testable",
-        body: "Packaged app smoke mode, silent installer smoke tests, and browser-level site tests are built in."
+        title: "Score split",
+        body: "Paper score is the default. Live score stays separate and empty until a real live surface exists."
       }
     ],
-    downloadTitle: "Test the build, compare the page, then ship the stronger version.",
+    downloadTitle: "Use the Windows installer, then verify the trust story in the docs.",
     downloadBody:
-      "Use the lab routes to compare variants, then keep the public homepage on the winner once the copy and composition earn it.",
+      "The public build is for onboarding, paper bots, and education first. Releases, docs, and the full repo stay linked from one place.",
     ...shared
   }
 };

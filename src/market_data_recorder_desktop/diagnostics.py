@@ -55,9 +55,18 @@ class DiagnosticsService:
         if profile is not None:
             lines.extend(
                 [
+                    f"Brand: {profile.brand_name}",
                     f"Active profile: {profile.display_name}",
                     f"Profile data dir: {profile.data_dir}",
                     f"Default preset: {profile.default_preset}",
+                    f"Primary goal: {profile.primary_goal}",
+                    f"Primary mission: {profile.primary_mission}",
+                    f"Experience level: {profile.experience_level}",
+                    f"Guided mode: {profile.guided_mode}",
+                    f"Lab enabled: {profile.lab_enabled}",
+                    f"Live unlocked: {profile.live_unlocked}",
+                    f"AI coach enabled: {profile.ai_coach_enabled}",
+                    f"Risk policy: {profile.risk_policy_id}",
                 ]
             )
         if status.summary is not None:

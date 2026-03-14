@@ -1,7 +1,7 @@
 ---
 const {
-  title = "market-data-recorder",
-  description = "Open-source desktop recorder for Polymarket market data with a Windows app, local-first storage, and transparent packaging."
+  title = "Superior",
+  description = "Open-source desktop app for equipping Polymarket, recording local books, and building a paper score with local-first storage."
 } = Astro.props;
 
 const nav = [
@@ -19,11 +19,12 @@ const nav = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="theme-color" content="#0A0F2E" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles/global.css" />
@@ -35,7 +36,7 @@ const nav = [
           <span class="brand-mark">S</span>
           <span>
             <strong>Superior</strong>
-            <small>Open-source market recorder</small>
+            <small>paper-first bot cabinet</small>
           </span>
         </a>
         <nav class="site-nav" aria-label="Primary navigation">
@@ -51,7 +52,7 @@ const nav = [
         <slot />
       </main>
       <footer class="site-footer">
-        <p>MIT licensed. Local-first. Built in public.</p>
+        <p>MIT licensed. Local-first. Paper-first. Built in public.</p>
         <div class="footer-links">
           <a href="https://github.com/Zwin-ux/arbitrage/releases" target="_blank" rel="noreferrer">Releases</a>
           <a href="https://github.com/Zwin-ux/arbitrage" target="_blank" rel="noreferrer">Source</a>

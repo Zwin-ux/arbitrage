@@ -1,5 +1,5 @@
 #define AppName "Superior"
-#define AppVersion "0.1.2"
+#define AppVersion "0.3.0"
 #define AppPublisher "Superior"
 #define AppExeName "market-data-recorder-app.exe"
 #ifndef SourceBundleDir
@@ -7,6 +7,9 @@
 #endif
 #ifndef OutputDirPath
   #define OutputDirPath "..\..\dist\installer"
+#endif
+#ifndef SourceSmokeExe
+  #define SourceSmokeExe ""
 #endif
 
 [Setup]
@@ -33,6 +36,9 @@ Name: "runatlogin"; Description: "Launch at login"; GroupDescription: "Startup:"
 [Files]
 Source: "{#SourceBundleDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "superior.ico"; DestDir: "{app}"; Flags: ignoreversion
+#if SourceSmokeExe != ""
+Source: "{#SourceSmokeExe}"; DestDir: "{app}"; DestName: "market-data-recorder-smoke.exe"; Flags: ignoreversion
+#endif
 
 [Icons]
 Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\superior.ico"

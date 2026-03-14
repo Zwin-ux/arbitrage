@@ -59,7 +59,7 @@ class WindowsStartupManager(StartupManager):
             self._launcher_path.unlink()
 
     def description(self) -> str:
-        return "Run the desktop app at login using the current executable."
+        return "Run Superior at login using the current executable."
 
     def _launcher_contents(self) -> str:
         if getattr(sys, "frozen", False):

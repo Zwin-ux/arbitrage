@@ -1,26 +1,29 @@
-# market-data-recorder
+# Superior
 
-Open-source Polymarket market-data recorder with a Typer CLI and a Windows-first PySide6 desktop app.
+Open-source, Windows-first prediction-market desktop app for learning Polymarket, recording market data, scanning explainable arbitrage ideas, and paper-testing bots before any live unlock.
+
+The public brand is `Superior`. The current Python package name and CLI entrypoints remain `market-data-recorder` in v1 to avoid breaking existing packaging and release links.
 
 ## What it includes
 
-- Public Polymarket recorder built on current Gamma, CLOB, and market WebSocket flows
-- DuckDB-backed raw and normalized storage
-- Replay and verify tooling
-- Desktop onboarding wizard with multiple profiles
-- OS-keychain-backed credential vault for Polymarket and Kalshi
-- Local-only diagnostics export and tray-based background flow
+- Guided desktop onboarding for Polymarket-first users
+- Local-first recorder built on current Gamma, CLOB, and market WebSocket flows
+- Explainable scanner for internal binary dislocation and future exact-match cross-venue work
+- Paper bot execution with simple deterministic fills and local portfolio history
+- Live-unlock checklist tied to credentials, diagnostics, risk acknowledgements, and paper activity
+- OS-keychain-backed credential vault for Polymarket, Kalshi, and optional AI coach keys
 - Open packaging assets for PyInstaller and Inno Setup
 - Astro-based public site for Railway deployment
 
-## Open-Source Defaults
+## Product posture
 
 - License: MIT
 - Telemetry: off by default
 - Secrets: OS keychain only
-- Build scripts: committed in `packaging/windows`
-- Docs: architecture, release process, and privacy docs in `docs/`
-- Public site: committed in `site/`
+- Default mode: guided beginner, paper first
+- Live mode: locked until the checklist passes
+- Lab strategies: explicit opt-in and paper-only in v1
+- Profit claims: none; the software aims to be stable and transparent, not to guarantee returns
 
 ## Install
 
@@ -41,48 +44,36 @@ npm.cmd --prefix site install
 npm.cmd --prefix site run build
 ```
 
-## CLI
+## Entry points
 
-Discover current tradable markets:
-
-```bash
-market-data-recorder discover
-```
-
-Record indefinitely:
-
-```bash
-market-data-recorder record
-```
-
-Replay stored raw messages:
-
-```bash
-market-data-recorder replay
-```
-
-Verify stored hashes and stream consistency:
-
-```bash
-market-data-recorder verify
-```
-
-## Desktop App
-
-Launch the GUI:
+Launch the desktop app:
 
 ```bash
 market-data-recorder-app
 ```
 
-The desktop app provides:
+Run the recorder CLI directly:
 
-- first-run setup wizard
-- multiple profiles with per-profile data directories
-- optional Polymarket and Kalshi credential storage
-- default presets for record, replay, and verify
-- diagnostics and trust/about views
-- system tray behavior for long-running recorder sessions
+```bash
+market-data-recorder discover
+market-data-recorder record
+market-data-recorder replay
+market-data-recorder verify
+```
+
+## Desktop app surface
+
+The Superior shell is built around:
+
+- `Hangar`: safe state, venue connections, recorder controls, and next steps
+- `Loadout`: equip connectors and strategy modules deliberately
+- `Learn`: local-first coach and beginner guidance
+- `Scanner`: explainable opportunity candidates
+- `Paper Bots`: deterministic paper runs against current candidates
+- `Score`: local paper ledger, score board, and recent run history
+- `Live Gate`: checklist and acknowledgements
+- `Lab`: explicit experimental surface
+- `Diagnostics` and `About`
 
 ## Storage
 
@@ -91,10 +82,18 @@ DuckDB tables are documented in [`docs/schema.md`](docs/schema.md).
 Desktop app data uses per-user paths from `platformdirs`:
 
 - config: `profiles.json`
-- data: profile DuckDB files and exports
+- data: profile DuckDB files, paper run history, and exports
 - logs: per-user app log directory
 
 Secrets are not stored in those paths.
+
+## Trust docs
+
+- [`docs/risk-model.md`](docs/risk-model.md)
+- [`docs/live-trading-limitations.md`](docs/live-trading-limitations.md)
+- [`docs/privacy-and-secrets.md`](docs/privacy-and-secrets.md)
+- [`docs/strategy-contributor-guide.md`](docs/strategy-contributor-guide.md)
+- [`docs/release-process.md`](docs/release-process.md)
 
 ## Packaging
 
@@ -105,25 +104,16 @@ Secrets are not stored in those paths.
 - Packaged app smoke test: [`scripts/smoke-test-windows-release.py`](scripts/smoke-test-windows-release.py)
 - Installer smoke test: [`scripts/smoke-test-installer.ps1`](scripts/smoke-test-installer.ps1)
 
-## Public Site
+## Public site
 
 - Site source: [`site/`](site/)
 - Railway config: [`site/railway.toml`](site/railway.toml)
 - Release/download target: [GitHub Releases](https://github.com/Zwin-ux/arbitrage/releases)
 - Variant lab: `/lab`, `/lab/control`, `/lab/focus`
 
-Railway should host only the public site. The recorder runtime, secrets, and user data should not be deployed there.
+Railway should host only the public site. The app runtime, secrets, and user data should not be deployed there.
 
-Railway setup for this monorepo:
-
-1. Connect the GitHub repo to a Railway service.
-2. Preferred: set the service root directory to `/site` and the config-as-code path to `/site/railway.toml`.
-3. Safe fallback: if Railway deploys from the repo root, the root [`Dockerfile`](Dockerfile) builds and serves the `site/` app directly.
-4. Generate a public Railway domain.
-5. Set `SITE_URL` to the public Railway URL once the domain exists.
-6. Enable `Wait for CI` so deployments wait for the GitHub Actions workflow on `main`.
-
-## Development Checks
+## Development checks
 
 ```bash
 pytest -q
@@ -132,10 +122,4 @@ npm.cmd --prefix site run build
 npm.cmd --prefix site run test:browser
 ```
 
-See [`docs/testing.md`](docs/testing.md) for the full release and variant-testing workflow.
-
-## Notes
-
-- The workspace runtime is Python 3.11. The package targets 3.11+.
-- The recorder core remains deterministic and reusable from both CLI and desktop flows.
-- The desktop credential vault stores secrets only in the OS keychain and validates completeness locally.
+See [`docs/testing.md`](docs/testing.md) for the release and variant-testing workflow.
