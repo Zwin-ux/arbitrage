@@ -52,13 +52,14 @@ Launch the desktop app:
 market-data-recorder-app
 ```
 
-Run the recorder CLI directly:
+Run the recorder and analysis CLI:
 
 ```bash
 market-data-recorder discover
 market-data-recorder record
 market-data-recorder replay
 market-data-recorder verify
+market-data-recorder arbitrage --min-edge 0.02
 ```
 
 ## Desktop app surface

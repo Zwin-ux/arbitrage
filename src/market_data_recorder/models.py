@@ -207,3 +207,20 @@ class VerificationReport(BaseModel):
     best_bid_ask_failures: int = 0
     unknown_books: int = 0
     issues: list[HealthIssue] = Field(default_factory=list)
+
+
+class ArbitrageLeg(BaseModel):
+    asset_id: str
+    outcome: str | None = None
+    best_bid: str
+    best_ask: str
+
+
+class ArbitrageOpportunity(BaseModel):
+    market: str
+    strategy: Literal["buy_all_outcomes", "sell_all_outcomes"]
+    timestamp: str
+    total_price: str
+    guaranteed_profit: str
+    outcome_count: int
+    legs: list[ArbitrageLeg]

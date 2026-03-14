@@ -505,6 +505,38 @@ class DuckDBStorage:
             [snapshot_id],
         ).fetchall()
 
+    def fetch_latest_best_bid_ask(self) -> list[tuple[Any, ...]]:
+        return self._connection.execute(
+            """
+            WITH ranked AS (
+              SELECT
+                market,
+                asset_id,
+                event_timestamp,
+                best_bid,
+                best_ask,
+                ROW_NUMBER() OVER (
+                  PARTITION BY market, asset_id
+                  ORDER BY recorded_at DESC, event_timestamp DESC
+                ) AS row_number
+              FROM best_bid_ask
+            )
+            SELECT
+              ranked.market,
+              ranked.asset_id,
+              tokens.outcome,
+              ranked.event_timestamp,
+              ranked.best_bid,
+              ranked.best_ask
+            FROM ranked
+            LEFT JOIN tokens
+              ON tokens.market_id = ranked.market
+             AND tokens.asset_id = ranked.asset_id
+            WHERE ranked.row_number = 1
+            ORDER BY ranked.market, ranked.asset_id
+            """
+        ).fetchall()
+
     def fetch_dashboard_summary(self) -> tuple[int, int, int, datetime | None, tuple[Any, ...] | None]:
         counts = self._connection.execute(
             """

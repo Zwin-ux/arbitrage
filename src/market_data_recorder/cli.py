@@ -6,6 +6,7 @@ from pathlib import Path
 
 import typer
 
+from .arbitrage import ArbitrageAnalyzer
 from .config import RecorderSettings
 from .logging import configure_logging
 from .replay import ReplayEngine
@@ -122,5 +123,30 @@ def verify(
         typer.echo(report.model_dump_json(indent=2))
         if report.snapshot_hash_failures or report.stream_hash_failures or report.best_bid_ask_failures:
             raise typer.Exit(code=1)
+    finally:
+        storage.close()
+
+
+@app.command()
+def arbitrage(
+    db_path: Path | None = typer.Option(default=None, help="Override DuckDB path."),
+    min_edge: str = typer.Option(
+        default="0",
+        help="Minimum guaranteed profit required to report an opportunity.",
+    ),
+    market_id: list[str] = typer.Option(
+        default_factory=list,
+        help="Limit analysis to one or more market IDs.",
+    ),
+) -> None:
+    settings = _settings()
+    storage = DuckDBStorage(db_path or settings.duckdb_path)
+    try:
+        analyzer = ArbitrageAnalyzer(storage)
+        opportunities = analyzer.find_opportunities(
+            min_edge=min_edge,
+            market_ids=market_id or None,
+        )
+        typer.echo(json.dumps([item.model_dump(mode="json") for item in opportunities], indent=2))
     finally:
         storage.close()
