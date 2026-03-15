@@ -17,6 +17,7 @@ from .app_types import (
     AppProfile,
     AssistantMessage,
     AssistantSession,
+    BotSlot,
     CapabilityState,
     CanonicalContract,
     ConnectorLoadout,
@@ -30,14 +31,21 @@ from .app_types import (
     OpportunityCandidate,
     OpportunityEvidence,
     OpportunityExplanation,
+    PaperBotDecision,
+    PaperBotEvent,
+    PaperBotSession,
     PaperExecutionSummary,
     PaperPosition,
     PaperRunResult,
+    PortfolioCurvePoint,
+    PortfolioSnapshot,
     PortfolioSummary,
     RiskPolicy,
     ScoreLedgerEntry,
+    SessionGrade,
     ScoreSnapshot,
     StrategyModule,
+    UnlockState,
     VenueConnection,
     VenueMarketQuote,
     default_risk_policies,
@@ -311,7 +319,10 @@ class CapabilityService:
         checklist: LiveUnlockChecklist,
     ) -> list[CapabilityState]:
         recorder_ready = any(item.venue_id == "polymarket" and item.enabled for item in connections)
-        scanner_ready = engine_status.summary is not None and engine_status.summary.book_snapshots > 0
+        market_db_exists = (profile.data_dir / "market_data.duckdb").exists()
+        scanner_ready = market_db_exists or (
+            engine_status.summary is not None and engine_status.summary.book_snapshots > 0
+        )
         paper_ready = score_snapshot.total_runs > 0 or scanner_ready
         return [
             CapabilityState(
@@ -669,6 +680,83 @@ class PaperRunStore:
             connection.close()
         return run
 
+    def list_sessions(self, profile: AppProfile, *, limit: int | None = None) -> list[PaperBotSession]:
+        connection = self._connect(profile)
+        try:
+            query = """
+                SELECT
+                  session_id,
+                  profile_id,
+                  started_at,
+                  ended_at,
+                  state,
+                  bot_slots_json,
+                  decisions_json,
+                  events_json,
+                  run_ids_json,
+                  realized_pnl_cents,
+                  score_delta,
+                  curve_json,
+                  grade_json
+                FROM bot_sessions
+                WHERE profile_id = ?
+                ORDER BY started_at
+            """
+            params: list[object] = [profile.id]
+            if limit is not None:
+                query += " LIMIT ?"
+                params.append(limit)
+            rows = connection.execute(query, params).fetchall()
+        finally:
+            connection.close()
+        sessions: list[PaperBotSession] = []
+        for row in rows:
+            sessions.append(
+                PaperBotSession(
+                    session_id=row[0],
+                    profile_id=row[1],
+                    started_at=row[2],
+                    ended_at=row[3],
+                    state=row[4],
+                    bot_slots=[BotSlot.model_validate(item) for item in json.loads(row[5])],
+                    decisions=[PaperBotDecision.model_validate(item) for item in json.loads(row[6])],
+                    events=[PaperBotEvent.model_validate(item) for item in json.loads(row[7])],
+                    run_ids=list(json.loads(row[8])),
+                    realized_pnl_cents=int(row[9]),
+                    score_delta=int(row[10]),
+                    curve_points=[PortfolioCurvePoint.model_validate(item) for item in json.loads(row[11])],
+                    grade=SessionGrade.model_validate(json.loads(row[12])),
+                )
+            )
+        return sessions
+
+    def append_session(self, profile: AppProfile, session: PaperBotSession) -> PaperBotSession:
+        connection = self._connect(profile)
+        try:
+            connection.execute(
+                """
+                INSERT INTO bot_sessions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    session.session_id,
+                    profile.id,
+                    session.started_at,
+                    session.ended_at,
+                    session.state,
+                    json.dumps([item.model_dump(mode="json") for item in session.bot_slots]),
+                    json.dumps([item.model_dump(mode="json") for item in session.decisions]),
+                    json.dumps([item.model_dump(mode="json") for item in session.events]),
+                    json.dumps(session.run_ids),
+                    session.realized_pnl_cents,
+                    session.score_delta,
+                    json.dumps([item.model_dump(mode="json") for item in session.curve_points]),
+                    json.dumps(session.grade.model_dump(mode="json")),
+                ],
+            )
+        finally:
+            connection.close()
+        return session
+
     def recent_ledger(self, profile: AppProfile, *, limit: int = 12) -> list[ScoreLedgerEntry]:
         connection = self._connect(profile)
         try:
@@ -700,15 +788,23 @@ class PaperRunStore:
 
     def summary(self, profile: AppProfile) -> PortfolioSummary:
         runs = self.list_runs(profile)
+        sessions = self.list_sessions(profile)
+        snapshot = self.score_snapshot(profile)
         return PortfolioSummary(
             total_runs=len(runs),
             completed_runs=sum(1 for run in runs if run.status == "completed"),
             total_deployed_cents=sum(run.deployed_capital_cents for run in runs),
             total_realized_pnl_cents=sum(run.realized_pnl_cents for run in runs),
+            sessions_completed=len([session for session in sessions if session.state == "complete"]),
+            portfolio_score=snapshot.portfolio_score,
+            available_bot_slots=snapshot.available_bot_slots,
+            mastery_score=snapshot.mastery_score,
+            last_session_grade=sessions[-1].grade.grade if sessions else "D",
         )
 
     def score_snapshot(self, profile: AppProfile) -> ScoreSnapshot:
         runs = self.list_runs(profile)
+        sessions = self.list_sessions(profile)
         if not runs:
             return ScoreSnapshot(profile_id=profile.id, scoreboard_mode=profile.scoreboard_mode)
         completed = [run for run in runs if run.status == "completed"]
@@ -727,6 +823,19 @@ class PaperRunStore:
                 streak += 1
             else:
                 break
+        portfolio_score = sum(self._score_delta_for_run(run) for run in completed)
+        mastery_score = max(0, min(999, int(round(hit_rate * 4 + average_realized + quality))))
+        available_bot_slots = 1
+        if len(completed) >= 2:
+            available_bot_slots += 1
+        if len(completed) >= 5 and hit_rate >= 50.0:
+            available_bot_slots += 1
+        if available_bot_slots >= 3:
+            next_unlock_label = "All v1 bot slots are unlocked."
+        elif available_bot_slots == 2:
+            next_unlock_label = "Reach 5 completed runs with at least 50% hit rate to unlock slot 3."
+        else:
+            next_unlock_label = "Complete two paper runs to unlock bot slot 2."
         return ScoreSnapshot(
             profile_id=profile.id,
             scoreboard_mode=profile.scoreboard_mode,
@@ -739,6 +848,10 @@ class PaperRunStore:
             average_realized_edge_bps=average_realized,
             current_streak=streak,
             opportunity_quality_score=quality,
+            portfolio_score=portfolio_score,
+            mastery_score=mastery_score,
+            available_bot_slots=available_bot_slots,
+            next_unlock_label=next_unlock_label,
             last_updated_at=runs[-1].executed_at,
         )
 
@@ -775,6 +888,22 @@ class PaperRunStore:
               label TEXT,
               metadata_json TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS bot_sessions (
+              session_id TEXT,
+              profile_id TEXT,
+              started_at TIMESTAMP,
+              ended_at TIMESTAMP,
+              state TEXT,
+              bot_slots_json TEXT,
+              decisions_json TEXT,
+              events_json TEXT,
+              run_ids_json TEXT,
+              realized_pnl_cents BIGINT,
+              score_delta BIGINT,
+              curve_json TEXT,
+              grade_json TEXT
+            );
             """
         )
         return connection
@@ -796,6 +925,16 @@ class PaperRunStore:
                 json.dumps(entry.metadata),
             ],
         )
+
+    @staticmethod
+    def _score_delta_for_run(run: PaperRunResult) -> int:
+        if run.status != "completed":
+            return 0
+        quality_bonus = int(round(run.opportunity_quality_score / 2))
+        edge_bonus = max(run.realized_edge_bps, 0)
+        pnl_bonus = max(run.realized_pnl_cents, 0)
+        discipline_bonus = 12 if run.execution.fill_ratio >= 0.8 else 0
+        return pnl_bonus + quality_bonus + edge_bonus + discipline_bonus
 
 
 class ScoreService:

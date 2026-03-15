@@ -1,10 +1,10 @@
-# First Paper Run
+# First Bot Session
 
 This is the fastest clean path through Superior v1.
 
 ## Goal
 
-Install the app, equip Polymarket, record a local sample, inspect one scanner signal, run one paper route, and see the score update.
+Install the app, equip Polymarket, record a local sample, stage one scanner signal, run one paper bot session, and see the score update.
 
 ## 1. Open the guided setup
 
@@ -43,7 +43,7 @@ You want:
 - book snapshots greater than zero
 - no obvious warnings in the hangar state
 
-## 5. Scan one route
+## 5. Stage one route
 
 Open `Scanner` and refresh the scan.
 
@@ -55,13 +55,13 @@ Read one candidate in plain language:
 
 If no candidate appears, keep the first recording short and healthy rather than forcing a trade idea.
 
-## 6. Run one paper route
+## 6. Start one paper session
 
-Use `Paper selected` or `Paper top route`.
+Use `Start selected session` or `Start session`.
 
 That should create:
 
-- one paper run record
+- one paper session record
 - one score update
 - one ledger entry sequence in `Score`
 
@@ -74,7 +74,7 @@ That should create:
 - expected edge versus realized edge
 - recent ledger entries
 
-If the score board is still empty, verify that the paper run completed instead of only opening the scanner.
+If the score board is still empty, verify that the paper session completed instead of only opening the scanner.
 
 ## 8. Stop there
 

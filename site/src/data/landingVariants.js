@@ -4,7 +4,6 @@ const portableUrl =
   "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-app-portable.zip";
 const checksumsUrl =
   "https://github.com/Zwin-ux/arbitrage/releases/latest/download/SHA256SUMS.txt";
-
 const githubUrl = "https://github.com/Zwin-ux/arbitrage";
 
 const shared = {
@@ -12,117 +11,92 @@ const shared = {
   portableUrl,
   checksumsUrl,
   githubUrl,
-  scannerFrameTitle: "SCAN PREVIEW",
-  scoreCards: [
-    { label: "Mode", value: "PAPER FIRST", accent: "green" },
-    { label: "Live Trading", value: "LOCKED", accent: "gold" },
-    { label: "Venue", value: "POLYMARKET", accent: "cyan" }
+  brandTitle: "Superior",
+  brandSubtitle: "NES score-attack bot cabinet",
+  trustItems: ["Open source", "Paper-first by default", "Local score ledger"],
+  scannerStats: [
+    { label: "Session", value: "Paper", accent: "green" },
+    { label: "Source", value: "Local books", accent: "cyan" },
+    { label: "Unlocks", value: "Live gated", accent: "yellow" },
   ],
   featureCards: [
     {
-      title: "LOCAL RECORDING",
-      body: "Capture market books locally so the scanner works from observed data instead of a remote dashboard."
+      eyebrow: "Build bots",
+      title: "Arm the bot bay",
+      body: "Equip a starter bot loadout, keep the rules explicit, and let the machine stage only the routes that clear the paper gate.",
     },
     {
-      title: "EXPLAINABLE ROUTES",
-      body: "Show route structure, deductions, and net edge in a format people can review before taking action."
+      eyebrow: "Stage routes",
+      title: "Feed it local books",
+      body: "Superior records local Polymarket books first, then turns scanner output into staged routes for the active bot slots.",
     },
     {
-      title: "CONTROLLED UNLOCKS",
-      body: "Keep credentials and live actions behind explicit setup checks instead of exposing them on day one."
-    }
+      eyebrow: "Bank score",
+      title: "Unlock deeper control",
+      body: "Paper score, mastery, and bot-slot unlocks all come from deterministic paper evidence instead of fake credits or hype.",
+    },
   ],
-  steps: [
-    {
-      step: "01",
-      title: "Install Superior",
-      body: "Use the Windows build and start with the guided setup path."
-    },
-    {
-      step: "02",
-      title: "Connect data",
-      body: "Start with public Polymarket data and leave credentials for later if paper mode is enough."
-    },
-    {
-      step: "03",
-      title: "Review a route",
-      body: "Record local books, inspect the route, and understand the deductions before anything moves."
-    },
-    {
-      step: "04",
-      title: "Paper it first",
-      body: "Keep live mode locked until the required checks, acknowledgements, and paper activity are complete."
-    }
+  previewHeading: "A score-attack machine, not a finance dashboard.",
+  previewBody:
+    "Superior turns real local market books into a playable paper loop: arm bots, stage routes, start a session, and watch portfolio score move inside one cabinet-like desktop shell.",
+  previewBullets: [
+    "Build and arm a starter bot loadout",
+    "Stage explainable routes from local recorder output",
+    "Bank paper score before any live path unlocks",
   ],
-  loadout: [
-    { label: "CONNECTOR", state: "POLYMARKET", accent: "cyan" },
-    { label: "STORAGE", state: "LOCAL", accent: "green" },
-    { label: "PAPER MODE", state: "READY", accent: "purple" },
-    { label: "LIVE MODE", state: "LOCKED", accent: "magenta" }
-  ]
+  previewCtaLabel: "See how it works",
+  previewCtaHref: "/docs",
+  footerLinks: [
+    { href: githubUrl, label: "GitHub" },
+    { href: "/docs", label: "Documentation" },
+    { href: "/roadmap", label: "Roadmap" },
+    { href: "/download", label: "Windows build" },
+  ],
 };
 
 export const landingVariants = {
   control: {
     key: "control",
     navLabel: "Control",
-    pageTitle: "Superior | Paper-First Market Scanner",
+    pageTitle: "Superior | NES Score-Attack Bot Cabinet",
     pageDescription:
-      "Superior is an open-source Windows app for recording prediction-market data, reviewing explainable arbitrage routes, and paper-testing them before anything live is unlocked.",
-    eyebrow: "Windows prediction-market scanner",
-    titleLines: ["Learn the market.", "Scan edge.", "Paper it first."],
+      "Superior is an open-source Windows desktop app for building paper-first bot loadouts, staging explainable routes from local books, and chasing portfolio score before live execution exists.",
+    eyebrow: "Windows prediction-market score cabinet",
+    titleLines: ["Build bots.", "Stage routes.", "Bank score first."],
     subhead:
-      "Superior is a Windows app for recording Polymarket data, surfacing explainable arbitrage candidates, and paper-testing them before anything live is unlocked.",
-    heroMarqueeLeft: "OPEN SOURCE WINDOWS BUILD",
-    heroMarqueeRight: "PAPER-FIRST BY DEFAULT",
-    scannerStats: [
-      { label: "Mode", value: "PAPER", accent: "green" },
-      { label: "Data", value: "LOCAL BOOKS", accent: "cyan" },
-      { label: "Live", value: "LOCKED", accent: "gold" }
+      "Local-first desktop machine for testing arbitrage bots on prediction markets. Record the books, arm the bot bay, run a paper session, and unlock deeper control deliberately.",
+    secondaryCtas: [
+      { label: "View cabinet", href: "#scanner" },
+      { label: "GitHub", href: githubUrl, external: true },
     ],
-    scannerCopy:
-      "The scanner records local books, prices the route, and shows fees, deductions, and assumptions before a candidate reaches paper mode.",
-    signalFeed: [
-      "Local book snapshots retained for review",
-      "Route costs shown before paper entry",
-      "Live controls hidden until setup checks pass"
+    previewStatus: [
+      { label: "Hangar", value: "Session ready", tone: "cyan" },
+      { label: "Bot Bay", value: "Armed", tone: "magenta" },
+      { label: "Score", value: "Paper only", tone: "green" },
     ],
-    downloadLead:
-      "Download the Windows build, run guided setup, and keep the first session in paper mode.",
-    downloadNote:
-      "Installer, portable build, source, and checksums live on GitHub Releases.",
-    ...shared
+    ...shared,
   },
   focus: {
     key: "focus",
     navLabel: "Focus",
-    pageTitle: "Superior | Controlled Market Scanner",
+    pageTitle: "Superior | Paper-First Bot Testing Machine",
     pageDescription:
-      "Superior is a paper-first prediction-market scanner with guided setup, local recording, and a controlled path to reviewing opportunities before live mode is available.",
-    eyebrow: "Controlled market workflow",
-    titleLines: ["Record books.", "Read the edge.", "Keep live locked."],
+      "Superior is a paper-first desktop machine for advanced testers who want to build bots, chase local score, and keep live execution locked behind real paper evidence.",
+    eyebrow: "Controlled bot testing workflow",
+    titleLines: ["Read the machine.", "Chase score.", "Keep live gated."],
     subhead:
-      "Built for people who want a calmer workflow: record local data, inspect one candidate at a time, and keep live mode behind the checklist.",
-    heroMarqueeLeft: "GUIDED SETUP INCLUDED",
-    heroMarqueeRight: "LIVE MODE STAYS LOCKED",
-    scannerStats: [
-      { label: "Mode", value: "PAPER", accent: "green" },
-      { label: "Review", value: "ONE AT A TIME", accent: "cyan" },
-      { label: "Live", value: "LOCKED", accent: "gold" }
+      "Built for a tighter loop. Superior records locally, stages routes into a bot bay, and treats paper score plus unlock progression as the main game layer.",
+    secondaryCtas: [
+      { label: "View cabinet", href: "#scanner" },
+      { label: "GitHub", href: githubUrl, external: true },
     ],
-    scannerCopy:
-      "This variant emphasizes clarity. The scanner shows route structure, deductions, and paper results before any live path is even visible.",
-    signalFeed: [
-      "One candidate reviewed at a time",
-      "Paper results visible before live mode",
-      "Advanced modules hidden until enabled"
+    previewStatus: [
+      { label: "Hangar", value: "Mission control", tone: "cyan" },
+      { label: "Bot Bay", value: "Score attack", tone: "magenta" },
+      { label: "Score", value: "Honest history", tone: "green" },
     ],
-    downloadLead:
-      "Install the Windows build, complete the guided setup, and let paper results be the first thing that moves.",
-    downloadNote:
-      "Source, releases, and trust files stay public on GitHub.",
-    ...shared
-  }
+    ...shared,
+  },
 };
 
 export const landingVariantOrder = ["control", "focus"];

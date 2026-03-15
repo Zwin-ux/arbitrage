@@ -21,10 +21,11 @@ from PySide6.QtWidgets import (
     QWizardPage,
 )
 
-from .app_types import default_risk_policies
+from .app_types import SetupCompletionRoute, SetupStepState, default_risk_policies
 from .credentials import CredentialProvider, CredentialVault
 from .profiles import ProfileStore
 from .startup import StartupManager
+from .ui.setup import SetupCompletionState, SetupStepper
 
 
 GOAL_GUIDANCE = {
@@ -405,12 +406,33 @@ class CoachPage(QWizardPage):
 class FinishPage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
-        self.setTitle("Finish")
-        self.setSubTitle("Review the setup summary. The app will open on Hangar when you finish.")
+        self.setTitle("Review")
+        self.setSubTitle("Confirm the setup summary before Superior opens Hangar.")
         layout = QVBoxLayout(self)
         self.summary_label = QLabel()
         self.summary_label.setWordWrap(True)
         self.summary_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        layout.addWidget(self.summary_label)
+        layout.addStretch(1)
+
+
+class CompletionPage(QWizardPage):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setTitle("Completion handoff")
+        self.setSubTitle("Finish setup and launch into Hangar with the recorder-first mission highlighted.")
+        layout = QVBoxLayout(self)
+        intro = QLabel(
+            "Superior will open your Hangar mission control with the first paper-safe action framed clearly."
+        )
+        intro.setWordWrap(True)
+        intro.setObjectName("heroText")
+        layout.addWidget(intro)
+        self.completion_state = SetupCompletionState()
+        layout.addWidget(self.completion_state)
+        self.summary_label = QLabel()
+        self.summary_label.setWordWrap(True)
+        self.summary_label.setProperty("muted", True)
         layout.addWidget(self.summary_label)
         layout.addStretch(1)
 
@@ -427,8 +449,13 @@ class SetupWizard(QWizard):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Superior setup")
-        self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
+        self.setWizardStyle(QWizard.WizardStyle.ModernStyle)
         self.resize(920, 680)
+        self.setOption(QWizard.WizardOption.HaveHelpButton, False)
+        self.setButtonText(QWizard.WizardButton.NextButton, "Next")
+        self.setButtonText(QWizard.WizardButton.BackButton, "Back")
+        self.setButtonText(QWizard.WizardButton.CancelButton, "Cancel")
+        self.setButtonText(QWizard.WizardButton.FinishButton, "Launch Hangar")
 
         self._profile_store = profile_store
         self._credential_vault = credential_vault
@@ -447,18 +474,29 @@ class SetupWizard(QWizard):
         self.risk_page = RiskPage(preset_labels)
         self.coach_page = CoachPage(coach_provider)
         self.finish_page = FinishPage()
+        self.completion_page = CompletionPage()
 
-        for page in (
-            self.welcome_page,
-            self.intent_page,
-            self.profile_page,
-            self.venue_page,
-            self.credentials_page,
-            self.risk_page,
-            self.coach_page,
-            self.finish_page,
-        ):
-            self.addPage(page)
+        self._stepper = SetupStepper(
+            [
+                "Welcome",
+                "Goal selection",
+                "Starter posture",
+                "Connector defaults",
+                "Review",
+                "Completion",
+            ]
+        )
+        self.setSideWidget(self._stepper)
+
+        self._welcome_id = self.addPage(self.welcome_page)
+        self._intent_id = self.addPage(self.intent_page)
+        self._profile_id = self.addPage(self.profile_page)
+        self._venue_id = self.addPage(self.venue_page)
+        self._credentials_id = self.addPage(self.credentials_page)
+        self._risk_id = self.addPage(self.risk_page)
+        self._coach_id = self.addPage(self.coach_page)
+        self._finish_id = self.addPage(self.finish_page)
+        self._completion_id = self.addPage(self.completion_page)
 
         self.currentIdChanged.connect(self._refresh_dynamic_content)
         self.intent_page.goal_combo.currentIndexChanged.connect(self._refresh_dynamic_content)
@@ -495,6 +533,9 @@ class SetupWizard(QWizard):
         self.intent_page.plan_label.setText(self._intent_plan_text())
         self.risk_page.recommendation_label.setText(self._risk_guidance_text())
         self.finish_page.summary_label.setText(self._summary_text())
+        self.completion_page.summary_label.setText(self._completion_summary_text())
+        self.completion_page.completion_state.set_route(self._completion_route())
+        self._stepper.set_steps(self._step_states())
 
     def accept(self) -> None:
         import_path = self.profile_page.import_path_edit.text().strip()
@@ -658,3 +699,79 @@ class SetupWizard(QWizard):
             "- Run one paper route and use Score as the main progression surface.\n"
             "- Keep live-gate work optional until you intentionally want it."
         )
+
+    def _completion_summary_text(self) -> str:
+        if self.profile_page.import_path_edit.text().strip():
+            return (
+                "Imported profiles still land in Hangar with the same safe default: boot recorder first, "
+                "then inspect one scanner route before worrying about anything live."
+            )
+        selected_venues = ", ".join(self.venue_page.selected_venues()) or "Polymarket"
+        risk_policy = self.risk_page.risk_policy_combo.currentText()
+        return (
+            f"Loadout ready: {selected_venues}. "
+            f"Risk posture: {risk_policy}. "
+            "The Hangar opens with the recorder-first checklist visible so the first paper-safe loop is obvious."
+        )
+
+    def _completion_route(self) -> SetupCompletionRoute:
+        if self.profile_page.import_path_edit.text().strip():
+            return SetupCompletionRoute(
+                title="Imported profile routes to Hangar",
+                detail=(
+                    "Superior will open Hangar, preserve the imported loadout, and keep Boot recorder framed "
+                    "as the next useful action."
+                ),
+            )
+        if self.venue_page.kalshi_checkbox.isChecked():
+            return SetupCompletionRoute(
+                title="Hangar opens with recorder-first guidance",
+                detail=(
+                    "Polymarket stays the first pass. Kalshi remains equipped, but Hangar still highlights Boot "
+                    "recorder before any cross-venue work."
+                ),
+            )
+        return SetupCompletionRoute(
+            title="Hangar highlights Boot recorder",
+            detail=(
+                "Superior will open Hangar mission control, show the first-pass checklist, and keep Boot recorder "
+                "visibly dominant until the first local sample lands."
+            ),
+        )
+
+    def _step_states(self) -> list[SetupStepState]:
+        current_step = self._current_step_index()
+        labels = [
+            "Welcome",
+            "Goal selection",
+            "Starter posture",
+            "Connector defaults",
+            "Review",
+            "Completion",
+        ]
+        states: list[SetupStepState] = []
+        for index, label in enumerate(labels):
+            states.append(
+                SetupStepState(
+                    id=f"step-{index}",
+                    label=label,
+                    index=index,
+                    active=index == current_step,
+                    complete=index < current_step,
+                )
+            )
+        return states
+
+    def _current_step_index(self) -> int:
+        current_page_id = self.currentId()
+        if current_page_id == self._welcome_id:
+            return 0
+        if current_page_id == self._intent_id:
+            return 1
+        if current_page_id in {self._profile_id, self._risk_id}:
+            return 2
+        if current_page_id in {self._venue_id, self._credentials_id, self._coach_id}:
+            return 3
+        if current_page_id == self._finish_id:
+            return 4
+        return 5

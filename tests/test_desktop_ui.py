@@ -4,9 +4,11 @@ import time
 from typing import Any, cast
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QLineEdit
+from PySide6.QtWidgets import QApplication, QLabel, QLineEdit
 
 from market_data_recorder.config import RecorderSettings
+from market_data_recorder.models import BestBidAskEvent, DiscoveredMarket, PolymarketEvent, PolymarketMarket
+from market_data_recorder.storage import DuckDBStorage
 from market_data_recorder_desktop.bot_services import (
     AssistantService,
     CapabilityService,
@@ -196,12 +198,19 @@ def test_main_window_runs_default_preset(
 
     selector_index = window.profile_selector.findData(profile.id)
     window.profile_selector.setCurrentIndex(selector_index)
-    qtbot.mouseClick(window.home_tab.start_button, Qt.MouseButton.LeftButton)
-    qtbot.waitUntil(lambda: controller.status(profile).state == "running", timeout=1500)
-    controller.stop()
+    window._start_default_preset()  # noqa: SLF001
+    qtbot.waitUntil(
+        lambda: controller.status(profile).state in {"running", "completed"},
+        timeout=1500,
+    )
+    if controller.status(profile).state == "running":
+        controller.stop()
     qtbot.waitUntil(lambda: controller.status(profile).state == "completed", timeout=3000)
     window._refresh_status_only()  # noqa: SLF001
     assert "Completed" in window.home_tab.engine_label.text()
+    assert window.home_tab.secondary_actions_widget.isVisible() is True
+    assert window.home_tab.replay_button.isEnabled() is True
+    assert window.home_tab.scan_button.isEnabled() is True
     controller.shutdown()
 
 
@@ -222,10 +231,90 @@ def test_main_window_empty_state_surfaces_guided_setup(
     qtbot.addWidget(window)
     window.show()
 
-    assert "guided loadout" in window.home_tab.setup_progress_label.text().lower()
+    assert window.home_tab.setup_progress_label.text() == "Setup checklist"
+    assert "[>] Create first profile." in window.home_tab.setup_steps_label.text()
     assert window.home_tab.open_setup_button.text() == "Create first profile"
     assert window.home_tab.start_button.isEnabled() is False
+    assert window.home_tab.secondary_actions_widget.isVisible() is False
     assert window.home_tab.view_docs_button.isEnabled() is True
+    label_text = " ".join(label.text() for label in window.findChildren(QLabel))
+    assert "CONTROL  Hangar | Loadout" not in label_text
+    assert "OPERATIONS  Scanner | Paper" not in label_text
+    controller.shutdown()
+
+
+def test_main_window_switches_primary_action_to_start_session(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Session Ready",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    db_path = profile.data_dir / "market_data.duckdb"
+    storage = DuckDBStorage(db_path)
+    try:
+        market = PolymarketMarket.model_validate(
+            {
+                "id": "market-session",
+                "conditionId": "condition-session",
+                "question": "Will the session start?",
+                "slug": "will-the-session-start",
+                "active": True,
+                "enableOrderBook": True,
+                "outcomes": '["Yes", "No"]',
+                "clobTokenIds": '["yes-session", "no-session"]',
+            }
+        )
+        event = PolymarketEvent.model_validate({"id": "event-session", "title": "Session", "active": True})
+        storage.store_discovery_snapshot([DiscoveredMarket(event=event, market=market)])
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="yes-session",
+                market="market-session",
+                best_bid="0.45",
+                best_ask="0.47",
+                spread="0.02",
+                timestamp="1",
+            )
+        )
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="no-session",
+                market="market-session",
+                best_bid="0.46",
+                best_ask="0.48",
+                spread="0.02",
+                timestamp="2",
+            )
+        )
+    finally:
+        storage.close()
+
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    selector_index = window.profile_selector.findData(profile.id)
+    window.profile_selector.setCurrentIndex(selector_index)
+    window._refresh_scanner()  # noqa: SLF001
+    window._refresh_status_only()  # noqa: SLF001
+
+    assert window.home_tab.start_button.text() == "Start session"
+    assert "Start a paper session" in window.home_tab.primary_action_hint.text()
     controller.shutdown()
 
 

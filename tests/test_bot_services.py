@@ -25,12 +25,20 @@ from market_data_recorder_desktop.bot_services import (
     ExperimentalLiveService,
     LiveExecutionEngine,
     OpportunityEngine,
+    PaperExecutionEngine,
     PaperRunStore,
     PolymarketVenueAdapter,
     ScoreService,
     UnlockService,
 )
 from market_data_recorder_desktop.credentials import CredentialVault
+from market_data_recorder_desktop.score_attack import (
+    BotConfigService,
+    PaperSimulationEngine,
+    PortfolioEngine,
+    SessionEventStore,
+    UnlockTrackService,
+)
 
 
 def test_opportunity_engine_surfaces_internal_binary_candidate(app_paths: Any, fake_keyring: Any) -> None:
@@ -311,3 +319,115 @@ def test_live_execution_preview_respects_shadow_and_micro_rules(app_paths: Any, 
     micro_status = live_status.model_copy(update={"current_mode": "micro"})
     micro_preview = LiveExecutionEngine().preview(micro_profile, candidate, micro_status)
     assert "Mode: micro" in micro_preview
+
+
+def test_paper_simulation_engine_runs_multi_bot_session(app_paths: Any, fake_keyring: Any) -> None:
+    del fake_keyring
+    profile = AppProfile(
+        id="profile-7",
+        display_name="Score Attack",
+        data_dir=app_paths.data_dir / "profile-7",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary", "cross-venue-complement"],
+    )
+    db_path = profile.data_dir / "market_data.duckdb"
+    storage = DuckDBStorage(db_path)
+    try:
+        market = PolymarketMarket.model_validate(
+            {
+                "id": "market-7",
+                "conditionId": "condition-7",
+                "question": "Will session score climb?",
+                "slug": "session-score-climb",
+                "active": True,
+                "enableOrderBook": True,
+                "outcomes": '["Yes", "No"]',
+                "clobTokenIds": '["yes-7", "no-7"]',
+            }
+        )
+        event = PolymarketEvent.model_validate({"id": "event-7", "title": "Session", "active": True})
+        storage.store_discovery_snapshot([DiscoveredMarket(event=event, market=market)])
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="yes-7",
+                market="market-7",
+                best_bid="0.44",
+                best_ask="0.46",
+                spread="0.02",
+                timestamp="1",
+            )
+        )
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="no-7",
+                market="market-7",
+                best_bid="0.45",
+                best_ask="0.47",
+                spread="0.02",
+                timestamp="2",
+            )
+        )
+    finally:
+        storage.close()
+
+    paper_store = PaperRunStore()
+    opportunity_engine = OpportunityEngine([PolymarketVenueAdapter()], ContractMatcher())
+    candidates = opportunity_engine.scan(profile)
+    score_snapshot = ScoreService(paper_store).snapshot(profile)
+    simulation_engine = PaperSimulationEngine(
+        paper_store=paper_store,
+        paper_execution_engine=PaperExecutionEngine(paper_store),
+        bot_config_service=BotConfigService(),
+        session_store=SessionEventStore(paper_store),
+    )
+    session = simulation_engine.run_session(profile, candidates, score_snapshot=score_snapshot)
+    sessions = paper_store.list_sessions(profile)
+
+    assert session.state == "complete"
+    assert session.score_delta > 0
+    assert len(session.bot_slots) >= 1
+    assert any(slot.state == "banked" for slot in session.bot_slots)
+    assert sessions[-1].session_id == session.session_id
+
+
+def test_portfolio_engine_surfaces_unlock_track(app_paths: Any, fake_keyring: Any) -> None:
+    del fake_keyring
+    profile = AppProfile(
+        id="profile-8",
+        display_name="Portfolio",
+        data_dir=app_paths.data_dir / "profile-8",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+    )
+    paper_store = PaperRunStore()
+    now = datetime.now(timezone.utc)
+    for index in range(3):
+        paper_store.append_run(
+            profile,
+            PaperRunResult(
+                run_id=f"run-score-{index}",
+                profile_id=profile.id,
+                executed_at=now,
+                strategy_ids=["internal-binary"],
+                candidate_ids=[f"cand-{index}"],
+                status="completed",
+                deployed_capital_cents=2_000,
+                expected_edge_bps=100,
+                realized_pnl_cents=20 + index,
+                realized_edge_bps=80,
+                opportunity_quality_score=70,
+                notes="portfolio test",
+            ),
+        )
+    portfolio_snapshot = PortfolioEngine(
+        paper_store,
+        BotConfigService(),
+        UnlockTrackService(),
+    ).snapshot(profile)
+
+    assert portfolio_snapshot.portfolio_score > 0
+    assert portfolio_snapshot.available_bot_slots >= 2
+    assert any(unlock.id == "slot-2" and unlock.unlocked for unlock in portfolio_snapshot.unlocks)

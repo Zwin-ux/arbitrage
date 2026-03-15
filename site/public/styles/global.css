@@ -1,16 +1,28 @@
 :root {
-  --space: #0a0f2e;
-  --space-deep: #06081a;
-  --panel: #111a4a;
-  --panel-alt: #141f59;
-  --panel-dark: #0b1338;
-  --cyan: #00e5ff;
-  --magenta: #ff00d4;
+  --bg-main: #08132a;
+  --bg-panel: #0e2248;
+  --bg-panel-2: #102958;
+  --bg-inset: #050b18;
+  --accent-cyan: #00eaff;
+  --accent-magenta: #ff3ed2;
+  --accent-yellow: #ffd84a;
+  --accent-red: #ff5c7a;
+  --accent-green: #5cffb2;
+  --text-primary: #e6f1ff;
+  --text-secondary: #9fb3d1;
+  --text-muted: #6f86a8;
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+  --space: var(--bg-main);
+  --space-deep: var(--bg-inset);
+  --panel: var(--bg-panel);
+  --panel-alt: var(--bg-panel-2);
+  --panel-dark: var(--bg-inset);
+  --cyan: var(--accent-cyan);
+  --magenta: var(--accent-magenta);
   --purple: #8a5cff;
-  --white: #ffffff;
-  --gold: #ffd700;
-  --green: #00ff8c;
-  --shadow: 8px 8px 0 rgba(0, 0, 0, 0.45);
+  --white: var(--text-primary);
+  --gold: var(--accent-yellow);
+  --green: var(--accent-green);
 }
 
 * {
@@ -24,10 +36,12 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "VT323", monospace;
-  color: var(--white);
-  background: var(--space);
-  letter-spacing: 0.01em;
+  font-family: "IBM Plex Sans", "Inter", "Segoe UI", sans-serif;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 14% 18%, rgba(0, 234, 255, 0.12), transparent 28%),
+    radial-gradient(circle at 82% 15%, rgba(255, 62, 210, 0.1), transparent 24%),
+    linear-gradient(180deg, #071224 0%, var(--bg-main) 46%, #050a15 100%);
 }
 
 body::before {
@@ -92,7 +106,7 @@ a {
 
 code,
 pre {
-  font-family: "VT323", monospace;
+  font-family: "IBM Plex Mono", "Cascadia Mono", monospace;
 }
 
 .site-shell {
@@ -117,11 +131,9 @@ pre {
   z-index: 10;
   margin-bottom: 32px;
   padding: 16px;
-  background: var(--panel);
-  border: 2px solid var(--cyan);
-  box-shadow:
-    0 0 0 2px var(--purple),
-    var(--shadow);
+  background: linear-gradient(180deg, rgba(15, 31, 63, 0.94), rgba(9, 20, 44, 0.94));
+  border: 1px solid rgba(0, 234, 255, 0.34);
+  box-shadow: var(--shadow);
 }
 
 .brand {
@@ -134,24 +146,23 @@ pre {
 h1,
 h2,
 h3 {
-  font-family: "Press Start 2P", cursive;
-  font-weight: 400;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .brand strong {
   display: block;
-  font-size: 8px;
-  line-height: 16px;
-  color: var(--white);
+  font-family: "Press Start 2P", cursive;
+  font-size: 9px;
+  line-height: 1.8;
+  letter-spacing: 0.22em;
+  color: var(--text-primary);
 }
 
 .brand small {
   display: block;
-  font-family: "VT323", monospace;
-  font-size: 24px;
-  line-height: 24px;
-  color: var(--cyan);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-secondary);
 }
 
 .brand-mark {
@@ -159,11 +170,9 @@ h3 {
   place-items: center;
   width: 48px;
   height: 48px;
-  border: 2px solid var(--white);
-  background: var(--panel-dark);
-  box-shadow:
-    0 0 0 2px var(--green),
-    4px 4px 0 rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, rgba(8, 19, 42, 0.94), rgba(5, 11, 24, 0.94));
+  box-shadow: inset 0 0 0 1px rgba(0, 234, 255, 0.12);
   overflow: hidden;
 }
 
@@ -188,12 +197,13 @@ h3 {
   align-items: center;
   min-height: 32px;
   padding: 8px 16px;
-  border: 2px solid var(--white);
-  background: var(--panel-dark);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(7, 16, 35, 0.86);
   font-family: "Press Start 2P", cursive;
   font-size: 8px;
-  line-height: 16px;
+  line-height: 1.7;
   text-transform: uppercase;
+  letter-spacing: 0.2em;
 }
 
 .site-nav .nav-cta,
@@ -205,55 +215,55 @@ h3 {
   justify-content: center;
   min-height: 48px;
   padding: 16px 24px;
-  border: 2px solid var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   font-family: "Press Start 2P", cursive;
   font-size: 8px;
-  line-height: 16px;
+  line-height: 1;
   text-transform: uppercase;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
-  transition: transform 120ms steps(2, end), background-color 120ms steps(2, end), color 120ms steps(2, end), border-color 120ms steps(2, end);
+  letter-spacing: 0.18em;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.18);
+  transition: transform 140ms ease, background-color 140ms ease, color 140ms ease, border-color 140ms ease;
 }
 
 .nav-cta,
 .button.primary,
 .button-primary {
-  background: var(--cyan);
-  color: var(--space-deep);
+  background: linear-gradient(135deg, rgba(0, 234, 255, 0.94), rgba(103, 168, 255, 0.9));
+  color: var(--bg-inset);
 }
 
 .site-nav .nav-cta {
-  background: var(--cyan);
-  color: var(--space-deep);
-  border-color: var(--white);
+  background: linear-gradient(135deg, rgba(0, 234, 255, 0.94), rgba(103, 168, 255, 0.9));
+  color: var(--bg-inset);
 }
 
 .button.secondary,
 .button-secondary {
   background: transparent;
-  color: var(--white);
-  border-color: var(--magenta);
+  color: var(--text-primary);
+  border-color: rgba(255, 62, 210, 0.35);
 }
 
 .site-nav a:hover,
 .button:hover,
 .button-primary:hover,
 .button-secondary:hover {
-  transform: translate(2px, 2px);
+  transform: translateY(-1px);
 }
 
 .nav-cta:hover,
 .button.primary:hover,
 .button-primary:hover {
-  background: var(--white);
-  color: var(--space);
-  border-color: var(--cyan);
+  background: #f4fbff;
+  color: var(--bg-main);
+  border-color: rgba(0, 234, 255, 0.42);
 }
 
 .button.secondary:hover,
 .button-secondary:hover {
-  background: var(--magenta);
-  color: var(--white);
-  border-color: var(--white);
+  background: rgba(12, 30, 63, 0.94);
+  color: var(--text-primary);
+  border-color: rgba(255, 62, 210, 0.62);
 }
 
 .page-hero,
@@ -273,11 +283,9 @@ h3 {
 .download-card,
 .doc-card,
 .content-card {
-  background: var(--panel);
-  border: 2px solid var(--cyan);
-  box-shadow:
-    0 0 0 2px var(--purple),
-    var(--shadow);
+  background: linear-gradient(180deg, rgba(15, 31, 63, 0.94), rgba(9, 20, 44, 0.94));
+  border: 1px solid rgba(0, 234, 255, 0.28);
+  box-shadow: var(--shadow);
 }
 
 .page-hero,
@@ -294,29 +302,30 @@ h3 {
 
 .eyebrow {
   margin: 0 0 16px;
-  color: var(--gold);
+  color: var(--accent-yellow);
   font-family: "Press Start 2P", cursive;
   font-size: 8px;
-  line-height: 16px;
+  line-height: 1.8;
   text-transform: uppercase;
+  letter-spacing: 0.24em;
 }
 
 h1 {
   margin: 0;
-  font-size: 32px;
-  line-height: 48px;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  line-height: 1.02;
 }
 
 h2 {
   margin: 0 0 16px;
-  font-size: 24px;
-  line-height: 40px;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.08;
 }
 
 h3 {
   margin: 0 0 16px;
-  font-size: 16px;
-  line-height: 32px;
+  font-size: 1.25rem;
+  line-height: 1.2;
 }
 
 .lead,
@@ -326,10 +335,9 @@ h3 {
 .download-card p,
 .doc-card p,
 .content-card p {
-  color: var(--white);
-  font-family: "VT323", monospace;
-  font-size: 24px;
-  line-height: 32px;
+  color: var(--text-secondary);
+  font-size: 1.02rem;
+  line-height: 1.7;
 }
 
 .hero-actions,
@@ -349,11 +357,9 @@ h3 {
 
 .hero-checklist {
   padding: 24px;
-  background: var(--panel-dark);
-  border: 2px solid var(--green);
-  box-shadow:
-    0 0 0 2px var(--purple),
-    var(--shadow);
+  background: rgba(5, 11, 24, 0.88);
+  border: 1px solid rgba(92, 255, 178, 0.26);
+  box-shadow: var(--shadow);
 }
 
 .check-list,

@@ -6,7 +6,7 @@ Open-source, Windows-first prediction-market desktop app for learning Polymarket
 
 The public brand is `Superior`. The current Python package name and CLI entrypoints remain `market-data-recorder` in v1 to avoid breaking existing packaging and release links.
 
-You can complete the first paper loop without entering any venue credentials: equip Polymarket, record a local sample, inspect one route, paper it, and watch Score update.
+You can complete the first bot session without entering any venue credentials: equip Polymarket, record a local sample, stage a route, start the paper session, and watch Score update.
 
 ## What it includes
 
@@ -79,11 +79,11 @@ market-data-recorder arbitrage --min-edge 0.02
 The Superior shell is built around:
 
 - `Hangar`: safe state, venue connections, recorder controls, and next steps
-- `Loadout`: equip connectors and strategy modules deliberately
+- `Loadout`: equip connectors, bot slots, and strategy modules deliberately
 - `Learn`: local-first coach and beginner guidance
-- `Scanner`: explainable opportunity candidates
-- `Paper Bots`: deterministic paper runs against current candidates
-- `Score`: local paper ledger, score board, and recent run history
+- `Scanner`: explainable staged routes from local books
+- `Paper Bots`: deterministic score-attack sessions against current candidates
+- `Score`: local paper ledger, portfolio score, and unlock progression
 - `Live Gate`: checklist and acknowledgements
 - `Experimental Live`: shadow-first graduation path with tiny Polymarket-first caps
 - `Lab`: explicit experimental surface

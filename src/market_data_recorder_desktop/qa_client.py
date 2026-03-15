@@ -62,6 +62,14 @@ from .credentials import CredentialVault
 from .main import _apply_style
 from .paths import AppPaths
 from .profiles import ProfileStore
+from .score_attack import (
+    BotConfigService,
+    PaperSimulationEngine,
+    PortfolioEngine,
+    ProgressionService,
+    SessionEventStore,
+    UnlockTrackService,
+)
 
 
 QAStatus = Literal["pending", "passed", "failed"]
@@ -139,6 +147,12 @@ class QASandbox:
     paper_store: PaperRunStore
     score_service: ScoreService
     paper_execution_engine: PaperExecutionEngine
+    bot_config_service: BotConfigService
+    session_store: SessionEventStore
+    paper_simulation_engine: PaperSimulationEngine
+    portfolio_engine: PortfolioEngine
+    progression_service: ProgressionService
+    unlock_track_service: UnlockTrackService
     unlock_service: UnlockService
     assistant_service: AssistantService
 
@@ -160,6 +174,9 @@ class QASandbox:
         )
         venue_adapters: list[VenueAdapter] = [PolymarketVenueAdapter(), KalshiVenueAdapter()]
         paper_store = PaperRunStore()
+        bot_config_service = BotConfigService()
+        session_store = SessionEventStore(paper_store)
+        unlock_track_service = UnlockTrackService()
         return cls(
             workspace=scenario_workspace,
             scenario_id=scenario_id,
@@ -174,6 +191,17 @@ class QASandbox:
             paper_store=paper_store,
             score_service=ScoreService(paper_store),
             paper_execution_engine=PaperExecutionEngine(paper_store),
+            bot_config_service=bot_config_service,
+            session_store=session_store,
+            paper_simulation_engine=PaperSimulationEngine(
+                paper_store=paper_store,
+                paper_execution_engine=PaperExecutionEngine(paper_store),
+                bot_config_service=bot_config_service,
+                session_store=session_store,
+            ),
+            portfolio_engine=PortfolioEngine(paper_store, bot_config_service, unlock_track_service),
+            progression_service=ProgressionService(),
+            unlock_track_service=unlock_track_service,
             unlock_service=UnlockService(paper_store),
             assistant_service=AssistantService(docs_paths=_qa_docs_paths()),
         )
@@ -482,6 +510,68 @@ def _first_paper_loop_without_credentials(sandbox: QASandbox) -> QAScenarioOutco
     )
 
 
+def _starter_bot_session_banks_score(sandbox: QASandbox) -> QAScenarioOutcome:
+    profile = sandbox.create_profile(display_name="QA Starter Session")
+    sandbox.seed_internal_binary_fixture(profile)
+    candidates = sandbox.opportunity_engine.scan(profile)
+    session = sandbox.paper_simulation_engine.run_session(
+        profile,
+        candidates,
+        score_snapshot=sandbox.score_service.snapshot(profile),
+    )
+    portfolio = sandbox.portfolio_engine.snapshot(profile)
+    if session.state != "complete":
+        raise AssertionError("Expected the starter session to complete.")
+    if session.score_delta <= 0:
+        raise AssertionError("Expected the starter session to bank positive score.")
+    artifact = sandbox.write_json_artifact(
+        "starter-session.json",
+        {
+            "session": session.model_dump(mode="json"),
+            "portfolio": portfolio.model_dump(mode="json"),
+        },
+    )
+    return QAScenarioOutcome(
+        summary="A starter bot session stages a route, banks paper score, and updates the portfolio snapshot without any live credentials.",
+        evidence=[
+            f"Session grade: {session.grade.grade}",
+            f"Session score delta: {session.score_delta}",
+            f"Portfolio score: {portfolio.portfolio_score}",
+            f"Available bot slots: {portfolio.available_bot_slots}",
+        ],
+        artifacts=[artifact, profile.data_dir / "superior_state.duckdb"],
+    )
+
+
+def _unlock_track_progression(sandbox: QASandbox) -> QAScenarioOutcome:
+    profile = sandbox.create_profile(display_name="QA Unlock Track")
+    sandbox.seed_internal_binary_fixture(profile)
+    candidates = sandbox.opportunity_engine.scan(profile)
+    for _ in range(3):
+        sandbox.paper_simulation_engine.run_session(
+            profile,
+            candidates,
+            score_snapshot=sandbox.score_service.snapshot(profile),
+        )
+    portfolio = sandbox.portfolio_engine.snapshot(profile)
+    unlocks = {unlock.id: unlock for unlock in portfolio.unlocks}
+    if not unlocks["slot-2"].unlocked:
+        raise AssertionError("Expected bot slot 2 to unlock after repeated paper sessions.")
+    if not unlocks["analytics"].unlocked:
+        raise AssertionError("Expected deep analytics to unlock after repeated paper sessions.")
+    artifact = sandbox.write_json_artifact("unlock-track.json", portfolio)
+    return QAScenarioOutcome(
+        summary="Repeated paper sessions unlock more bot capacity and deeper score analysis without exposing live execution.",
+        evidence=[
+            f"Portfolio score: {portfolio.portfolio_score}",
+            f"Slot 2 unlocked: {unlocks['slot-2'].unlocked}",
+            f"Analytics unlocked: {unlocks['analytics'].unlocked}",
+            f"Last session grade: {portfolio.last_session_grade}",
+        ],
+        artifacts=[artifact],
+    )
+
+
 def _experimental_live_graduation(sandbox: QASandbox) -> QAScenarioOutcome:
     profile = sandbox.create_profile(
         display_name="QA Experimental Live",
@@ -760,6 +850,28 @@ SCENARIOS: tuple[QAScenarioDefinition, ...] = (
         runner=_first_paper_loop_without_credentials,
     ),
     QAScenarioDefinition(
+        id="starter-bot-session-banks-score",
+        title="Starter Bot Session Banks Score",
+        category="score-attack",
+        acceptance_criteria=(
+            "A starter bot session can run from local Polymarket fixture data with no stored credentials.",
+            "The session must bank paper score through the deterministic simulation engine.",
+            "The portfolio snapshot must reflect the new score and active slot state.",
+        ),
+        runner=_starter_bot_session_banks_score,
+    ),
+    QAScenarioDefinition(
+        id="unlock-track-progression",
+        title="Unlock Track Progression",
+        category="score-attack",
+        acceptance_criteria=(
+            "Repeated paper sessions unlock more bot capacity.",
+            "Analytics-style progression surfaces should unlock from real paper evidence.",
+            "Live execution must remain out of scope even as progression expands.",
+        ),
+        runner=_unlock_track_progression,
+    ),
+    QAScenarioDefinition(
         id="experimental-live-graduation",
         title="Experimental Live Graduation",
         category="experimental-live",
@@ -920,7 +1032,7 @@ class QAClientWindow(QMainWindow):
         header = QLabel("Superior QA Client")
         header.setObjectName("heroTitle")
         subtitle = QLabel(
-            "Deterministic local QA for onboarding, scanner, paper score, live gating, and runtime safety."
+            "Deterministic local QA for onboarding, scanner, bot sessions, score attack, live gating, and runtime safety."
         )
         subtitle.setObjectName("heroText")
         subtitle.setWordWrap(True)

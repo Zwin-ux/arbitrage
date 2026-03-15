@@ -18,6 +18,23 @@ PaperRunStatus = Literal["completed", "skipped"]
 ScoreboardMode = Literal["paper", "live"]
 LiveMode = Literal["locked", "shadow", "micro", "experimental"]
 ConnectorId = Literal["polymarket", "kalshi", "coach"]
+SemanticStateColor = Literal["active", "warning", "locked", "idle", "error", "success"]
+SurfaceTier = Literal["shell", "primary", "secondary", "inset"]
+TypeRamp = Literal["label", "body", "title", "display", "console"]
+BotSlotState = Literal["empty", "armed", "staged", "running", "banked", "blocked", "locked"]
+SessionState = Literal["idle", "running", "banked", "blocked", "complete"]
+BotRoutePreference = Literal["highest_edge", "best_quality", "balanced"]
+BotDecisionType = Literal["skip", "stage", "enter", "bank", "blocked"]
+BotEventType = Literal[
+    "session_start",
+    "bot_armed",
+    "route_staged",
+    "paper_entered",
+    "paper_banked",
+    "blocked",
+    "session_complete",
+]
+SessionGradeValue = Literal["S", "A", "B", "C", "D"]
 ModuleId = Literal[
     "internal-binary",
     "cross-venue-complement",
@@ -247,6 +264,114 @@ class OpportunityCandidate(BaseModel):
     opportunity_quality_score: int = 0
 
 
+class BotBlueprint(BaseModel):
+    id: str
+    label: str
+    description: str
+    strategy_family: ModuleId
+    min_net_edge_bps: int = 20
+    target_stake_cents: int = 1_500
+    max_assignments: int = 1
+    route_preference: BotRoutePreference = "highest_edge"
+    lab_only: bool = False
+
+
+class BotConfig(BaseModel):
+    blueprint_id: str
+    slot_id: str
+    label: str
+    strategy_family: ModuleId
+    min_net_edge_bps: int = 20
+    max_position_cents: int = 1_500
+    max_assignments: int = 1
+    route_preference: BotRoutePreference = "highest_edge"
+    enabled: bool = True
+
+
+class BotSlot(BaseModel):
+    slot_id: str
+    label: str
+    state: BotSlotState = "empty"
+    bot_id: str | None = None
+    bot_label: str = "Empty"
+    detail: str = ""
+    current_candidate_id: str | None = None
+    realized_pnl_cents: int = 0
+    score_delta: int = 0
+
+
+class PaperBotDecision(BaseModel):
+    bot_id: str
+    slot_id: str
+    decision: BotDecisionType
+    reason: str
+    candidate_id: str | None = None
+    expected_edge_bps: int = 0
+    realized_pnl_cents: int = 0
+    score_delta: int = 0
+
+
+class PaperBotEvent(BaseModel):
+    event_id: str
+    session_id: str
+    occurred_at: datetime
+    slot_id: str
+    bot_id: str
+    event_type: BotEventType
+    title: str
+    detail: str
+    tone: SemanticStateColor = "idle"
+    amount_cents: int = 0
+    metadata: dict[str, str] = Field(default_factory=dict)
+
+
+class PortfolioCurvePoint(BaseModel):
+    recorded_at: datetime
+    label: str
+    run_id: str | None = None
+    cumulative_pnl_cents: int = 0
+    cumulative_score: int = 0
+
+
+class SessionGrade(BaseModel):
+    grade: SessionGradeValue = "C"
+    score_delta: int = 0
+    combo_count: int = 0
+    consistency_bonus: int = 0
+    note: str = ""
+
+
+class UnlockRequirement(BaseModel):
+    id: str
+    label: str
+    target: str
+    met: bool = False
+
+
+class UnlockState(BaseModel):
+    id: str
+    label: str
+    unlocked: bool = False
+    detail: str = ""
+    requirements: list[UnlockRequirement] = Field(default_factory=list)
+
+
+class PaperBotSession(BaseModel):
+    session_id: str
+    profile_id: str
+    started_at: datetime
+    ended_at: datetime | None = None
+    state: SessionState = "idle"
+    bot_slots: list[BotSlot] = Field(default_factory=list)
+    decisions: list[PaperBotDecision] = Field(default_factory=list)
+    events: list[PaperBotEvent] = Field(default_factory=list)
+    run_ids: list[str] = Field(default_factory=list)
+    realized_pnl_cents: int = 0
+    score_delta: int = 0
+    curve_points: list[PortfolioCurvePoint] = Field(default_factory=list)
+    grade: SessionGrade = Field(default_factory=SessionGrade)
+
+
 class PaperPosition(BaseModel):
     market_slug: str
     strategy_id: str
@@ -349,6 +474,10 @@ class ScoreSnapshot(BaseModel):
     average_realized_edge_bps: int = 0
     current_streak: int = 0
     opportunity_quality_score: int = 0
+    portfolio_score: int = 0
+    mastery_score: int = 0
+    available_bot_slots: int = 1
+    next_unlock_label: str = "Complete two paper runs to unlock a second bot slot."
     last_updated_at: datetime | None = None
 
 
@@ -357,6 +486,106 @@ class PortfolioSummary(BaseModel):
     completed_runs: int = 0
     total_deployed_cents: int = 0
     total_realized_pnl_cents: int = 0
+    sessions_completed: int = 0
+    portfolio_score: int = 0
+    available_bot_slots: int = 1
+    mastery_score: int = 0
+    last_session_grade: str = "D"
+
+
+class PortfolioSnapshot(BaseModel):
+    profile_id: str | None = None
+    total_realized_pnl_cents: int = 0
+    portfolio_score: int = 0
+    mastery_score: int = 0
+    available_bot_slots: int = 1
+    active_bot_slots: int = 0
+    sessions_completed: int = 0
+    current_streak: int = 0
+    last_session_grade: str = "D"
+    curve_points: list[PortfolioCurvePoint] = Field(default_factory=list)
+    unlocks: list[UnlockState] = Field(default_factory=list)
+
+
+class ChecklistItem(BaseModel):
+    id: str
+    label: str
+    detail: str = ""
+    complete: bool = False
+    current: bool = False
+    blocked: bool = False
+
+
+class MachineStatus(BaseModel):
+    id: str
+    label: str
+    value: str
+    detail: str
+    tone: SemanticStateColor = "idle"
+
+
+class TelemetryStat(BaseModel):
+    label: str
+    value: str
+    detail: str = ""
+    tone: SemanticStateColor = "idle"
+
+
+class ConnectorStateView(BaseModel):
+    id: str
+    label: str
+    value: str
+    detail: str = ""
+    tone: SemanticStateColor = "idle"
+
+
+class HangarViewModel(BaseModel):
+    title: str = "Hangar mission control"
+    next_step: str
+    status_tiles: list[TelemetryStat] = Field(default_factory=list)
+    mission: str
+    paper_score: str
+    primary_action_hint: str
+    checklist_title: str = "First pass checklist"
+    checklist: list[ChecklistItem] = Field(default_factory=list)
+    milestone_title: str = "Golden path"
+    milestones: list[ChecklistItem] = Field(default_factory=list)
+    machine_statuses: list[MachineStatus] = Field(default_factory=list)
+    system_log: list[str] = Field(default_factory=list)
+    telemetry_stats: list[TelemetryStat] = Field(default_factory=list)
+    capability_rows: list[ConnectorStateView] = Field(default_factory=list)
+    connector_rows: list[ConnectorStateView] = Field(default_factory=list)
+
+
+class SetupDraft(BaseModel):
+    display_name: str = "My Superior Profile"
+    template: TemplateName = "Guided"
+    goal_id: str = "learn_and_scan"
+    experience_level: ExperienceLevel = "beginner"
+    guided_mode: bool = True
+    lab_enabled: bool = False
+    enabled_venues: list[str] = Field(default_factory=lambda: ["Polymarket"])
+    use_credentials_now: bool = False
+    ai_coach_enabled: bool = False
+    default_preset: str = "continuous-record"
+    risk_policy_id: str = "starter"
+    auto_start: bool = False
+    start_minimized: bool = False
+    market_filters: list[str] = Field(default_factory=list)
+
+
+class SetupStepState(BaseModel):
+    id: str
+    label: str
+    index: int
+    active: bool = False
+    complete: bool = False
+
+
+class SetupCompletionRoute(BaseModel):
+    target: Literal["hangar_recorder_highlight"] = "hangar_recorder_highlight"
+    title: str = "Launch into Hangar"
+    detail: str = "Superior will open in Hangar with Boot recorder highlighted as the first action."
 
 
 def default_run_presets() -> list[RunPreset]:

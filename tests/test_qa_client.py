@@ -51,6 +51,19 @@ def test_qa_suite_supports_experimental_live_graduation(tmp_path: Path) -> None:
     assert "promoted mode: experimental" in text
 
 
+def test_qa_suite_supports_starter_bot_session(tmp_path: Path) -> None:
+    report = run_suite(
+        tmp_path / "qa-starter-session",
+        scenario_ids=["starter-bot-session-banks-score"],
+    )
+
+    assert len(report.scenarios) == 1
+    assert report.scenarios[0].status == "passed"
+    text = "\n".join([report.scenarios[0].summary, *report.scenarios[0].evidence]).lower()
+    assert "portfolio score" in text
+    assert "session grade" in text
+
+
 def test_qa_client_window_renders_report(qtbot: Any, tmp_path: Path) -> None:
     report = run_suite(tmp_path / "qa-window", scenario_ids=["guided-profile-bootstrap"])
     window = QAClientWindow(workspace=tmp_path / "qa-window", scenario_ids=["guided-profile-bootstrap"])

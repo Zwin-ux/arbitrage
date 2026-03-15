@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "market-data-recorder"
-version = "0.3.4"
+version = "0.4.0"
 description = "Open-source Superior desktop app for Polymarket learning, explainable scanning, and paper-first prediction-market bots."
 readme = "README.md"
 requires-python = ">=3.11"
