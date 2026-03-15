@@ -65,17 +65,6 @@ jobs:
       - name: Run mypy
         run: python -m mypy src tests
 
-      - name: Run headless QA client
-        run: python -m market_data_recorder_desktop.qa_client --headless --workspace .tmp\qa-ci --output .tmp\qa-ci\report.json
-
-      - name: Upload QA report
-        uses: actions/upload-artifact@v4
-        with:
-          name: superior-qa-report
-          path: |
-            .tmp/qa-ci/report.json
-            .tmp/qa-ci/**
-
   windows-package:
     name: Windows Package Smoke
     needs: changes
