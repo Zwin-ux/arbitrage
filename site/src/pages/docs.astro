@@ -1,14 +1,22 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const sourceUrl = "https://github.com/Zwin-ux/arbitrage";
+const docsRoot = "https://github.com/Zwin-ux/arbitrage/tree/main/docs";
 ---
 
 <BaseLayout title="Docs | Superior">
   <section class="page-hero compact">
     <p class="eyebrow">Docs</p>
-    <h1>Build, install, and verify Superior from the same public repo.</h1>
+    <h1>Build, verify, and trust Superior from the same public repo.</h1>
     <p class="lead">
-      The site is intentionally light. The real source of truth is still the monorepo, the desktop app, and the trust docs that explain paper-first mode and live gating.
+      The site stays light on purpose. The source of truth is still the monorepo, the desktop app, and the trust docs that explain paper-first mode, scorekeeping, and live gating in plain language.
     </p>
+    <div class="hero-actions">
+      <a class="button primary" href={sourceUrl} target="_blank" rel="noreferrer">Open GitHub</a>
+      <a class="button secondary" href={`${docsRoot}/first-paper-run.md`} target="_blank" rel="noreferrer">First paper run</a>
+      <a class="button secondary" href={`${docsRoot}/release-checklist.md`} target="_blank" rel="noreferrer">Release checklist</a>
+    </div>
   </section>
 
   <section class="docs-grid">
@@ -27,6 +35,7 @@ powershell -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1</code
       <h2>Quality gates</h2>
       <pre><code>pytest -q
 python -m mypy src tests
+market-data-recorder-qa --headless --output .tmp/qa-report.json
 npm --prefix site ci
 npm --prefix site run build</code></pre>
     </article>
@@ -36,17 +45,32 @@ npm --prefix site run build</code></pre>
     <article class="feature-card">
       <p class="eyebrow">Key repo docs</p>
       <h3>Trust surface</h3>
-      <p>Read the risk model, live-trading limitations, privacy/secrets notes, contributor strategy guide, release process, and third-party notices directly in the repo.</p>
+      <p>Read the risk model, live-trading limitations, privacy and secrets notes, release checklist, first paper run guide, contributor strategy guide, release process, and third-party notices directly in the repo.</p>
     </article>
     <article class="feature-card">
       <p class="eyebrow">Product posture</p>
       <h3>Paper first, live gated</h3>
-      <p>Superior is stable software with explicit guardrails, not a guarantee of profits. Users onboard, record local books, scan opportunities, and build paper history before any live-gate path appears.</p>
+      <p>Superior is stable software with explicit guardrails, not a promise of profits. Users onboard, record local books, scan one explainable route at a time, and build paper history before any live-gate path appears.</p>
     </article>
     <article class="feature-card">
       <p class="eyebrow">Railway setup</p>
       <h3>Deploy only the site</h3>
       <p>Connect the GitHub repo to Railway, set the service root to <code>/site</code>, set the config path to <code>/site/railway.toml</code>, use the default Railway domain, and enable "Wait for CI". The app runtime, user data, and secrets stay off Railway.</p>
+    </article>
+    <article class="feature-card">
+      <p class="eyebrow">QA client</p>
+      <h3>Review evidence directly</h3>
+      <p>The public QA client runs deterministic onboarding, scanner, paper-score, and live-gate scenarios and exports a JSON report with scenario artifacts. It is part of the product, not an internal-only script.</p>
+    </article>
+    <article class="feature-card">
+      <p class="eyebrow">Release trust</p>
+      <h3>Hashes and release manifest</h3>
+      <p>Each Windows release should publish installer and portable-zip hashes. Until signing exists, the release manifest and the public repo are the trust story.</p>
+    </article>
+    <article class="feature-card">
+      <p class="eyebrow">Support</p>
+      <h3>Launch issues cleanly</h3>
+      <p>Use the onboarding and bug issue templates in the repo if the installer, first paper run, or connector flow breaks. Those templates are meant to shorten diagnosis, not deflect users.</p>
     </article>
   </section>
 </BaseLayout>

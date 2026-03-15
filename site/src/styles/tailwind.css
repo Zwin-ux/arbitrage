@@ -95,6 +95,10 @@
     font-family: "Press Start 2P", cursive;
   }
 
+  .font-ui {
+    font-family: "Press Start 2P", cursive;
+  }
+
   .font-body {
     font-family: "VT323", monospace;
   }
@@ -218,6 +222,182 @@
     image-rendering: crisp-edges;
   }
 
+  .arcade-shell {
+    background: var(--space);
+  }
+
+  .arcade-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 2.8rem 2.8rem;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 88%);
+  }
+
+  .arcade-strip {
+    border: 2px solid var(--cyan);
+    background: var(--panel);
+    box-shadow:
+      0 0 0 2px var(--purple),
+      8px 8px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-mark {
+    border: 2px solid var(--white);
+    background: var(--panel-dark);
+    box-shadow:
+      0 0 0 2px var(--green),
+      4px 4px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-nav-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.6rem;
+    padding-inline: 1rem;
+    border: 2px solid var(--white);
+    background: var(--panel-dark);
+    color: rgba(255, 255, 255, 0.9);
+    transition:
+      border-color 120ms steps(2, end),
+      color 120ms steps(2, end),
+      background-color 120ms steps(2, end),
+      transform 120ms steps(2, end);
+  }
+
+  .arcade-nav-chip:hover {
+    transform: translate(2px, 2px);
+    border-color: var(--cyan);
+    background: var(--cyan);
+    color: var(--space);
+  }
+
+  .arcade-button,
+  .arcade-button-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3.15rem;
+    padding-inline: 1.35rem;
+    border: 2px solid var(--white);
+    font-family: "Press Start 2P", cursive;
+    font-size: 8px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    transition:
+      transform 120ms steps(2, end),
+      box-shadow 120ms steps(2, end),
+      border-color 120ms steps(2, end),
+      background-color 120ms steps(2, end),
+      color 120ms steps(2, end);
+  }
+
+  .arcade-button {
+    background: var(--cyan);
+    color: var(--space-deep);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-button-secondary {
+    background: transparent;
+    color: white;
+    border-color: var(--magenta);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-button:hover,
+  .arcade-button-secondary:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-button:hover {
+    background: var(--white);
+    color: var(--space);
+    border-color: var(--cyan);
+  }
+
+  .arcade-button-secondary:hover {
+    background: var(--magenta);
+    color: var(--white);
+    border-color: var(--white);
+  }
+
+  .arcade-marquee {
+    border: 2px solid var(--white);
+    background: var(--panel-dark);
+    box-shadow:
+      0 0 0 2px var(--magenta),
+      4px 4px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-cabinet {
+    border: 2px solid var(--cyan);
+    background: var(--panel);
+    box-shadow:
+      0 0 0 2px var(--purple),
+      8px 8px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-logo-stage {
+    background: var(--panel-dark);
+    box-shadow:
+      0 0 0 2px var(--green),
+      4px 4px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-panel {
+    border: 2px solid var(--cyan);
+    background: var(--panel);
+    box-shadow:
+      0 0 0 2px var(--purple),
+      8px 8px 0 rgba(0, 0, 0, 0.45);
+  }
+
+  .arcade-screen {
+    background: var(--panel-dark);
+    box-shadow:
+      inset 0 0 0 2px rgba(0, 0, 0, 0.45),
+      0 0 0 2px rgba(138, 92, 255, 0.7);
+  }
+
+  .pixel-spark {
+    border-radius: 0;
+    box-shadow:
+      calc(var(--spark-size, 0px) * -1) 0 0 currentColor,
+      calc(var(--spark-size, 0px)) 0 0 currentColor,
+      0 calc(var(--spark-size, 0px) * -1) 0 currentColor,
+      0 calc(var(--spark-size, 0px)) 0 currentColor;
+    animation: spark-twinkle 4.8s steps(2, end) infinite;
+  }
+
+  .signal-dot {
+    position: absolute;
+    display: block;
+    width: 8px;
+    height: 8px;
+    box-shadow: 0 0 0 2px currentColor;
+    animation: signal-pulse 2s steps(2, end) infinite;
+  }
+
+  .scanner-sweep::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background:
+      conic-gradient(
+        from 210deg,
+        transparent 0deg,
+        transparent 290deg,
+        rgba(0, 229, 255, 0.35) 330deg,
+        transparent 360deg
+      );
+    animation: radar-sweep 4.6s linear infinite;
+  }
+
   @keyframes star-twinkle {
     0%,
     100% {
@@ -247,6 +427,42 @@
 
     100% {
       top: calc(100% - 8px);
+    }
+  }
+
+  @keyframes spark-twinkle {
+    0%,
+    100% {
+      opacity: 0.92;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.45;
+      transform: scale(0.82);
+    }
+  }
+
+  @keyframes signal-pulse {
+    0%,
+    100% {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1.18);
+    }
+  }
+
+  @keyframes radar-sweep {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
     }
   }
 }

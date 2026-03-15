@@ -3,9 +3,11 @@ import { expect, test } from "@playwright/test";
 test("homepage keeps the primary download path visible", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /equip polymarket\./i })).toBeVisible();
-  await expect(page.getByText(/no exchange account is required to equip polymarket/i)).toBeVisible();
-  const downloadLink = page.getByRole("link", { name: /download for windows/i }).first();
+  await expect(page.getByRole("heading", { name: /learn the market\./i })).toBeVisible();
+  await expect(
+    page.getByText(/recording polymarket data, surfacing explainable arbitrage candidates/i)
+  ).toBeVisible();
+  const downloadLink = page.getByRole("link", { name: /download superior/i }).first();
   await expect(downloadLink).toBeVisible();
   await expect(downloadLink).toHaveAttribute(
     "href",
@@ -32,10 +34,12 @@ test("variant lab exposes both control and focus routes", async ({ page }) => {
 
 test("control and focus variants stay intentionally different", async ({ page }) => {
   await page.goto("/lab/control/");
-  await expect(page.getByRole("heading", { name: /equip polymarket\./i })).toBeVisible();
-  await expect(page.getByText(/clean windows path to learn polymarket/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /learn the market\./i })).toBeVisible();
+  await expect(
+    page.getByText(/recording polymarket data, surfacing explainable arbitrage candidates/i)
+  ).toBeVisible();
 
   await page.goto("/lab/focus/");
-  await expect(page.getByRole("heading", { name: /equip the loadout\./i })).toBeVisible();
-  await expect(page.getByText(/deterministic paper bots/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /record books\./i })).toBeVisible();
+  await expect(page.getByText(/built for people who want a calmer workflow/i)).toBeVisible();
 });

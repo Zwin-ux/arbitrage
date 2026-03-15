@@ -22,7 +22,7 @@ import { landingVariantOrder, landingVariants } from "../../data/landingVariants
       return (
         <article class="content-card">
           <p class="eyebrow">{variant.navLabel}</p>
-          <h2>{variant.headlineLead} <span>{variant.headlineAccent}</span></h2>
+          <h2>{variant.titleLines[0]} <span>{variant.titleLines[1]}</span></h2>
           <p>{variant.subhead}</p>
           <div class="link-row">
             <a class="button-primary" href={`/lab/${variant.key}`}>

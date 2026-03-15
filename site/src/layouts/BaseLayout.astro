@@ -1,7 +1,7 @@
 ---
 const {
   title = "Superior",
-  description = "Open-source desktop app for equipping Polymarket, recording local books, and building a paper score with local-first storage."
+  description = "Open-source desktop app for recording local books, reviewing explainable routes, and paper-testing with local-first storage."
 } = Astro.props;
 
 const nav = [
@@ -20,7 +20,11 @@ const nav = [
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#0A0F2E" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/superior-emblem.png" />
+    <link rel="icon" type="image/png" href="/assets/superior-app-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -33,10 +37,12 @@ const nav = [
     <div class="site-shell">
       <header class="site-header">
         <a class="brand" href="/">
-          <span class="brand-mark">S</span>
+          <span class="brand-mark">
+            <img src="/assets/superior-head.png" alt="Superior mark" />
+          </span>
           <span>
             <strong>Superior</strong>
-            <small>paper-first bot cabinet</small>
+            <small>paper-first market scanner</small>
           </span>
         </a>
         <nav class="site-nav" aria-label="Primary navigation">

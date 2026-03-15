@@ -3,6 +3,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 const installerUrl = "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe";
 const portableUrl = "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-app-portable.zip";
+const checksumsUrl = "https://github.com/Zwin-ux/arbitrage/releases/latest/download/SHA256SUMS.txt";
+const sourceUrl = "https://github.com/Zwin-ux/arbitrage";
 ---
 
 <BaseLayout
@@ -19,6 +21,7 @@ const portableUrl = "https://github.com/Zwin-ux/arbitrage/releases/latest/downlo
       <div class="hero-actions">
         <a class="button primary" href={installerUrl}>Download installer</a>
         <a class="button secondary" href={portableUrl}>Download portable zip</a>
+        <a class="button secondary" href={sourceUrl} target="_blank" rel="noreferrer">View source</a>
       </div>
       <div class="badge-row" aria-label="Download highlights">
         <span class="badge">Windows-first installer</span>
@@ -35,6 +38,7 @@ const portableUrl = "https://github.com/Zwin-ux/arbitrage/releases/latest/downlo
         <li>Keep Polymarket on and leave credentials blank if recorder plus paper mode is enough for now.</li>
         <li>Store any later credentials in the OS keychain, not in JSON, DuckDB, or logs.</li>
         <li>Run the recorder first, then use Scanner and Paper Bots with real local market data.</li>
+        <li>If Windows SmartScreen appears, compare the download hash with the release manifest before running it.</li>
       </ul>
     </aside>
   </section>
@@ -103,9 +107,23 @@ const portableUrl = "https://github.com/Zwin-ux/arbitrage/releases/latest/downlo
       </ul>
     </article>
     <article class="download-card">
+      <p class="eyebrow">Trust</p>
+      <h2>Verify what you download</h2>
+      <p>Superior ships unsigned in v1. Use the public release manifest and the public repo together:</p>
+      <div class="hero-actions">
+        <a class="button secondary" href={checksumsUrl}>Download SHA256SUMS</a>
+        <a class="button secondary" href={sourceUrl} target="_blank" rel="noreferrer">Open GitHub</a>
+      </div>
+      <ul class="signal-list">
+        <li>Compare the installer or portable zip against <code>SHA256SUMS.txt</code></li>
+        <li>Read the release notes and trust docs before you move beyond paper mode</li>
+        <li>SmartScreen friction is expected until the project has signing infrastructure</li>
+      </ul>
+    </article>
+    <article class="download-card">
       <p class="eyebrow">Source build</p>
       <h2>Inspect everything before you run it</h2>
-      <p>If Releases is empty, or if you want to audit the trust story first, use the repo directly:</p>
+      <p>If Releases is empty, or if you want source-level visibility first, use the repo directly:</p>
       <pre><code>python -m pip install -e ".[dev]"
 market-data-recorder-app</code></pre>
       <p>

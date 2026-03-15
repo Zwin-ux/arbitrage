@@ -1,167 +1,126 @@
 const windowsInstallerUrl =
   "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe";
+const portableUrl =
+  "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-app-portable.zip";
+const checksumsUrl =
+  "https://github.com/Zwin-ux/arbitrage/releases/latest/download/SHA256SUMS.txt";
+
+const githubUrl = "https://github.com/Zwin-ux/arbitrage";
 
 const shared = {
   windowsInstallerUrl,
-  secondaryCtaHref: "/download",
-  badges: ["MIT licensed", "Paper first", "Windows first"]
+  portableUrl,
+  checksumsUrl,
+  githubUrl,
+  scannerFrameTitle: "SCAN PREVIEW",
+  scoreCards: [
+    { label: "Mode", value: "PAPER FIRST", accent: "green" },
+    { label: "Live Trading", value: "LOCKED", accent: "gold" },
+    { label: "Venue", value: "POLYMARKET", accent: "cyan" }
+  ],
+  featureCards: [
+    {
+      title: "LOCAL RECORDING",
+      body: "Capture market books locally so the scanner works from observed data instead of a remote dashboard."
+    },
+    {
+      title: "EXPLAINABLE ROUTES",
+      body: "Show route structure, deductions, and net edge in a format people can review before taking action."
+    },
+    {
+      title: "CONTROLLED UNLOCKS",
+      body: "Keep credentials and live actions behind explicit setup checks instead of exposing them on day one."
+    }
+  ],
+  steps: [
+    {
+      step: "01",
+      title: "Install Superior",
+      body: "Use the Windows build and start with the guided setup path."
+    },
+    {
+      step: "02",
+      title: "Connect data",
+      body: "Start with public Polymarket data and leave credentials for later if paper mode is enough."
+    },
+    {
+      step: "03",
+      title: "Review a route",
+      body: "Record local books, inspect the route, and understand the deductions before anything moves."
+    },
+    {
+      step: "04",
+      title: "Paper it first",
+      body: "Keep live mode locked until the required checks, acknowledgements, and paper activity are complete."
+    }
+  ],
+  loadout: [
+    { label: "CONNECTOR", state: "POLYMARKET", accent: "cyan" },
+    { label: "STORAGE", state: "LOCAL", accent: "green" },
+    { label: "PAPER MODE", state: "READY", accent: "purple" },
+    { label: "LIVE MODE", state: "LOCKED", accent: "magenta" }
+  ]
 };
 
 export const landingVariants = {
   control: {
     key: "control",
-    label: "Control",
-    pageTitle: "Superior | Open-Source Prediction-Market Bot",
-    pageDescription:
-      "Superior is a guided, local-first prediction-market desktop app for equipping Polymarket, scanning edge, and building a paper score before any live gate clears.",
-    eyebrow: "Open-source prediction-market desktop app",
-    headlineLead: "Equip Polymarket.",
-    headlineAccent: "Record books. Build a paper score.",
-    subhead:
-      "Superior gives everyday users a clean Windows path to learn Polymarket, record local books, inspect one explainable route at a time, and keep score without pretending paper and live results are the same thing.",
     navLabel: "Control",
-    heroTopLeft: "Superior",
-    heroTopRight: "Paper-first",
-    heroPanels: [
-      {
-        title: "Guided",
-        body: "Beginner-first onboarding, connector loadouts, and clear explanations instead of noisy dashboards."
-      },
-      {
-        title: "Deterministic",
-        body: "Scanner, paper execution, score updates, and live-gate rules stay explicit. The coach never places trades."
-      }
+    pageTitle: "Superior | Paper-First Market Scanner",
+    pageDescription:
+      "Superior is an open-source Windows app for recording prediction-market data, reviewing explainable arbitrage routes, and paper-testing them before anything live is unlocked.",
+    eyebrow: "Windows prediction-market scanner",
+    titleLines: ["Learn the market.", "Scan edge.", "Paper it first."],
+    subhead:
+      "Superior is a Windows app for recording Polymarket data, surfacing explainable arbitrage candidates, and paper-testing them before anything live is unlocked.",
+    heroMarqueeLeft: "OPEN SOURCE WINDOWS BUILD",
+    heroMarqueeRight: "PAPER-FIRST BY DEFAULT",
+    scannerStats: [
+      { label: "Mode", value: "PAPER", accent: "green" },
+      { label: "Data", value: "LOCAL BOOKS", accent: "cyan" },
+      { label: "Live", value: "LOCKED", accent: "gold" }
     ],
-    featureCards: [
-      {
-        title: "Equip Polymarket first",
-        body: "Start with public data, add your own keys later, and learn the venue before you try to make the product do more."
-      },
-      {
-        title: "Paper score",
-        body: "Run deterministic paper routes against recorded books and watch the score board move from realized paper results only."
-      },
-      {
-        title: "Live gated",
-        body: "Credentials, risk acknowledgements, diagnostics, and paper history all have to clear before any live path appears."
-      }
+    scannerCopy:
+      "The scanner records local books, prices the route, and shows fees, deductions, and assumptions before a candidate reaches paper mode.",
+    signalFeed: [
+      "Local book snapshots retained for review",
+      "Route costs shown before paper entry",
+      "Live controls hidden until setup checks pass"
     ],
-    setupTitle: "An arcade-style loadout that stays concrete about what the product is doing.",
-    setupBody:
-      "Install the Windows build, keep Guided mode on, equip Polymarket, and start recording public books before you worry about credentials, live mode, or experimental modules.",
-    setupCaption: "No exchange account is required to equip Polymarket and finish the first recording run.",
-    setupSteps: [
-      {
-        title: "Install the Windows build",
-        body: "Use the installer for shortcuts, uninstall support, and the cleanest first-run path."
-      },
-      {
-        title: "Equip your loadout",
-        body: "Pick your goal, keep conservative defaults, equip Polymarket, and leave credentials blank if you only want recorder plus paper mode."
-      },
-      {
-        title: "Record, scan, score",
-        body: "Run the recorder, inspect explainable scanner output, and paper the top candidate before anything live unlocks."
-      }
-    ],
-    productTitle: "A consumer desktop app for prediction-market learning, explainable routes, and honest scorekeeping.",
-    productBody:
-      "The product is built around guided onboarding, connector loadouts, scanner explanations, paper execution history, and trust. Superior is stable software with explicit guardrails, not a promise of guaranteed profits.",
-    productNotes: [
-      {
-        title: "Open source",
-        body: "The app, site, packaging, and trust docs all live in one public repo."
-      },
-      {
-        title: "Local first",
-        body: "Profiles, diagnostics, and paper history stay on your machine. Secrets stay in the OS keychain."
-      },
-      {
-        title: "Lab ready",
-        body: "High-risk experiments live behind an explicit Lab toggle and stay paper-only in v1."
-      }
-    ],
-    downloadTitle: "Download the Windows build, then inspect the source if you want the full trust story.",
-    downloadBody:
-      "GitHub Releases hosts the installer. The docs explain loadouts, paper score, local storage, and live gating before you ever click a trade button.",
+    downloadLead:
+      "Download the Windows build, run guided setup, and keep the first session in paper mode.",
+    downloadNote:
+      "Installer, portable build, source, and checksums live on GitHub Releases.",
     ...shared
   },
   focus: {
     key: "focus",
-    label: "Focus",
-    pageTitle: "Superior | Scan Markets With Guardrails",
-    pageDescription:
-      "Superior helps users equip Polymarket, record local market data, understand edge, and keep live trading behind explicit checklists and risk controls.",
-    eyebrow: "Guided Polymarket onboarding",
-    headlineLead: "Equip the loadout.",
-    headlineAccent: "Explain edge. Keep live gated.",
-    subhead:
-      "This variant leans harder on trust: local-first storage, deterministic paper bots, and a score board that moves only from realized paper results.",
     navLabel: "Focus",
-    heroTopLeft: "Superior",
-    heroTopRight: "Guided mode",
-    heroPanels: [
-      {
-        title: "Trust",
-        body: "Stable recorder, transparent risk policies, and no hidden hosted control plane."
-      },
-      {
-        title: "Clarity",
-        body: "Every candidate shows the match, the assumptions, and the cost adjustments that cut gross edge down to net."
-      }
+    pageTitle: "Superior | Controlled Market Scanner",
+    pageDescription:
+      "Superior is a paper-first prediction-market scanner with guided setup, local recording, and a controlled path to reviewing opportunities before live mode is available.",
+    eyebrow: "Controlled market workflow",
+    titleLines: ["Record books.", "Read the edge.", "Keep live locked."],
+    subhead:
+      "Built for people who want a calmer workflow: record local data, inspect one candidate at a time, and keep live mode behind the checklist.",
+    heroMarqueeLeft: "GUIDED SETUP INCLUDED",
+    heroMarqueeRight: "LIVE MODE STAYS LOCKED",
+    scannerStats: [
+      { label: "Mode", value: "PAPER", accent: "green" },
+      { label: "Review", value: "ONE AT A TIME", accent: "cyan" },
+      { label: "Live", value: "LOCKED", accent: "gold" }
     ],
-    featureCards: [
-      {
-        title: "Consumer setup",
-        body: "Profiles, connector loadouts, risk presets, and coach settings all live inside one Windows desktop flow."
-      },
-      {
-        title: "Explainable scanner",
-        body: "The UI explains why a route qualifies, why it fails, and what still blocks the live gate."
-      },
-      {
-        title: "Public trust docs",
-        body: "Risk model, live limits, local storage, and contributor architecture are documented in the repo."
-      }
+    scannerCopy:
+      "This variant emphasizes clarity. The scanner shows route structure, deductions, and paper results before any live path is even visible.",
+    signalFeed: [
+      "One candidate reviewed at a time",
+      "Paper results visible before live mode",
+      "Advanced modules hidden until enabled"
     ],
-    setupTitle: "A disciplined path from curiosity to one clean recording and one honest score update.",
-    setupBody:
-      "Superior is designed so the first launch feels understandable: guided defaults, optional credentials, connector loadouts, and a paper-first workflow that does not demand trust up front.",
-    setupCaption: "Guided setup, local storage, and paper score all work before live credentials enter the conversation.",
-    setupSteps: [
-      {
-        title: "Download and launch",
-        body: "The Windows installer gets the product onto the machine with the fewest manual decisions."
-      },
-      {
-        title: "Equip the safe defaults",
-        body: "Start with Polymarket, a conservative risk policy, and Guided mode on unless you already know the workflow."
-      },
-      {
-        title: "Use evidence before intent",
-        body: "Record local books, read the scanner explanation, and paper the candidate before you even think about live readiness."
-      }
-    ],
-    productTitle: "Built for users who want a clean path from curiosity to disciplined experimentation and honest scorekeeping.",
-    productBody:
-      "Superior is not a black-box money machine. It is an open-source desktop app for studying prediction markets, running paper bots, and deciding when a live path is earned.",
-    productNotes: [
-      {
-        title: "Paper first",
-        body: "No live mode until credentials, risk acknowledgements, diagnostics, and paper history all pass."
-      },
-      {
-        title: "Coach only",
-        body: "The assistant explains venues, logs, and scanner results without gaining control over execution."
-      },
-      {
-        title: "Score split",
-        body: "Paper score is the default. Live score stays separate and empty until a real live surface exists."
-      }
-    ],
-    downloadTitle: "Use the Windows installer, then verify the trust story in the docs.",
-    downloadBody:
-      "The public build is for onboarding, paper bots, and education first. Releases, docs, and the full repo stay linked from one place.",
+    downloadLead:
+      "Install the Windows build, complete the guided setup, and let paper results be the first thing that moves.",
+    downloadNote:
+      "Source, releases, and trust files stay public on GitHub.",
     ...shared
   }
 };
