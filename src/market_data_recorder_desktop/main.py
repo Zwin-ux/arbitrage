@@ -43,6 +43,7 @@ def create_window(
     from market_data_recorder.logging import configure_logging
 
     from .bot_services import (
+        ArbitrageService,
         AssistantService,
         CapabilityService,
         ConnectorLoadoutService,
@@ -79,6 +80,7 @@ def create_window(
     paper_execution_engine = PaperExecutionEngine(paper_store)
     score_service = ScoreService(paper_store)
     unlock_service = UnlockService(paper_store)
+    arbitrage_service = ArbitrageService()
     assistant_service = AssistantService(
         docs_paths=[
             Path(__file__).resolve().parents[2] / "README.md",
@@ -105,6 +107,7 @@ def create_window(
         live_execution_engine=LiveExecutionEngine(),
         unlock_service=unlock_service,
         assistant_service=assistant_service,
+        arbitrage_service=arbitrage_service,
         allow_setup_wizard_on_empty_profiles=not smoke_test,
         show_tray_icon=not smoke_test,
     )

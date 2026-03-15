@@ -11,6 +11,8 @@ from typing import Iterable
 
 import duckdb
 
+from market_data_recorder.arbitrage import ArbitrageAnalyzer
+from market_data_recorder.models import ArbitrageOpportunity
 from market_data_recorder.storage import DuckDBStorage
 
 from .app_types import (
@@ -1397,3 +1399,23 @@ class AssistantService:
             if any(keyword in text for keyword in keywords):
                 sources.append(path.name)
         return sources[:4]
+
+
+class ArbitrageService:
+    """Read-only service that surfaces guaranteed arbitrage opportunities from a recorded DuckDB file."""
+
+    def find_opportunities(
+        self,
+        profile: AppProfile,
+        *,
+        min_edge: str = "0",
+    ) -> list[ArbitrageOpportunity]:
+        db_path = profile.data_dir / "market_data.duckdb"
+        if not db_path.exists():
+            return []
+        storage = DuckDBStorage(db_path, read_only=True)
+        try:
+            return ArbitrageAnalyzer(storage).find_opportunities(min_edge=min_edge)
+        finally:
+            storage.close()
+

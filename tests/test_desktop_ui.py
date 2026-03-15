@@ -357,3 +357,107 @@ def test_parser_requires_smoke_output_with_smoke_test() -> None:
         assert exc.code == 2
     else:  # pragma: no cover - defensive
         raise AssertionError("expected parser to reject --smoke-test without --smoke-output")
+
+
+def test_arbitrage_tab_shows_no_data_placeholder(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    from market_data_recorder_desktop.window import ArbitrageTab
+
+    tab = ArbitrageTab()
+    qtbot.addWidget(tab)
+    tab.show()
+
+    assert tab.opportunity_list.count() == 0
+    assert "No data yet" in tab.details_text.toPlainText()
+
+
+def test_arbitrage_tab_update_opportunities_populates_list(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    from market_data_recorder.models import ArbitrageLeg, ArbitrageOpportunity
+    from market_data_recorder_desktop.window import ArbitrageTab
+
+    tab = ArbitrageTab()
+    qtbot.addWidget(tab)
+    tab.show()
+
+    opportunities = [
+        ArbitrageOpportunity(
+            market="test-market",
+            strategy="buy_all_outcomes",
+            timestamp="1000",
+            total_price="0.95",
+            guaranteed_profit="0.05",
+            outcome_count=2,
+            legs=[
+                ArbitrageLeg(asset_id="yes-token", outcome="Yes", best_bid="0.44", best_ask="0.45"),
+                ArbitrageLeg(asset_id="no-token", outcome="No", best_bid="0.49", best_ask="0.50"),
+            ],
+        )
+    ]
+    tab.update_opportunities(opportunities)
+
+    assert tab.opportunity_list.count() == 1
+    assert "[BUY]" in tab.opportunity_list.item(0).text()
+    assert "+5.00%" in tab.opportunity_list.item(0).text()
+
+
+def test_arbitrage_tab_set_detail_shows_legs(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    from market_data_recorder.models import ArbitrageLeg, ArbitrageOpportunity
+    from market_data_recorder_desktop.window import ArbitrageTab
+
+    tab = ArbitrageTab()
+    qtbot.addWidget(tab)
+    tab.show()
+
+    opp = ArbitrageOpportunity(
+        market="sell-market",
+        strategy="sell_all_outcomes",
+        timestamp="2000",
+        total_price="1.05",
+        guaranteed_profit="0.05",
+        outcome_count=2,
+        legs=[
+            ArbitrageLeg(asset_id="yes-token", outcome="Yes", best_bid="0.56", best_ask="0.57"),
+            ArbitrageLeg(asset_id="no-token", outcome="No", best_bid="0.49", best_ask="0.50"),
+        ],
+    )
+    tab.set_detail(opp)
+
+    detail_text = tab.details_text.toPlainText()
+    assert "sell-market" in detail_text
+    assert "Sell all outcomes" in detail_text
+    assert "yes-token" in detail_text
+    assert "no-token" in detail_text
+    assert "+5.0000%" in detail_text
+
+
+def test_desktop_window_has_arbitrage_tab(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    tab_titles = [window.tabs.tabText(i) for i in range(window.tabs.count())]
+    assert "Arbitrage" in tab_titles
+    assert hasattr(window, "arb_tab")
+    controller.shutdown()

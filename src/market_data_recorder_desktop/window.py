@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from market_data_recorder.models import ArbitrageOpportunity
 from . import __version__
 from .app_types import (
     AppProfile,
@@ -64,6 +65,7 @@ from .app_types import (
     VenueConnection,
 )
 from .bot_services import (
+    ArbitrageService,
     AssistantService,
     CapabilityService,
     ConnectorLoadoutService,
@@ -1316,6 +1318,106 @@ class ScannerTab(QWidget):
         )
 
 
+class ArbitrageTab(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+        self.header_label = QLabel(
+            "Guaranteed arbitrage opportunities found by reading stored local market books.\n"
+            "A buy-all-outcomes route profits when the sum of all asks is below $1.\n"
+            "A sell-all-outcomes route profits when the sum of all bids exceeds $1."
+        )
+        self.header_label.setObjectName("heroTitle")
+        self.header_label.setWordWrap(True)
+        layout.addWidget(self.header_label)
+
+        filter_row = QHBoxLayout()
+        filter_row.addWidget(QLabel("Min edge (e.g. 0.01):"))
+        self.min_edge_input = QPlainTextEdit()
+        self.min_edge_input.setMaximumHeight(34)
+        self.min_edge_input.setPlaceholderText("0")
+        self.min_edge_input.setProperty("consoleRole", "system")
+        filter_row.addWidget(self.min_edge_input)
+        self.refresh_button = QPushButton("Refresh arbitrage")
+        filter_row.addWidget(self.refresh_button)
+        filter_row.addStretch(1)
+        layout.addLayout(filter_row)
+
+        content_row = QHBoxLayout()
+        content_row.setSpacing(10)
+
+        opps_group = QGroupBox("Arbitrage opportunities")
+        opps_group.setProperty("panelTone", "subtle")
+        opps_layout = QVBoxLayout(opps_group)
+        self.opportunity_list = QListWidget()
+        self.opportunity_list.setMaximumWidth(380)
+        opps_layout.addWidget(self.opportunity_list)
+
+        details_group = QGroupBox("Opportunity detail")
+        details_group.setProperty("panelTone", "normal")
+        details_layout = QVBoxLayout(details_group)
+        self.details_text = QPlainTextEdit()
+        self.details_text.setReadOnly(True)
+        self.details_text.setProperty("consoleRole", "system")
+        details_layout.addWidget(self.details_text)
+
+        content_row.addWidget(opps_group)
+        content_row.addWidget(details_group, stretch=1)
+        layout.addLayout(content_row)
+
+        self.details_text.setPlainText(
+            "No data yet.\n\nRecord local market books first, then click 'Refresh arbitrage'."
+        )
+
+    def update_opportunities(self, opportunities: list[ArbitrageOpportunity]) -> None:
+        self.opportunity_list.clear()
+        for i, opp in enumerate(opportunities):
+            profit_pct = float(opp.guaranteed_profit) * 100
+            strategy_short = "BUY" if opp.strategy == "buy_all_outcomes" else "SELL"
+            label = f"[{strategy_short}] {opp.market[:32]}… | +{profit_pct:.2f}%"
+            item = QListWidgetItem(label)
+            item.setData(32, i)
+            self.opportunity_list.addItem(item)
+        if not opportunities:
+            self.details_text.setPlainText(
+                "No guaranteed arbitrage found with the current min-edge filter.\n\n"
+                "Try lowering the min edge to '0' and refreshing, or record more local data."
+            )
+
+    def set_detail(self, opportunity: ArbitrageOpportunity | None) -> None:
+        if opportunity is None:
+            self.details_text.setPlainText("Select an opportunity to inspect its legs.")
+            return
+        profit_pct = float(opportunity.guaranteed_profit) * 100
+        strategy_label = (
+            "Buy all outcomes (sum of asks < $1)"
+            if opportunity.strategy == "buy_all_outcomes"
+            else "Sell all outcomes (sum of bids > $1)"
+        )
+        lines = [
+            f"Market: {opportunity.market}",
+            f"Strategy: {strategy_label}",
+            f"Timestamp: {opportunity.timestamp}",
+            f"Total price: ${float(opportunity.total_price):.4f}",
+            f"Guaranteed profit: +{profit_pct:.4f}%  (${float(opportunity.guaranteed_profit):.4f} per $1 resolved)",
+            f"Outcomes in basket: {opportunity.outcome_count}",
+            "",
+            "Legs:",
+        ]
+        for leg in opportunity.legs:
+            outcome_str = f" ({leg.outcome})" if leg.outcome else ""
+            lines.append(
+                f"  {leg.asset_id}{outcome_str}"
+                f"  bid={leg.best_bid}  ask={leg.best_ask}"
+            )
+        lines += [
+            "",
+            "Next step: paper this route in the Paper Runs tab to validate fills before any live use.",
+        ]
+        self.details_text.setPlainText("\n".join(lines))
+
+
 class PaperBotsTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
@@ -1748,6 +1850,7 @@ class DesktopMainWindow(QMainWindow):
         live_execution_engine: LiveExecutionEngine,
         unlock_service: UnlockService,
         assistant_service: AssistantService,
+        arbitrage_service: ArbitrageService | None = None,
         allow_setup_wizard_on_empty_profiles: bool = True,
         show_tray_icon: bool = True,
     ) -> None:
@@ -1784,8 +1887,10 @@ class DesktopMainWindow(QMainWindow):
         self._live_execution_engine = live_execution_engine
         self._unlock_service = unlock_service
         self._assistant_service = assistant_service
+        self._arb_service = arbitrage_service or ArbitrageService()
         self._profiles: list[AppProfile] = []
         self._latest_candidates: list[OpportunityCandidate] = []
+        self._latest_arb_opportunities: list[ArbitrageOpportunity] = []
         self._last_paper_run: PaperRunResult | None = None
         self._last_session: PaperBotSession | None = None
         self._previous_state = "idle"
@@ -1798,6 +1903,7 @@ class DesktopMainWindow(QMainWindow):
         self.loadout_tab = LoadoutTab()
         self.learn_tab = LearnTab()
         self.scanner_tab = ScannerTab()
+        self.arb_tab = ArbitrageTab()
         self.paper_bots_tab = PaperBotsTab()
         self.score_tab = ScoreTab()
         self.live_unlock_tab = LiveUnlockTab()
@@ -1815,6 +1921,7 @@ class DesktopMainWindow(QMainWindow):
         self.tabs.addTab(self.home_tab, "Hangar")
         self.tabs.addTab(self.loadout_tab, "Loadout")
         self.tabs.addTab(self.scanner_tab, "Scanner")
+        self.tabs.addTab(self.arb_tab, "Arbitrage")
         self.tabs.addTab(self.paper_bots_tab, "Paper Runs")
         self.tabs.addTab(self.score_tab, "Score")
         self.tabs.addTab(self.diagnostics_tab, "Diagnostics")
@@ -1890,6 +1997,9 @@ class DesktopMainWindow(QMainWindow):
         self.scanner_tab.paper_button.clicked.connect(self._start_selected_session)
         self.scanner_tab.live_preview_button.clicked.connect(self._preview_live_lock)
         self.scanner_tab.candidate_list.currentItemChanged.connect(self._on_candidate_changed)
+
+        self.arb_tab.refresh_button.clicked.connect(self._refresh_arbitrage)
+        self.arb_tab.opportunity_list.currentItemChanged.connect(self._on_arb_opportunity_changed)
 
         self.paper_bots_tab.run_top_button.clicked.connect(self._start_paper_session)
         self.paper_bots_tab.refresh_button.clicked.connect(self._refresh_portfolio_views)
@@ -2075,6 +2185,7 @@ class DesktopMainWindow(QMainWindow):
 
     def _refresh_all_views(self) -> None:
         self._refresh_scanner()
+        self._refresh_arbitrage()
         self._refresh_portfolio_views()
         profile = self._current_profile()
         self.lab_tab.update_view(profile, self._opportunity_engine.strategy_modules())
@@ -2086,6 +2197,34 @@ class DesktopMainWindow(QMainWindow):
         self.scanner_tab.update_candidates(self._latest_candidates)
         self.scanner_tab.set_details(self._selected_candidate())
         self._refresh_status_only()
+
+    def _refresh_arbitrage(self) -> None:
+        profile = self._current_profile()
+        min_edge = self.arb_tab.min_edge_input.toPlainText().strip() or "0"
+        try:
+            self._latest_arb_opportunities = (
+                self._arb_service.find_opportunities(profile, min_edge=min_edge)
+                if profile is not None
+                else []
+            )
+        except Exception:
+            self._latest_arb_opportunities = []
+        self.arb_tab.update_opportunities(self._latest_arb_opportunities)
+        selected = self._latest_arb_opportunities[0] if self._latest_arb_opportunities else None
+        self.arb_tab.set_detail(selected)
+
+    def _on_arb_opportunity_changed(self) -> None:
+        current_item = self.arb_tab.opportunity_list.currentItem()
+        if current_item is None:
+            self.arb_tab.set_detail(None)
+            return
+        index = current_item.data(32)
+        opportunity = (
+            self._latest_arb_opportunities[index]
+            if isinstance(index, int) and 0 <= index < len(self._latest_arb_opportunities)
+            else None
+        )
+        self.arb_tab.set_detail(opportunity)
 
     def _refresh_portfolio_views(self) -> None:
         profile = self._current_profile()
