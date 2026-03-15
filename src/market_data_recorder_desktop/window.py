@@ -1,21 +1,16 @@
 from __future__ import annotations
 
 import logging
-import math
 from datetime import datetime, timezone
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer, QUrl
+from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import (
     QAction,
     QColor,
     QCloseEvent,
     QDesktopServices,
     QFont,
-    QPaintEvent,
-    QPainter,
-    QPen,
-    QRadialGradient,
 )
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -47,6 +42,7 @@ from .app_types import (
     AppProfile,
     AssistantSession,
     BotConfig,
+    BotRegistryEntry,
     BotSlot,
     CapabilityState,
     ConnectorLoadout,
@@ -86,6 +82,8 @@ from .diagnostics import DiagnosticsService
 from .paths import AppPaths
 from .profiles import ProfileStore
 from .score_attack import (
+    BotRegistryService,
+    DecisionTraceFormatter,
     BotConfigService,
     PaperSimulationEngine,
     PortfolioEngine,
@@ -95,6 +93,7 @@ from .score_attack import (
 )
 from .startup import StartupManager
 from .ui.hangar import HomeTab as HangarHomeTab
+from .ui.scanner import ArcadeScannerWidget
 from .ui.shell import DesktopShell
 from .wizard import SetupWizard
 
@@ -113,7 +112,7 @@ def _repolish(widget: QWidget) -> None:
     widget.update()
 
 
-class SignalBadge(QFrame):
+class _LegacySignalBadge(QFrame):
     def __init__(self, label: str) -> None:
         super().__init__()
         self.setProperty("signalBadge", True)
@@ -136,7 +135,7 @@ class SignalBadge(QFrame):
         _repolish(self.value_label)
 
 
-class StatusTile(QFrame):
+class _LegacyStatusTile(QFrame):
     def __init__(self, title: str) -> None:
         super().__init__()
         self.setProperty("statusTile", True)
@@ -164,196 +163,11 @@ class StatusTile(QFrame):
         _repolish(self.value_label)
 
 
-class ArcadeScannerWidget(QWidget):
-    def __init__(self) -> None:
-        super().__init__()
-        self._phase = 0
-        self._scan_state = "standby"
-        self._signals_found = 0
-        self._routes_ready = 0
-        self._top_edge_bps = 0
-        self._top_label = "Waiting for first route"
-        self._timer = QTimer(self)
-        self._timer.timeout.connect(self._advance_phase)
-        self._timer.start(80)
-        self.setMinimumHeight(300)
-
-    def sizeHint(self) -> QSize:
-        return QSize(720, 320)
-
-    def set_snapshot(
-        self,
-        *,
-        scan_state: str,
-        signals_found: int,
-        routes_ready: int,
-        top_edge_bps: int,
-        top_label: str,
-    ) -> None:
-        self._scan_state = scan_state
-        self._signals_found = signals_found
-        self._routes_ready = routes_ready
-        self._top_edge_bps = top_edge_bps
-        self._top_label = top_label
-        self.update()
-
-    def _advance_phase(self) -> None:
-        self._phase = (self._phase + 1) % 180
-        self.update()
-
-    def paintEvent(self, _event: QPaintEvent) -> None:
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        rect = QRectF(self.rect()).adjusted(10, 10, -10, -10)
-        palette = self._palette_for_state()
-
-        painter.fillRect(self.rect(), QColor("#061127"))
-        painter.fillRect(rect, QColor("#081630"))
-        painter.setPen(QPen(palette["border"], 2))
-        painter.drawRoundedRect(rect, 8, 8)
-
-        inner_rect = rect.adjusted(18, 18, -18, -18)
-        center = QPointF(inner_rect.center().x(), inner_rect.top() + inner_rect.height() * 0.47)
-        radius = min(inner_rect.width(), inner_rect.height()) * 0.34
-
-        for angle in range(0, 360, 6):
-            radians = math.radians(angle)
-            inner_radius = radius * 0.28
-            outer_radius = radius * 1.12
-            start = QPointF(
-                center.x() + math.cos(radians) * inner_radius,
-                center.y() + math.sin(radians) * inner_radius,
-            )
-            end = QPointF(
-                center.x() + math.cos(radians) * outer_radius,
-                center.y() + math.sin(radians) * outer_radius,
-            )
-            color = QColor(palette["vector"])
-            color.setAlpha(60 if angle % 24 == 0 else 28)
-            painter.setPen(QPen(color, 1))
-            painter.drawLine(start, end)
-
-        sweep_angle = (self._phase * 2.0) % 360.0
-        sweep_radians = math.radians(sweep_angle)
-        sweep_end = QPointF(
-            center.x() + math.cos(sweep_radians) * radius * 1.1,
-            center.y() + math.sin(sweep_radians) * radius * 1.1,
-        )
-        painter.setPen(QPen(palette["accent"], 2))
-        painter.drawLine(center, sweep_end)
-
-        for ring_index, ring_factor in enumerate((0.42, 0.68, 0.94), start=1):
-            ring_color = QColor(palette["vector"])
-            ring_color.setAlpha(70 if ring_index == 2 else 38)
-            painter.setPen(QPen(ring_color, 1))
-            painter.drawEllipse(center, radius * ring_factor, radius * ring_factor)
-
-        pulse = 1.0 + 0.06 * math.sin(self._phase / 8.0)
-        core_gradient = QRadialGradient(center, radius * 0.18 * pulse)
-        core_gradient.setColorAt(0.0, QColor("#ffffff"))
-        core_gradient.setColorAt(0.35, palette["accent"])
-        core_gradient.setColorAt(1.0, QColor(0, 0, 0, 0))
-        painter.setBrush(core_gradient)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawEllipse(center, radius * 0.18 * pulse, radius * 0.18 * pulse)
-
-        dot_angles = (22, 88, 148, 214, 276, 332)
-        for index, angle in enumerate(dot_angles):
-            radians = math.radians(angle + self._phase * 0.6)
-            orbit_radius = radius * (0.64 if index % 2 == 0 else 0.82)
-            dot_center = QPointF(
-                center.x() + math.cos(radians) * orbit_radius,
-                center.y() + math.sin(radians) * orbit_radius,
-            )
-            dot_color = palette["signal"] if index < max(1, min(self._signals_found, len(dot_angles))) else palette["vector"]
-            dot_alpha = 230 if index < self._signals_found else 110
-            color = QColor(dot_color)
-            color.setAlpha(dot_alpha)
-            painter.setBrush(color)
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawEllipse(dot_center, 4.5, 4.5)
-
-        control_bar = QRectF(inner_rect.left() + 28, inner_rect.bottom() - 36, inner_rect.width() - 56, 14)
-        stripe_colors = (QColor("#00f0ff"), QColor("#7cffb2"), QColor("#ff3ed2"), QColor("#ffd700"))
-        stripe_width = max(6.0, control_bar.width() / 36.0)
-        stripe_x = control_bar.left()
-        stripe_index = 0
-        while stripe_x < control_bar.right():
-            painter.fillRect(
-                QRectF(stripe_x, control_bar.top(), min(stripe_width, control_bar.right() - stripe_x), control_bar.height()),
-                stripe_colors[stripe_index % len(stripe_colors)],
-            )
-            stripe_x += stripe_width
-            stripe_index += 1
-        painter.setPen(QPen(palette["border"], 1))
-        painter.drawRect(control_bar)
-
-        self._draw_text_block(painter, rect, palette)
-        self._draw_scanlines(painter, rect)
-
-    def _draw_text_block(self, painter: QPainter, rect: QRectF, palette: dict[str, QColor]) -> None:
-        painter.setPen(palette["label"])
-        title_font = QFont("Cascadia Mono", 10)
-        title_font.setBold(True)
-        painter.setFont(title_font)
-        painter.drawText(rect.adjusted(18, 14, -18, -18), Qt.AlignmentFlag.AlignLeft, "MARKET SCAN")
-        painter.drawText(rect.adjusted(18, 14, -18, -18), Qt.AlignmentFlag.AlignRight, self._scan_state.upper())
-
-        body_font = QFont("Cascadia Mono", 9)
-        painter.setFont(body_font)
-        metrics = [
-            f"SIGNALS  {self._signals_found:02d}",
-            f"ROUTES   {self._routes_ready:02d}",
-            f"TOP EDGE {self._top_edge_bps:+d} BPS",
-            f"FOCUS    {self._top_label[:22].upper()}",
-        ]
-        baseline_y = int(rect.top()) + 42
-        for index, line in enumerate(metrics):
-            painter.setPen(palette["label"])
-            painter.drawText(int(rect.left()) + 20, baseline_y + index * 18, line)
-
-        painter.setPen(palette["accent"])
-        painter.drawText(
-            int(rect.left()) + 20,
-            int(rect.bottom()) - 52,
-            "SCANNER FOCUS LOCKED TO LOCAL BOOKS",
-        )
-        painter.setPen(palette["vector"])
-        painter.drawText(
-            int(rect.left()) + 20,
-            int(rect.bottom()) - 18,
-            "PAPER-FIRST  |  LOCAL SIGNALS  |  NET EDGE ONLY",
-        )
-
-    @staticmethod
-    def _draw_scanlines(painter: QPainter, rect: QRectF) -> None:
-        scanline_color = QColor(255, 255, 255, 12)
-        painter.setPen(QPen(scanline_color, 1))
-        y = int(rect.top()) + 1
-        while y < int(rect.bottom()):
-            painter.drawLine(int(rect.left()) + 1, y, int(rect.right()) - 1, y)
-            y += 4
-
-    def _palette_for_state(self) -> dict[str, QColor]:
-        if self._scan_state == "active":
-            accent = QColor("#7cffb2")
-            signal = QColor("#7cffb2")
-        elif self._scan_state == "locked":
-            accent = QColor("#ffd700")
-            signal = QColor("#ffd700")
-        else:
-            accent = QColor("#00f0ff")
-            signal = QColor("#ff3ed2")
-        return {
-            "border": QColor("#1fd6ff"),
-            "vector": QColor("#00f0ff"),
-            "signal": signal,
-            "accent": accent,
-            "label": QColor("#d9f7ff"),
-        }
+class _LegacyArcadeScannerWidget(QWidget):
+    """Retired in favor of ui.scanner.ArcadeScannerWidget."""
 
 
-class HomeTab(QWidget):
+class _LegacyHomeTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
@@ -367,9 +181,9 @@ class HomeTab(QWidget):
 
         signal_row = QHBoxLayout()
         signal_row.setSpacing(8)
-        self.paper_state_badge = SignalBadge("Paper mode")
-        self.live_state_badge = SignalBadge("Live gate")
-        self.lab_state_badge = SignalBadge("Lab")
+        self.paper_state_badge = _LegacySignalBadge("Paper mode")
+        self.live_state_badge = _LegacySignalBadge("Live gate")
+        self.lab_state_badge = _LegacySignalBadge("Lab")
         signal_row.addWidget(self.paper_state_badge)
         signal_row.addWidget(self.live_state_badge)
         signal_row.addWidget(self.lab_state_badge)
@@ -438,9 +252,9 @@ class HomeTab(QWidget):
         console_layout = QVBoxLayout(console_group)
         tile_row = QHBoxLayout()
         tile_row.setSpacing(8)
-        self.recorder_tile = StatusTile("Recorder")
-        self.scanner_tile = StatusTile("Scanner")
-        self.route_tile = StatusTile("Route")
+        self.recorder_tile = _LegacyStatusTile("Recorder")
+        self.scanner_tile = _LegacyStatusTile("Scanner")
+        self.route_tile = _LegacyStatusTile("Route")
         tile_row.addWidget(self.recorder_tile)
         tile_row.addWidget(self.scanner_tile)
         tile_row.addWidget(self.route_tile)
@@ -1012,6 +826,16 @@ class LoadoutTab(QWidget):
         bot_bay_layout.addWidget(self.bot_bay_text)
         lower_row.addWidget(bot_bay_group, 3)
 
+        registry_group = QGroupBox("Starter registry")
+        registry_group.setProperty("panelTone", "normal")
+        registry_layout = QVBoxLayout(registry_group)
+        self.registry_text = QPlainTextEdit()
+        self.registry_text.setReadOnly(True)
+        self.registry_text.setProperty("consoleRole", "system")
+        self.registry_text.setMaximumHeight(170)
+        registry_layout.addWidget(self.registry_text)
+        lower_row.addWidget(registry_group, 3)
+
         unlock_group = QGroupBox("Unlock track")
         unlock_group.setProperty("panelTone", "subtle")
         unlock_layout = QVBoxLayout(unlock_group)
@@ -1033,6 +857,7 @@ class LoadoutTab(QWidget):
         connector_states: list[CapabilityState],
         module_states: list[CapabilityState],
         bot_configs: list[BotConfig],
+        registry_entries: list[BotRegistryEntry],
         slot_preview: list[BotSlot],
         unlocks: list[UnlockState],
     ) -> None:
@@ -1040,6 +865,7 @@ class LoadoutTab(QWidget):
             self.header_label.setText("Create a profile to equip your first connector.")
             self.state_text.setPlainText("No loadout yet.")
             self.bot_bay_text.setPlainText("No bot slots yet.")
+            self.registry_text.setPlainText("No starter registry yet.")
             self.unlock_text.setPlainText("No unlock track yet.")
             for checkbox in (
                 self.polymarket_checkbox,
@@ -1110,6 +936,24 @@ class LoadoutTab(QWidget):
                 ]
             )
         self.bot_bay_text.setPlainText("\n".join(bay_lines))
+        registry_lines = ["STARTER REGISTRY", ""]
+        if not registry_entries:
+            registry_lines.append("No starter bots are visible until a module is equipped.")
+        for entry in registry_entries:
+            registry_lines.extend(
+                [
+                    f"{entry.status.upper():<9} {entry.label}",
+                    f"  FAMILY  {entry.family_label}",
+                    f"  GATE    {entry.min_net_edge_bps}+ bps",
+                    f"  STYLE   {entry.route_preference.replace('_', ' ')}",
+                    f"  TARGET  ${entry.target_stake_cents / 100:.2f}",
+                    f"  SLOT    {entry.slot_label}",
+                    f"  NOTE    {entry.unlock_label}",
+                    f"  ABOUT   {entry.description}",
+                    "",
+                ]
+            )
+        self.registry_text.setPlainText("\n".join(registry_lines).rstrip())
         unlock_lines = ["UNLOCK TRACK", ""]
         if not unlocks:
             unlock_lines.append("No unlocks loaded yet.")
@@ -1181,9 +1025,14 @@ class ScannerTab(QWidget):
         self.metrics_text.setReadOnly(True)
         self.metrics_text.setProperty("consoleRole", "system")
         self.metrics_text.setMaximumHeight(82)
+        self.route_board_text = QPlainTextEdit()
+        self.route_board_text.setReadOnly(True)
+        self.route_board_text.setProperty("consoleRole", "system")
+        self.route_board_text.setMaximumHeight(112)
         focus_layout.addWidget(self.visual_label)
         focus_layout.addWidget(self.focus_display)
         focus_layout.addWidget(self.metrics_text)
+        focus_layout.addWidget(self.route_board_text)
         layout.addWidget(focus_group)
 
         actions = QHBoxLayout()
@@ -1221,20 +1070,28 @@ class ScannerTab(QWidget):
             signals_found=0,
             routes_ready=0,
             top_edge_bps=0,
+            top_quality=0,
             top_label="Waiting for first route",
         )
         self.metrics_text.setPlainText(
             "STATE      standby\n"
             "SIGNALS    0\n"
             "ROUTES     0\n"
-            "TOP EDGE   +0 bps"
+            "TOP EDGE   +0 bps\n"
+            "QUALITY    000"
+        )
+        self.route_board_text.setPlainText(
+            "TACTICAL BOARD\n\n"
+            "No staged routes yet.\n"
+            "Recorder data must land before the radar can stage anything truthful."
         )
 
     def update_candidates(self, candidates: list[OpportunityCandidate]) -> None:
         self.candidate_list.clear()
         for candidate in candidates:
+            tone = "READY" if candidate.net_edge_bps > 0 else "HOLD "
             item = QListWidgetItem(
-                f"{candidate.strategy_label} | {candidate.net_edge_bps} bps | {candidate.status}"
+                f"[{tone}] {candidate.strategy_label} | {candidate.net_edge_bps:+d} bps | Q{candidate.opportunity_quality_score:03d}"
             )
             item.setData(32, candidate.id)
             self.candidate_list.addItem(item)
@@ -1246,6 +1103,7 @@ class ScannerTab(QWidget):
                 signals_found=len(candidates),
                 routes_ready=sum(1 for candidate in candidates if candidate.net_edge_bps > 0),
                 top_edge_bps=top_candidate.net_edge_bps,
+                top_quality=top_candidate.opportunity_quality_score,
                 top_label=top_candidate.strategy_label,
             )
             self.metrics_text.setPlainText(
@@ -1255,23 +1113,41 @@ class ScannerTab(QWidget):
                         f"SIGNALS    {len(candidates)}",
                         f"ROUTES     {sum(1 for candidate in candidates if candidate.net_edge_bps > 0)}",
                         f"TOP EDGE   {top_candidate.net_edge_bps:+d} bps",
+                        f"QUALITY    {top_candidate.opportunity_quality_score:03d}",
                         f"FOCUS      {top_candidate.strategy_label}",
                     ]
                 )
             )
+            board_lines = ["TACTICAL BOARD", ""]
+            for candidate in sorted(candidates, key=lambda item: (item.net_edge_bps, item.opportunity_quality_score), reverse=True)[:5]:
+                route_state = "READY" if candidate.net_edge_bps > 0 else "HOLD"
+                board_lines.append(
+                    f"{route_state:<5} {candidate.strategy_label[:16]:<16} {candidate.net_edge_bps:+4d} bps  Q{candidate.opportunity_quality_score:03d}"
+                )
+                board_lines.append(f"      {candidate.summary}")
+            self.route_board_text.setPlainText("\n".join(board_lines))
         if not candidates:
             self.focus_display.set_snapshot(
                 scan_state="standby",
                 signals_found=0,
                 routes_ready=0,
                 top_edge_bps=0,
+                top_quality=0,
                 top_label="Waiting for first route",
             )
             self.metrics_text.setPlainText(
                 "STATE      standby\n"
                 "SIGNALS    0\n"
                 "ROUTES     0\n"
-                "TOP EDGE   +0 bps"
+                "TOP EDGE   +0 bps\n"
+                "QUALITY    000"
+            )
+            self.route_board_text.setPlainText(
+                "TACTICAL BOARD\n\n"
+                "No staged routes yet.\n"
+                "1. Record a local sample.\n"
+                "2. Refresh Scanner.\n"
+                "3. Wait for a route that survives net-edge deductions."
             )
             self.details_text.setPlainText(
                 "No scanner candidates yet.\n\n"
@@ -1291,32 +1167,36 @@ class ScannerTab(QWidget):
         )
         matched_contracts = candidate.explanation.matched_contracts or ["No exact contract pair was attached."]
         assumptions = candidate.explanation.assumptions or ["No extra assumptions recorded."]
+        route_state = "READY TO PAPER" if candidate.net_edge_bps > 0 else "HOLD / SKIP"
         self.details_text.setPlainText(
             "\n".join(
                 [
-                    f"Candidate: {candidate.strategy_label}",
-                    f"Status: {candidate.status}",
-                    f"What the scanner saw: {candidate.summary}",
-                    f"Gross edge before deductions: {candidate.gross_edge_bps} bps",
-                    f"Net edge after deductions: {candidate.net_edge_bps} bps",
-                    f"Venues in play: {', '.join(candidate.venues)}",
-                    f"Suggested paper stake: ${candidate.recommended_stake_cents / 100:.2f}",
+                    "TACTICAL READOUT",
+                    "",
+                    f"Route: {candidate.strategy_label}",
+                    f"State: {route_state}",
+                    f"Machine status: {candidate.status}",
+                    f"Gross edge: {candidate.gross_edge_bps} bps",
+                    f"Net edge: {candidate.net_edge_bps} bps",
+                    f"Quality score: {candidate.opportunity_quality_score}",
+                    f"Venues: {', '.join(candidate.venues)}",
+                    f"Paper stake: ${candidate.recommended_stake_cents / 100:.2f}",
                     (
-                        "Suggested next move: paper this route and watch how it lands in Score."
+                        "Next move: start a paper session and bank the result into Score."
                         if candidate.net_edge_bps > 0
-                        else "Suggested next move: skip this route and wait for a cleaner net-positive setup."
+                        else "Next move: hold this route and keep the radar scanning for a cleaner edge."
                     ),
                     "",
-                    "Why it passed or failed",
+                    "WHY THE RADAR FLAGGED IT",
                     candidate.explanation.summary,
                     "",
-                    "What matched",
+                    "WHAT MATCHED",
                     *[f"- {item}" for item in matched_contracts],
                     "",
-                    "Assumptions still in play",
+                    "ASSUMPTIONS STILL IN PLAY",
                     *[f"- {item}" for item in assumptions],
                     "",
-                    "Deductions from gross edge",
+                    "DEDUCTIONS FROM GROSS EDGE",
                     *deductions,
                 ]
             )
@@ -1447,8 +1327,13 @@ class PaperBotsTab(QWidget):
         self.session_summary_text.setReadOnly(True)
         self.session_summary_text.setProperty("consoleRole", "system")
         self.session_summary_text.setMaximumHeight(180)
+        self.decision_trace_text = QPlainTextEdit()
+        self.decision_trace_text.setReadOnly(True)
+        self.decision_trace_text.setProperty("consoleRole", "system")
+        self.decision_trace_text.setMaximumHeight(180)
         upper_row.addWidget(self.bot_slots_text, 1)
         upper_row.addWidget(self.session_summary_text, 1)
+        upper_row.addWidget(self.decision_trace_text, 1)
         layout.addLayout(upper_row)
 
         self.event_feed = QListWidget()
@@ -1456,7 +1341,13 @@ class PaperBotsTab(QWidget):
         layout.addWidget(self.event_feed, 3)
         layout.addWidget(self.runs_list, 2)
 
-    def update_runs(self, runs: list[PaperRunResult], session: PaperBotSession | None = None) -> None:
+    def update_runs(
+        self,
+        runs: list[PaperRunResult],
+        session: PaperBotSession | None = None,
+        *,
+        decision_trace: str = "",
+    ) -> None:
         self.runs_list.clear()
         for run in reversed(runs[-20:]):
             self.runs_list.addItem(
@@ -1464,9 +1355,15 @@ class PaperBotsTab(QWidget):
             )
         if not runs:
             self.runs_list.addItem("No paper runs yet. Record -> scan -> start session.")
-        self.set_last_run(runs[-1] if runs else None, session=session)
+        self.set_last_run(runs[-1] if runs else None, session=session, decision_trace=decision_trace)
 
-    def set_last_run(self, run: PaperRunResult | None, *, session: PaperBotSession | None = None) -> None:
+    def set_last_run(
+        self,
+        run: PaperRunResult | None,
+        *,
+        session: PaperBotSession | None = None,
+        decision_trace: str = "",
+    ) -> None:
         if session is None:
             self.bot_slots_text.setPlainText(
                 "BOT SLOTS\n\n"
@@ -1476,6 +1373,10 @@ class PaperBotsTab(QWidget):
             self.session_summary_text.setPlainText(
                 "SESSION SUMMARY\n\n"
                 "No session has banked score yet."
+            )
+            self.decision_trace_text.setPlainText(
+                decision_trace
+                or "TACTICAL TRACE\n\nNo decision trace yet.\nStart a paper session to inspect bot decisions."
             )
             self.event_feed.clear()
         else:
@@ -1511,6 +1412,7 @@ class PaperBotsTab(QWidget):
                 self.event_feed.addItem(
                     f"{event.occurred_at.isoformat()} | {event.title} | {event.detail}"
                 )
+            self.decision_trace_text.setPlainText(decision_trace)
         if run is None:
             return
         self.session_summary_text.appendPlainText(
@@ -1873,9 +1775,11 @@ class DesktopMainWindow(QMainWindow):
         self._score_service = score_service
         self._paper_execution_engine = paper_execution_engine
         self._bot_config_service = BotConfigService()
+        self._bot_registry_service = BotRegistryService(self._bot_config_service)
         self._session_store = SessionEventStore(paper_store)
         self._unlock_track_service = UnlockTrackService()
         self._progression_service = ProgressionService()
+        self._decision_trace_formatter = DecisionTraceFormatter()
         self._portfolio_engine = PortfolioEngine(
             paper_store,
             self._bot_config_service,
@@ -2110,6 +2014,9 @@ class DesktopMainWindow(QMainWindow):
         portfolio_snapshot = self._portfolio_engine.snapshot(profile)
         unlocks = self._unlock_track_service.unlocks(profile, score_snapshot) if profile is not None else []
         bot_configs = self._bot_config_service.configs(profile, score_snapshot) if profile is not None else []
+        registry_entries = (
+            self._bot_registry_service.entries(profile, score_snapshot, unlocks) if profile is not None else []
+        )
         slot_preview = self._bot_config_service.slot_preview(profile, score_snapshot) if profile is not None else []
         checklist = (
             self._unlock_service.checklist(
@@ -2169,6 +2076,7 @@ class DesktopMainWindow(QMainWindow):
                 connector_states=self._loadout_service.connector_states(profile, connections, credential_statuses),
                 module_states=self._loadout_service.module_states(profile, self._opportunity_engine.strategy_modules()),
                 bot_configs=bot_configs,
+                registry_entries=registry_entries,
                 slot_preview=slot_preview,
                 unlocks=unlocks,
             )
@@ -2179,6 +2087,7 @@ class DesktopMainWindow(QMainWindow):
                 connector_states=[],
                 module_states=[],
                 bot_configs=[],
+                registry_entries=[],
                 slot_preview=[],
                 unlocks=[],
             )
@@ -2243,7 +2152,11 @@ class DesktopMainWindow(QMainWindow):
         portfolio_snapshot = self._portfolio_engine.snapshot(profile)
         ledger_entries = self._score_service.ledger(profile, limit=10)
         last_session = self._last_session or (sessions[-1] if sessions else None)
-        self.paper_bots_tab.update_runs(runs, last_session)
+        self.paper_bots_tab.update_runs(
+            runs,
+            last_session,
+            decision_trace=self._decision_trace_formatter.render(last_session),
+        )
         self.score_tab.update_summary(score_snapshot, ledger_entries, runs, portfolio_snapshot, sessions)
 
     def _venue_connections(self, profile: AppProfile | None) -> list[VenueConnection]:

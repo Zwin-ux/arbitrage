@@ -1,5 +1,7 @@
 #define AppName "Superior"
-#define AppVersion "0.3.0"
+#ifndef AppVersion
+  #define AppVersion "0.4.1"
+#endif
 #define AppPublisher "Superior"
 #define AppExeName "market-data-recorder-app.exe"
 #ifndef SourceBundleDir

@@ -67,6 +67,50 @@ def _desktop_window(
     )
 
 
+def _store_internal_binary_sample(profile: Any) -> None:
+    db_path = profile.data_dir / "market_data.duckdb"
+    storage = DuckDBStorage(db_path)
+    try:
+        market = PolymarketMarket.model_validate(
+            {
+                "id": "market-session",
+                "conditionId": "condition-session",
+                "question": "Will the session start?",
+                "slug": "will-the-session-start",
+                "active": True,
+                "enableOrderBook": True,
+                "outcomes": '["Yes", "No"]',
+                "clobTokenIds": '["yes-session", "no-session"]',
+            }
+        )
+        event = PolymarketEvent.model_validate({"id": "event-session", "title": "Session", "active": True})
+        storage.store_discovery_snapshot([DiscoveredMarket(event=event, market=market)])
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="yes-session",
+                market="market-session",
+                best_bid="0.45",
+                best_ask="0.47",
+                spread="0.02",
+                timestamp="1",
+            )
+        )
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="no-session",
+                market="market-session",
+                best_bid="0.46",
+                best_ask="0.48",
+                spread="0.02",
+                timestamp="2",
+            )
+        )
+    finally:
+        storage.close()
+
+
 def test_setup_wizard_creates_profile_and_keeps_secrets_out_of_json(
     qtbot: Any,
     app_paths: AppPaths,
@@ -256,47 +300,7 @@ def test_main_window_switches_primary_action_to_start_session(
         equipped_connectors=["polymarket"],
         equipped_modules=["internal-binary"],
     )
-    db_path = profile.data_dir / "market_data.duckdb"
-    storage = DuckDBStorage(db_path)
-    try:
-        market = PolymarketMarket.model_validate(
-            {
-                "id": "market-session",
-                "conditionId": "condition-session",
-                "question": "Will the session start?",
-                "slug": "will-the-session-start",
-                "active": True,
-                "enableOrderBook": True,
-                "outcomes": '["Yes", "No"]',
-                "clobTokenIds": '["yes-session", "no-session"]',
-            }
-        )
-        event = PolymarketEvent.model_validate({"id": "event-session", "title": "Session", "active": True})
-        storage.store_discovery_snapshot([DiscoveredMarket(event=event, market=market)])
-        storage.store_best_bid_ask(
-            BestBidAskEvent(
-                event_type="best_bid_ask",
-                asset_id="yes-session",
-                market="market-session",
-                best_bid="0.45",
-                best_ask="0.47",
-                spread="0.02",
-                timestamp="1",
-            )
-        )
-        storage.store_best_bid_ask(
-            BestBidAskEvent(
-                event_type="best_bid_ask",
-                asset_id="no-session",
-                market="market-session",
-                best_bid="0.46",
-                best_ask="0.48",
-                spread="0.02",
-                timestamp="2",
-            )
-        )
-    finally:
-        storage.close()
+    _store_internal_binary_sample(profile)
 
     controller = EngineController(RecorderSettings())
     window = _desktop_window(
@@ -315,6 +319,81 @@ def test_main_window_switches_primary_action_to_start_session(
 
     assert window.home_tab.start_button.text() == "Start session"
     assert "Start a paper session" in window.home_tab.primary_action_hint.text()
+    controller.shutdown()
+
+
+def test_main_window_surfaces_starter_registry_and_scanner_tactical_board(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Tactical Radar",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary", "cross-venue-complement"],
+    )
+    _store_internal_binary_sample(profile)
+
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    selector_index = window.profile_selector.findData(profile.id)
+    window.profile_selector.setCurrentIndex(selector_index)
+    window._refresh_scanner()  # noqa: SLF001
+    window._refresh_status_only()  # noqa: SLF001
+
+    assert "STARTER REGISTRY" in window.loadout_tab.registry_text.toPlainText()
+    assert "Scout Bot" in window.loadout_tab.registry_text.toPlainText()
+    assert "TACTICAL BOARD" in window.scanner_tab.route_board_text.toPlainText()
+    assert "READY" in window.scanner_tab.route_board_text.toPlainText()
+    assert "TACTICAL READOUT" in window.scanner_tab.details_text.toPlainText()
+    controller.shutdown()
+
+
+def test_main_window_paper_session_surfaces_decision_trace(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Score Attack",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    _store_internal_binary_sample(profile)
+
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    selector_index = window.profile_selector.findData(profile.id)
+    window.profile_selector.setCurrentIndex(selector_index)
+    window._refresh_scanner()  # noqa: SLF001
+    window._start_paper_session()  # noqa: SLF001
+
+    trace_text = window.paper_bots_tab.decision_trace_text.toPlainText()
+    assert "TACTICAL TRACE" in trace_text
+    assert "RESULT" in trace_text
+    assert "SLOT 1" in window.paper_bots_tab.bot_slots_text.toPlainText().upper()
     controller.shutdown()
 
 

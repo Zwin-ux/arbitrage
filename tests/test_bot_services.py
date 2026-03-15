@@ -33,7 +33,9 @@ from market_data_recorder_desktop.bot_services import (
 )
 from market_data_recorder_desktop.credentials import CredentialVault
 from market_data_recorder_desktop.score_attack import (
+    BotRegistryService,
     BotConfigService,
+    DecisionTraceFormatter,
     PaperSimulationEngine,
     PortfolioEngine,
     SessionEventStore,
@@ -431,3 +433,91 @@ def test_portfolio_engine_surfaces_unlock_track(app_paths: Any, fake_keyring: An
     assert portfolio_snapshot.portfolio_score > 0
     assert portfolio_snapshot.available_bot_slots >= 2
     assert any(unlock.id == "slot-2" and unlock.unlocked for unlock in portfolio_snapshot.unlocks)
+
+
+def test_bot_registry_service_surfaces_starter_bot_states(app_paths: Any, fake_keyring: Any) -> None:
+    del fake_keyring
+    profile = AppProfile(
+        id="profile-9",
+        display_name="Registry",
+        data_dir=app_paths.data_dir / "profile-9",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary", "cross-venue-complement"],
+    )
+    snapshot = ScoreSnapshot(profile_id=profile.id, available_bot_slots=1)
+    unlocks = UnlockTrackService().unlocks(profile, snapshot)
+
+    entries = BotRegistryService(BotConfigService()).entries(profile, snapshot, unlocks)
+
+    assert any(entry.label == "Scout Bot" and entry.status == "armed" for entry in entries)
+    assert any(entry.label == "Discipline Bot" and entry.status == "locked" for entry in entries)
+    assert any(entry.family_label == "Cross-Venue" for entry in entries)
+
+
+def test_paper_simulation_engine_generates_human_trace_lines(app_paths: Any, fake_keyring: Any) -> None:
+    del fake_keyring
+    profile = AppProfile(
+        id="profile-10",
+        display_name="Trace",
+        data_dir=app_paths.data_dir / "profile-10",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    db_path = profile.data_dir / "market_data.duckdb"
+    storage = DuckDBStorage(db_path)
+    try:
+        market = PolymarketMarket.model_validate(
+            {
+                "id": "market-10",
+                "conditionId": "condition-10",
+                "question": "Will the tactical trace render?",
+                "slug": "will-the-tactical-trace-render",
+                "active": True,
+                "enableOrderBook": True,
+                "outcomes": '["Yes", "No"]',
+                "clobTokenIds": '["yes-10", "no-10"]',
+            }
+        )
+        event = PolymarketEvent.model_validate({"id": "event-10", "title": "Trace", "active": True})
+        storage.store_discovery_snapshot([DiscoveredMarket(event=event, market=market)])
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="yes-10",
+                market="market-10",
+                best_bid="0.44",
+                best_ask="0.46",
+                spread="0.02",
+                timestamp="1",
+            )
+        )
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="no-10",
+                market="market-10",
+                best_bid="0.45",
+                best_ask="0.47",
+                spread="0.02",
+                timestamp="2",
+            )
+        )
+    finally:
+        storage.close()
+
+    paper_store = PaperRunStore()
+    candidates = OpportunityEngine([PolymarketVenueAdapter()], ContractMatcher()).scan(profile)
+    session = PaperSimulationEngine(
+        paper_store=paper_store,
+        paper_execution_engine=PaperExecutionEngine(paper_store),
+        bot_config_service=BotConfigService(),
+        session_store=SessionEventStore(paper_store),
+    ).run_session(profile, candidates, score_snapshot=ScoreService(paper_store).snapshot(profile))
+    rendered = DecisionTraceFormatter().render(session)
+
+    assert session.decisions
+    assert any(decision.trace_lines for decision in session.decisions)
+    assert "TACTICAL TRACE" in rendered
+    assert "RESULT" in rendered

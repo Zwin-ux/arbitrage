@@ -288,6 +288,21 @@ class BotConfig(BaseModel):
     enabled: bool = True
 
 
+class BotRegistryEntry(BaseModel):
+    blueprint_id: str
+    label: str
+    family_label: str
+    description: str
+    min_net_edge_bps: int = 20
+    target_stake_cents: int = 1_500
+    route_preference: BotRoutePreference = "highest_edge"
+    lab_only: bool = False
+    status: str = "locked"
+    unlock_label: str = ""
+    slot_label: str = ""
+    tone: SemanticStateColor = "idle"
+
+
 class BotSlot(BaseModel):
     slot_id: str
     label: str
@@ -300,15 +315,26 @@ class BotSlot(BaseModel):
     score_delta: int = 0
 
 
+class DecisionTraceLine(BaseModel):
+    label: str
+    value: str
+    tone: SemanticStateColor = "idle"
+
+
 class PaperBotDecision(BaseModel):
     bot_id: str
     slot_id: str
     decision: BotDecisionType
     reason: str
     candidate_id: str | None = None
+    route_label: str = ""
     expected_edge_bps: int = 0
+    realized_edge_bps: int = 0
     realized_pnl_cents: int = 0
+    stake_cents: int = 0
+    quality_score: int = 0
     score_delta: int = 0
+    trace_lines: list[DecisionTraceLine] = Field(default_factory=list)
 
 
 class PaperBotEvent(BaseModel):

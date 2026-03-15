@@ -7,7 +7,9 @@ from .app_types import (
     AppProfile,
     BotBlueprint,
     BotConfig,
+    BotRegistryEntry,
     BotSlot,
+    DecisionTraceLine,
     OpportunityCandidate,
     PaperBotDecision,
     PaperBotEvent,
@@ -31,6 +33,23 @@ def _score_delta_for_run(run: PaperRunResult) -> int:
     pnl_bonus = max(run.realized_pnl_cents, 0)
     discipline_bonus = 12 if run.execution.fill_ratio >= 0.8 else 0
     return pnl_bonus + quality_bonus + edge_bonus + discipline_bonus
+
+
+def _family_label(strategy_family: str) -> str:
+    return {
+        "internal-binary": "Internal Binary",
+        "cross-venue-complement": "Cross-Venue",
+        "negative-risk-basket": "Neg Risk Lab",
+        "maker-rebate-lab": "Maker Lab",
+    }.get(strategy_family, strategy_family.replace("-", " ").title())
+
+
+def _route_preference_label(route_preference: str) -> str:
+    return {
+        "highest_edge": "Highest edge",
+        "best_quality": "Best quality",
+        "balanced": "Balanced",
+    }.get(route_preference, route_preference.replace("-", " ").title())
 
 
 class BotConfigService:
@@ -138,6 +157,59 @@ class BotConfigService:
                 )
             )
         return slots
+
+
+class BotRegistryService:
+    def __init__(self, bot_config_service: BotConfigService) -> None:
+        self._bot_config_service = bot_config_service
+
+    def entries(
+        self,
+        profile: AppProfile,
+        score_snapshot: ScoreSnapshot,
+        unlocks: list[UnlockState],
+    ) -> list[BotRegistryEntry]:
+        configs = {config.blueprint_id: config for config in self._bot_config_service.configs(profile, score_snapshot)}
+        next_unlock = next((unlock for unlock in unlocks if not unlock.unlocked), None)
+        entries: list[BotRegistryEntry] = []
+        for index, blueprint in enumerate(self._bot_config_service.blueprints(profile), start=1):
+            if blueprint.id in configs:
+                status = "armed"
+                slot_label = configs[blueprint.id].slot_id.replace("-", " ").title()
+                unlock_label = f"Armed in {slot_label}."
+                tone = "active"
+            elif blueprint.lab_only and not profile.lab_enabled:
+                status = "offline"
+                slot_label = "Lab only"
+                unlock_label = "Enable Lab to surface this starter bot."
+                tone = "locked"
+            elif index <= score_snapshot.available_bot_slots:
+                status = "available"
+                slot_label = f"Slot {index}"
+                unlock_label = "Current bot bay has room to arm this bot."
+                tone = "warning"
+            else:
+                status = "locked"
+                slot_label = f"Slot {index}"
+                unlock_label = next_unlock.detail if next_unlock is not None else score_snapshot.next_unlock_label
+                tone = "locked"
+            entries.append(
+                BotRegistryEntry(
+                    blueprint_id=blueprint.id,
+                    label=blueprint.label,
+                    family_label=_family_label(blueprint.strategy_family),
+                    description=blueprint.description,
+                    min_net_edge_bps=blueprint.min_net_edge_bps,
+                    target_stake_cents=blueprint.target_stake_cents,
+                    route_preference=blueprint.route_preference,
+                    lab_only=blueprint.lab_only,
+                    status=status,
+                    unlock_label=unlock_label,
+                    slot_label=slot_label,
+                    tone=tone,
+                )
+            )
+        return entries
 
 
 class SessionEventStore:
@@ -316,6 +388,30 @@ class ProgressionService:
         return "All current paper-first unlocks are online."
 
 
+class DecisionTraceFormatter:
+    def render(self, session: PaperBotSession | None) -> str:
+        if session is None:
+            return (
+                "TACTICAL TRACE\n\n"
+                "No decision trace yet.\n"
+                "Start a paper session to see what each bot saw, why it acted, and how score moved."
+            )
+        lines = [
+            "TACTICAL TRACE",
+            "",
+            f"Session grade: {session.grade.grade}",
+            f"Score delta: {session.score_delta}",
+            "",
+        ]
+        for decision in session.decisions:
+            lines.append(f"{decision.slot_id.upper()} :: {decision.decision.upper()} :: {decision.route_label or 'No route'}")
+            lines.append(f"Reason: {decision.reason}")
+            for item in decision.trace_lines:
+                lines.append(f"  {item.label.upper():<12} {item.value}")
+            lines.append("")
+        return "\n".join(lines).rstrip()
+
+
 class PortfolioEngine:
     def __init__(
         self,
@@ -448,6 +544,15 @@ class PaperSimulationEngine:
                         slot_id=config.slot_id,
                         decision="blocked",
                         reason="No current candidate matched the bot gate.",
+                        route_label="No staged route",
+                        stake_cents=0,
+                        quality_score=0,
+                        trace_lines=[
+                            DecisionTraceLine(label="family", value=_family_label(config.strategy_family)),
+                            DecisionTraceLine(label="gate", value=f"{config.min_net_edge_bps}+ bps", tone="warning"),
+                            DecisionTraceLine(label="route", value="No matching local route", tone="locked"),
+                            DecisionTraceLine(label="result", value="Bot stayed blocked", tone="locked"),
+                        ],
                     )
                 )
                 events.append(
@@ -476,7 +581,23 @@ class PaperSimulationEngine:
                     decision="stage",
                     reason=f"Candidate cleared the {config.min_net_edge_bps} bps bot gate.",
                     candidate_id=candidate.id,
+                    route_label=candidate.strategy_label,
                     expected_edge_bps=candidate.net_edge_bps,
+                    stake_cents=min(candidate.recommended_stake_cents, config.max_position_cents),
+                    quality_score=candidate.opportunity_quality_score,
+                    trace_lines=[
+                        DecisionTraceLine(label="family", value=_family_label(config.strategy_family)),
+                        DecisionTraceLine(label="preference", value=_route_preference_label(config.route_preference)),
+                        DecisionTraceLine(label="route", value=candidate.summary),
+                        DecisionTraceLine(label="gross edge", value=f"{candidate.gross_edge_bps} bps", tone="warning"),
+                        DecisionTraceLine(label="net edge", value=f"{candidate.net_edge_bps} bps", tone="active"),
+                        DecisionTraceLine(label="quality", value=str(candidate.opportunity_quality_score), tone="active"),
+                        DecisionTraceLine(
+                            label="stake",
+                            value=f"${min(candidate.recommended_stake_cents, config.max_position_cents) / 100:.2f}",
+                        ),
+                        DecisionTraceLine(label="result", value="Route staged", tone="warning"),
+                    ],
                 )
             )
             events.append(
@@ -514,9 +635,41 @@ class PaperSimulationEngine:
                     decision="bank" if run.status == "completed" else "blocked",
                     reason=run.notes,
                     candidate_id=candidate.id,
+                    route_label=candidate.strategy_label,
                     expected_edge_bps=run.expected_edge_bps,
+                    realized_edge_bps=run.realized_edge_bps,
                     realized_pnl_cents=run.realized_pnl_cents,
+                    stake_cents=run.deployed_capital_cents,
+                    quality_score=run.opportunity_quality_score,
                     score_delta=score_delta,
+                    trace_lines=[
+                        DecisionTraceLine(label="family", value=_family_label(config.strategy_family)),
+                        DecisionTraceLine(label="route", value=candidate.summary),
+                        DecisionTraceLine(label="gate", value=f"{config.min_net_edge_bps}+ bps", tone="warning"),
+                        DecisionTraceLine(label="expected", value=f"{run.expected_edge_bps} bps", tone="warning"),
+                        DecisionTraceLine(
+                            label="realized",
+                            value=f"{run.realized_edge_bps} bps",
+                            tone="success" if run.status == "completed" else "locked",
+                        ),
+                        DecisionTraceLine(label="quality", value=str(run.opportunity_quality_score), tone="active"),
+                        DecisionTraceLine(label="stake", value=f"${run.deployed_capital_cents / 100:.2f}"),
+                        DecisionTraceLine(
+                            label="paper pnl",
+                            value=f"${run.realized_pnl_cents / 100:.2f}",
+                            tone="success" if run.realized_pnl_cents >= 0 else "error",
+                        ),
+                        DecisionTraceLine(
+                            label="score",
+                            value=str(score_delta),
+                            tone="success" if score_delta > 0 else "locked",
+                        ),
+                        DecisionTraceLine(
+                            label="result",
+                            value="Score banked" if run.status == "completed" else "Route blocked",
+                            tone="success" if run.status == "completed" else "locked",
+                        ),
+                    ],
                 )
             )
             events.append(

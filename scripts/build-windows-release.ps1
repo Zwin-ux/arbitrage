@@ -68,24 +68,6 @@ function Invoke-ExecutableAndWait {
     }
 }
 
-function Wait-ForPath {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Path,
-        [int]$TimeoutSeconds = 20
-    )
-
-    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-    do {
-        if (Test-Path $Path) {
-            return $true
-        }
-        Start-Sleep -Milliseconds 250
-    } while ((Get-Date) -lt $deadline)
-
-    return (Test-Path $Path)
-}
-
 function Reset-Directory {
     param(
         [Parameter(Mandatory = $true)]
@@ -109,65 +91,6 @@ function Reset-Directory {
     }
 
     New-Item -ItemType Directory -Path $Path -Force | Out-Null
-}
-
-function Get-InstalledExecutablePath {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$InstallRoot,
-        [Parameter(Mandatory = $true)]
-        [string]$InstallLog
-    )
-
-    $candidates = @(
-        (Join-Path $InstallRoot "market-data-recorder-app.exe"),
-        (Join-Path $InstallRoot "market-data-recorder-app\market-data-recorder-app.exe"),
-        (Join-Path $env:LOCALAPPDATA "Programs\Superior\market-data-recorder-app.exe")
-    )
-
-    if (Test-Path $InstallLog) {
-        $logMatch = Select-String -Path $InstallLog -Pattern 'Dest filename:\s+(.*market-data-recorder-app\.exe)$' | Select-Object -Last 1
-        if ($null -ne $logMatch) {
-            $logPath = $logMatch.Matches[0].Groups[1].Value.Trim()
-            if (-not [string]::IsNullOrWhiteSpace($logPath)) {
-                $candidates = @($logPath) + $candidates
-            }
-        }
-    }
-
-    foreach ($candidate in ($candidates | Select-Object -Unique)) {
-        if ([string]::IsNullOrWhiteSpace($candidate)) {
-            continue
-        }
-        if (Wait-ForPath -Path $candidate -TimeoutSeconds 20) {
-            return $candidate
-        }
-    }
-
-    return $null
-}
-
-function Get-InstalledSmokeExecutablePath {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$InstallRoot
-    )
-
-    $candidates = @(
-        (Join-Path $InstallRoot "market-data-recorder-smoke\market-data-recorder-smoke.exe"),
-        (Join-Path $env:LOCALAPPDATA "Programs\Superior\market-data-recorder-smoke\market-data-recorder-smoke.exe")
-    )
-
-    foreach ($candidate in ($candidates | Select-Object -Unique)) {
-        if ([string]::IsNullOrWhiteSpace($candidate)) {
-            continue
-        }
-        if (Wait-ForPath -Path $candidate -TimeoutSeconds 20) {
-            return $candidate
-        }
-    }
-
-    return $null
 }
 
 function Copy-ReleaseAsset {
@@ -212,52 +135,6 @@ function Write-ReleaseChecksums {
     Set-Content -Path $OutputPath -Value $lines -Encoding ascii
 }
 
-function Test-InstallerSmoke {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$InstallerPath
-    )
-
-    $installRoot = Join-Path $env:TEMP "SuperiorSmokeInstall"
-    $installLog = Join-Path $env:TEMP "superior-installer-smoke.log"
-    cmd.exe /c "rmdir /s /q ""$installRoot"" >nul 2>nul"
-    if (Test-Path $installLog) {
-        Remove-Item $installLog -Force -ErrorAction SilentlyContinue
-    }
-
-    Invoke-ExecutableAndWait -FilePath $InstallerPath -ArgumentList @(
-        "/VERYSILENT",
-        "/SUPPRESSMSGBOXES",
-        "/NORESTART",
-        "/DIR=$installRoot",
-        "/LOG=$installLog"
-    ) -StageName "Installer smoke install"
-
-    $appExe = Get-InstalledExecutablePath -InstallRoot $installRoot -InstallLog $installLog
-    if ($null -eq $appExe) {
-        throw "Installer smoke failed. Installed executable was not found. Checked install root $installRoot and install log $installLog."
-    }
-
-    $smokeExe = Get-InstalledSmokeExecutablePath -InstallRoot $installRoot
-    if ($null -eq $smokeExe) {
-        throw "Installer smoke failed. Installed smoke executable was not found under $installRoot."
-    }
-
-    Invoke-NativeStep -StageName "Installed app smoke" -Command {
-        python "$repoRoot\scripts\smoke-test-windows-release.py" --bundle-exe $smokeExe
-    }
-
-    $uninstaller = Join-Path (Split-Path -Parent $appExe) "unins000.exe"
-    if (Test-Path $uninstaller) {
-        Invoke-ExecutableAndWait -FilePath $uninstaller -ArgumentList @(
-            "/VERYSILENT",
-            "/SUPPRESSMSGBOXES",
-            "/NORESTART"
-        ) -StageName "Installer smoke uninstall"
-    }
-    cmd.exe /c "rmdir /s /q ""$installRoot"" >nul 2>nul"
-}
-
 try {
     Write-ReleaseStage "Locate ISCC"
     $isccPath = & "$repoRoot\scripts\bootstrap-iscc.ps1"
@@ -283,6 +160,7 @@ try {
     $stageSmokeWork = "$stageRoot\smoke-build-work"
     $stageInstallerDir = "$stageRoot\installer"
     $finalDist = "$repoRoot\dist"
+    $appVersion = python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])"
     Write-ReleaseStage "Prepare release staging"
     if (Test-Path "$repoRoot\.tmp\build-release") {
         Remove-Item "$repoRoot\.tmp\build-release" -Recurse -Force
@@ -312,14 +190,15 @@ try {
     }
 
     Invoke-NativeStep -StageName "Compile installer" -Command {
-        & $isccPath "/DSourceBundleDir=$bundleDir" "/DSourceSmokeDir=$smokeBundleDir" "/DOutputDirPath=$stageInstallerDir" "$repoRoot\packaging\windows\installer.iss"
+        & $isccPath "/DAppVersion=$appVersion" "/DSourceBundleDir=$bundleDir" "/DSourceSmokeDir=$smokeBundleDir" "/DOutputDirPath=$stageInstallerDir" "$repoRoot\packaging\windows\installer.iss"
     }
 
     $installerBuilt = "$stageInstallerDir\market-data-recorder-setup.exe"
     $installerFinal = "$finalDist\market-data-recorder-setup.exe"
 
-    Write-ReleaseStage "Smoke test installer"
-    Test-InstallerSmoke -InstallerPath $installerBuilt
+    Invoke-NativeStep -StageName "Smoke test installer" -Command {
+        powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\smoke-test-installer.ps1" -InstallerPath $installerBuilt
+    }
 
     Write-ReleaseStage "Copy final release assets"
     Copy-ReleaseAsset -SourcePath $portableZip -DestinationPath "$finalDist\market-data-recorder-app-portable.zip"
