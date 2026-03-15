@@ -38,13 +38,13 @@ def _default_modules(enabled_venues: list[str], lab_enabled: bool) -> list[Modul
 
 def _primary_mission(primary_goal: str, enabled_venues: list[str]) -> str:
     if primary_goal == "paper_arbitrage":
-        return "Record your first book, inspect one scanner hit, and paper it."
+        return "Build a clean local sample, paper one route, and grow score slowly."
     if primary_goal == "live_prepare":
-        return "Equip your connectors, record locally, and clear the paper-first gate."
+        return "Stay in paper mode, finish diagnostics, and clear the live gate deliberately."
     if primary_goal == "lab_experiment":
-        return "Open the Lab only after the recorder and paper score are healthy."
+        return "Keep Lab paper-only until recorder health and paper score look stable."
     if "Polymarket" in enabled_venues:
-        return "Equip Polymarket and record your first book."
+        return "Equip Polymarket, record a local sample, then inspect one scanner route."
     return "Create a profile and equip your first connector."
 
 

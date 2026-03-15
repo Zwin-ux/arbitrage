@@ -1,6 +1,6 @@
 # Testing
 
-This repo now has two deliberate test lanes:
+This repo now has three deliberate test lanes:
 
 ## 1. Windows release lane
 
@@ -27,6 +27,7 @@ That script now does all of the following:
 - installs the installer silently into a temp folder
 - smoke-tests the installed bundle through the installed smoke companion
 - writes final release assets to `dist/`
+- writes `dist\SHA256SUMS.txt` for the installer and portable zip
 
 Standalone smoke commands:
 
@@ -42,7 +43,31 @@ The shipped Windows app uses the windowed PyInstaller bootloader. In some constr
 
 GitHub Actions on `windows-latest` is the source of truth for packaged EXE and installer execution.
 
-## 2. Frontend variant lane
+## 2. QA client lane
+
+Use the local QA client when you want a product-level read on the guided path instead of raw unit tests:
+
+```powershell
+market-data-recorder-qa
+market-data-recorder-qa --headless --output .tmp\qa-report.json
+```
+
+The QA client runs deterministic local scenarios for:
+
+- guided onboarding and profile bootstrap
+- loadout and capability gating
+- scanner detection on seeded Polymarket fixtures
+- first paper loop without credentials
+- paper-score ledger updates
+- live-gate lock and unlock rules
+- coach guardrails
+- engine controller state transitions
+
+Each scenario writes reviewable artifacts into an isolated workspace so QA can inspect evidence instead of treating success as a black box.
+
+In CI, the headless QA client also exports a report artifact so the release lane has reviewable evidence instead of only pass/fail status.
+
+## 3. Frontend variant lane
 
 The site now has a simple variant lab:
 
@@ -79,4 +104,5 @@ GitHub Actions now covers:
 
 - Python tests and mypy
 - Windows package build + smoke tests
+- QA client coverage through the normal Python test suite
 - site build + browser smoke tests

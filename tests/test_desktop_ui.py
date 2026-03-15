@@ -101,6 +101,35 @@ def test_setup_wizard_creates_profile_and_keeps_secrets_out_of_json(
     assert fake_keyring.store
 
 
+def test_setup_wizard_allows_first_run_without_credentials(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    vault = CredentialVault(backend=fake_keyring)
+    wizard = SetupWizard(
+        profile_store=store,
+        credential_vault=vault,
+        startup_manager=UnsupportedStartupManager(),
+        preset_labels=[("continuous-record", "Continuous recorder")],
+    )
+    qtbot.addWidget(wizard)
+
+    wizard.profile_page.name_edit.setText("No Keys Yet")
+    wizard.profile_page.data_dir_edit.setText(str(app_paths.data_dir / "no-keys"))
+    wizard.venue_page.polymarket_checkbox.setChecked(True)
+    wizard.venue_page.kalshi_checkbox.setChecked(False)
+    wizard.credentials_page.set_enabled_providers(["polymarket"])
+    wizard.accept()
+
+    created = store.get_profile(wizard.created_profile_id or "")
+    assert created is not None
+    assert created.enabled_venues == ["Polymarket"]
+    assert "Run one paper route and use Score as the main progression surface." in wizard.finish_page.summary_label.text()
+    assert fake_keyring.store == {}
+
+
 def test_setup_wizard_surfaces_recommended_plan(
     qtbot: Any,
     app_paths: AppPaths,

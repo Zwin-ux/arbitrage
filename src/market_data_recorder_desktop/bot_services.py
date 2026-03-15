@@ -317,21 +317,33 @@ class CapabilityService:
                 label="Recorder",
                 equipped=True,
                 ready=recorder_ready,
-                message="Capture local Polymarket books before scanning." if recorder_ready else "Equip Polymarket first.",
+                message=(
+                    "Ready to capture local Polymarket books for the first paper loop."
+                    if recorder_ready
+                    else "Equip Polymarket first."
+                ),
             ),
             CapabilityState(
                 capability_id="scanner",
                 label="Scanner",
                 equipped=True,
                 ready=scanner_ready,
-                message="Scanner is ready to inspect local books." if scanner_ready else "Run the recorder to unlock scanner quality.",
+                message=(
+                    "Local books are ready. Refresh scan to inspect the next route."
+                    if scanner_ready
+                    else "Run the recorder once so scanner explanations have local data."
+                ),
             ),
             CapabilityState(
                 capability_id="paper-score",
                 label="Paper Score",
                 equipped=True,
                 ready=paper_ready,
-                message="Paper score will update after the first paper run." if not score_snapshot.total_runs else "Paper score is live.",
+                message=(
+                    "Paper score will light up after the first paper route."
+                    if not score_snapshot.total_runs
+                    else "Paper score is live and reading from the local ledger."
+                ),
             ),
             CapabilityState(
                 capability_id="live-gate",

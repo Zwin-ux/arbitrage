@@ -8,8 +8,8 @@
 #ifndef OutputDirPath
   #define OutputDirPath "..\..\dist\installer"
 #endif
-#ifndef SourceSmokeExe
-  #define SourceSmokeExe ""
+#ifndef SourceSmokeDir
+  #define SourceSmokeDir ""
 #endif
 
 [Setup]
@@ -36,8 +36,8 @@ Name: "runatlogin"; Description: "Launch at login"; GroupDescription: "Startup:"
 [Files]
 Source: "{#SourceBundleDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "superior.ico"; DestDir: "{app}"; Flags: ignoreversion
-#if SourceSmokeExe != ""
-Source: "{#SourceSmokeExe}"; DestDir: "{app}"; DestName: "market-data-recorder-smoke.exe"; Flags: ignoreversion
+#if SourceSmokeDir != ""
+Source: "{#SourceSmokeDir}\*"; DestDir: "{app}\market-data-recorder-smoke"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
 
 [Icons]

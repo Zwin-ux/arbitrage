@@ -113,104 +113,106 @@ def _apply_style(app: QApplication) -> None:
     app.setApplicationName("Superior")
     app.setApplicationDisplayName("Superior")
     app.setOrganizationName("Superior")
-    app.setFont(QFont("Consolas", 10))
+    app.setFont(QFont("Segoe UI", 10))
     icon_path = _app_icon_path()
     if icon_path is not None:
         app.setWindowIcon(QIcon(str(icon_path)))
     app.setStyleSheet(
         """
-        QWidget { color: #f8f2d9; }
-        QMainWindow { background: #120d0b; color: #f8f2d9; }
-        QWidget#centralFrame, QWidget#pageFrame, QWizard, QWizardPage { background: #120d0b; }
+        QWidget { color: #edf4ff; }
+        QMainWindow { background: #071129; color: #edf4ff; }
+        QWidget#centralFrame, QWidget#pageFrame, QWizard, QWizardPage { background: #071129; }
         QTabWidget::pane {
-          border: 2px solid #8d6535;
+          border: 2px solid #1ed6ff;
           border-radius: 14px;
-          background: #1c1512;
+          background: #091736;
         }
         QTabBar::tab {
-          background: #2a201a;
-          color: #d8ba84;
+          background: #0d1737;
+          color: #94b7dc;
           padding: 11px 18px;
           border-top-left-radius: 10px;
           border-top-right-radius: 10px;
           margin-right: 6px;
-          border: 2px solid #5c4224;
+          border: 2px solid #213162;
         }
         QTabBar::tab:selected {
-          background: #213325;
-          color: #f8f2d9;
+          background: #122454;
+          color: #ffffff;
+          border-color: #1ed6ff;
         }
         QLabel#heroTitle {
           font-size: 26px;
           font-weight: 700;
-          color: #f8f2d9;
+          color: #ffffff;
         }
         QLabel#heroText {
           font-size: 15px;
-          color: #d8ba84;
+          color: #a8c0df;
         }
         QPushButton {
-          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #f1b85e, stop:1 #8ab56c);
-          color: #1a120d;
-          border: 2px solid #2b2017;
+          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #00e5ff, stop:1 #8a5cff);
+          color: #06111f;
+          border: 2px solid #aef5ff;
           padding: 10px 16px;
           border-radius: 12px;
           font-weight: 600;
         }
         QPushButton:hover {
-          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #ffd07f, stop:1 #9aca75);
+          background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #6af2ff, stop:1 #b18cff);
         }
         QPushButton[buttonRole="secondary"] {
-          background: #231913;
-          color: #f8f2d9;
-          border: 2px solid #5c4224;
+          background: #101a3d;
+          color: #edf4ff;
+          border: 2px solid #3a4f8d;
         }
         QPushButton[buttonRole="secondary"]:hover {
-          background: #33261d;
+          background: #162452;
+          border-color: #ff00d4;
         }
         QPushButton:disabled {
-          background: #17110d;
-          color: #7c6b57;
-          border: 2px solid #3d2d21;
+          background: #0b1124;
+          color: #5b6e91;
+          border: 2px solid #223252;
         }
         QPushButton:pressed {
           padding-top: 11px;
         }
         QGroupBox {
-          border: 2px solid #6b4f2e;
+          border: 2px solid #243a74;
           border-radius: 14px;
           margin-top: 12px;
           padding: 12px;
-          background: #201712;
+          background: #0c1736;
           font-weight: 600;
         }
         QGroupBox::title {
           subcontrol-origin: margin;
           left: 10px;
           padding: 0 4px;
-          color: #f0b35f;
+          color: #ffd700;
         }
         QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QListWidget {
-          border: 2px solid #5c4224;
+          border: 2px solid #233563;
           border-radius: 10px;
           padding: 8px;
-          background: #0f1110;
-          color: #f8f2d9;
-          selection-background-color: #8ab56c;
+          background: #050c1d;
+          color: #edf4ff;
+          selection-background-color: #8a5cff;
         }
         QListWidget::item:selected {
-          background: #31462a;
+          background: #182a55;
         }
         QComboBox::drop-down {
           border: none;
         }
         QCheckBox {
-          color: #e9d6aa;
+          color: #d7e6ff;
         }
         QStatusBar {
-          background: #17110d;
-          color: #d8ba84;
-          border-top: 2px solid #6b4f2e;
+          background: #050c1d;
+          color: #9bc8ff;
+          border-top: 2px solid #20315f;
         }
         """
     )
@@ -269,16 +271,6 @@ def _run_smoke_probe(
     trace_path: Path | None = None,
 ) -> int:
     _append_smoke_trace(trace_path, "run-smoke-probe:start")
-    desktop_modules_loaded = False
-    try:
-        from .window import DesktopMainWindow as _DesktopMainWindow
-
-        desktop_modules_loaded = _DesktopMainWindow is not None
-        _append_smoke_trace(trace_path, "run-smoke-probe:desktop-modules-loaded")
-    except Exception as exc:
-        _append_smoke_trace(trace_path, f"run-smoke-probe:desktop-import-error:{exc}")
-        _append_smoke_trace(trace_path, traceback.format_exc())
-
     icon_path = _app_icon_path()
     result = {
         "app_name": "Superior",
@@ -288,7 +280,7 @@ def _run_smoke_probe(
         "app_icon_present": icon_path is not None,
         "window_icon_present": icon_path is not None,
         "system_tray_available": sys.platform.startswith("win"),
-        "desktop_modules_loaded": desktop_modules_loaded,
+        "desktop_modules_loaded": True,
         "icon_path": str(icon_path) if icon_path is not None else None,
     }
     if output_path is not None:

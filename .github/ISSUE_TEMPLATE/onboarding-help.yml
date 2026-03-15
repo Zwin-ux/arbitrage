@@ -1,0 +1,36 @@
+name: Onboarding help
+description: Report a confusing or blocked first-run experience.
+title: "[Onboarding] "
+labels:
+  - onboarding
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template if the guided setup, first paper run, or download flow was confusing or blocked.
+  - type: input
+    id: step
+    attributes:
+      label: Where did you get stuck?
+      placeholder: Download page, setup wizard, loadout, scanner, paper run, score
+    validations:
+      required: true
+  - type: textarea
+    id: blocker
+    attributes:
+      label: What was confusing or blocked?
+    validations:
+      required: true
+  - type: textarea
+    id: expectation
+    attributes:
+      label: What did you expect to happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Mention whether you were new to Polymarket, whether you used the installer or source build, and whether credentials were involved.
+    validations:
+      required: false

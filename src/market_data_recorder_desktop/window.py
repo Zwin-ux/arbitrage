@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from . import __version__
 from .app_types import (
     AppProfile,
     AssistantSession,
@@ -72,7 +73,7 @@ class HomeTab(QWidget):
         super().__init__()
         layout = QVBoxLayout(self)
 
-        self.safe_state_label = QLabel("Paper score active | Live gate locked | Lab offline")
+        self.safe_state_label = QLabel("Paper mode active | Live gate locked | Lab off")
         self.safe_state_label.setObjectName("heroTitle")
         self.next_step_label = QLabel("Create a loadout and record your first local Polymarket book.")
         self.next_step_label.setWordWrap(True)
@@ -110,6 +111,18 @@ class HomeTab(QWidget):
         setup_layout.addWidget(self.setup_steps_label)
         setup_layout.addLayout(setup_actions)
         layout.addWidget(setup_group)
+
+        loop_group = QGroupBox("Golden path")
+        loop_layout = QVBoxLayout(loop_group)
+        self.loop_label = QLabel("Golden path: 0 of 4 milestones complete")
+        self.loop_label.setObjectName("heroText")
+        self.loop_label.setWordWrap(True)
+        self.loop_steps_label = QLabel()
+        self.loop_steps_label.setWordWrap(True)
+        self.loop_steps_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        loop_layout.addWidget(self.loop_label)
+        loop_layout.addWidget(self.loop_steps_label)
+        layout.addWidget(loop_group)
 
         action_row = QHBoxLayout()
         self.start_button = QPushButton("Boot recorder")
@@ -186,7 +199,7 @@ class HomeTab(QWidget):
             self.data_label.setText("No database yet")
             self.risk_label.setText("No risk policy")
             self.warning_label.setText("No warnings")
-            self.safe_state_label.setText("Paper score active | Live gate locked | Lab offline")
+            self.safe_state_label.setText("Paper mode active | Live gate locked | Lab off")
             self.next_step_label.setText("Use setup to create a Superior profile and equip Polymarket.")
             self.mission_label.setText("Mission: Equip Polymarket and record your first book.")
             self.score_label.setText("Paper score: waiting for first run")
@@ -197,6 +210,13 @@ class HomeTab(QWidget):
                 "1. Create your first profile with Guided mode on.\n"
                 "2. Equip Polymarket and leave credentials blank if you only want recorder plus paper mode.\n"
                 "3. Boot the recorder, then scan edge after market data appears."
+            )
+            self.loop_label.setText("Golden path: 0 of 4 milestones complete")
+            self.loop_steps_label.setText(
+                "[NEXT] Equip Polymarket loadout - Create a guided profile with Polymarket equipped.\n"
+                "[WAIT] Record local sample - Recorder stays off until a profile exists.\n"
+                "[WAIT] Inspect scanner route - Scanner waits for local market data.\n"
+                "[WAIT] Earn paper score - Score lights up after the first paper route."
             )
             self.open_setup_button.setText("Create first profile")
             self.capability_text.setPlainText(
@@ -217,12 +237,23 @@ class HomeTab(QWidget):
         )
         is_running = status.state == "running"
         live_state = "Live gate clear" if profile.live_unlocked else "Live gate locked"
-        lab_state = "Lab online" if profile.lab_enabled else "Lab offline"
-        self.safe_state_label.setText(f"Paper score active | {live_state} | {lab_state}")
-        if checklist is not None and checklist.outstanding:
-            self.next_step_label.setText(f"Next step: {checklist.outstanding[0].message}")
+        lab_state = "Lab on" if profile.lab_enabled else "Lab off"
+        self.safe_state_label.setText(f"Paper mode active | {live_state} | {lab_state}")
+        scanner_ready = any(state.capability_id == "scanner" and state.ready for state in capability_states)
+        loadout_ready = "polymarket" in profile.equipped_connectors and bool(profile.equipped_modules)
+        score_ready = score_snapshot.total_runs > 0
+        if not loadout_ready:
+            self.next_step_label.setText("Next step: save a loadout with Polymarket and at least one strategy module.")
+        elif is_running:
+            self.next_step_label.setText("Next step: let the recorder finish a clean local sample, then refresh scan.")
+        elif not has_data:
+            self.next_step_label.setText("Next step: boot the recorder so Superior has local books to inspect.")
+        elif not score_ready:
+            self.next_step_label.setText("Next step: inspect a scanner route and paper it to light up the score board.")
+        elif checklist is not None and checklist.outstanding:
+            self.next_step_label.setText("Next step: keep the paper loop healthy. Live-gate items are optional for now.")
         else:
-            self.next_step_label.setText("Loadout is healthy. Keep running the paper-first loop.")
+            self.next_step_label.setText("Next step: keep recorder data healthy and grow paper score with discipline.")
         self.brand_label.setText(profile.brand_name)
         self.profile_label.setText(profile.display_name)
         self.goal_label.setText(profile.primary_goal.replace("_", " ").title())
@@ -257,6 +288,50 @@ class HomeTab(QWidget):
                 for state in capability_states
             )
         )
+        step_specs = [
+            (
+                "Equip loadout",
+                loadout_ready,
+                "Polymarket and at least one strategy module are equipped."
+                if loadout_ready
+                else "Save a loadout with Polymarket and one strategy module.",
+            ),
+            (
+                "Record local sample",
+                has_data,
+                "Local recorder data is present and ready for the scanner."
+                if has_data
+                else "Boot the recorder and wait for raw messages plus book snapshots.",
+            ),
+            (
+                "Inspect scanner route",
+                scanner_ready,
+                "Scanner explanations are ready to inspect the next route."
+                if scanner_ready
+                else "Recorder data has to land before the scanner becomes useful.",
+            ),
+            (
+                "Earn paper score",
+                score_ready,
+                "Paper score is live in the local ledger."
+                if score_ready
+                else "Run one paper route to create the first score entry.",
+            ),
+        ]
+        completed_steps = sum(1 for _label, ready, _message in step_specs if ready)
+        self.loop_label.setText(f"Golden path: {completed_steps} of {len(step_specs)} milestones complete")
+        first_incomplete_seen = False
+        loop_lines: list[str] = []
+        for label, ready, message in step_specs:
+            if ready:
+                marker = "DONE"
+            elif not first_incomplete_seen:
+                marker = "NEXT"
+                first_incomplete_seen = True
+            else:
+                marker = "WAIT"
+            loop_lines.append(f"[{marker}] {label} - {message}")
+        self.loop_steps_label.setText("\n".join(loop_lines))
         self.open_setup_button.setText("Edit setup")
         if profile.live_unlocked:
             self.setup_progress_label.setText(
@@ -310,8 +385,8 @@ class HomeTab(QWidget):
         self.stop_button.setEnabled(is_running)
         self.replay_button.setEnabled(has_data and not is_running)
         self.verify_button.setEnabled(has_data and not is_running)
-        self.scan_button.setEnabled(True)
-        self.paper_button.setEnabled(True)
+        self.scan_button.setEnabled(has_data)
+        self.paper_button.setEnabled(has_data)
 
 
 class LoadoutTab(QWidget):
@@ -462,6 +537,11 @@ class ScannerTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
+        self.header_label = QLabel(
+            "Scanner reads your local market sample and explains whether a route survives cost deductions."
+        )
+        self.header_label.setWordWrap(True)
+        layout.addWidget(self.header_label)
         actions = QHBoxLayout()
         self.refresh_button = QPushButton("Refresh scan")
         self.paper_button = QPushButton("Paper selected")
@@ -486,31 +566,51 @@ class ScannerTab(QWidget):
             item.setData(32, candidate.id)
             self.candidate_list.addItem(item)
         if not candidates:
-            self.details_text.setPlainText("No scanner candidates yet. Run the recorder, then refresh the scanner.")
+            self.details_text.setPlainText(
+                "No scanner candidates yet.\n\n"
+                "The fastest path is:\n"
+                "1. Record one clean local sample.\n"
+                "2. Refresh scan.\n"
+                "3. Paper the first route that still clears net edge."
+            )
 
     def set_details(self, candidate: OpportunityCandidate | None) -> None:
         if candidate is None:
             self.details_text.setPlainText("Choose a scanner result to inspect the full explanation.")
             return
+        deductions = (
+            [f"- {key.replace('_', ' ')}: {value} bps" for key, value in candidate.explanation.cost_adjustments_bps.items()]
+            or ["- none"]
+        )
+        matched_contracts = candidate.explanation.matched_contracts or ["No exact contract pair was attached."]
+        assumptions = candidate.explanation.assumptions or ["No extra assumptions recorded."]
         self.details_text.setPlainText(
             "\n".join(
                 [
-                    f"Strategy: {candidate.strategy_label}",
-                    f"Summary: {candidate.summary}",
-                    f"Gross edge: {candidate.gross_edge_bps} bps",
-                    f"Net edge: {candidate.net_edge_bps} bps",
-                    f"Venues: {', '.join(candidate.venues)}",
-                    f"Recommended stake: ${candidate.recommended_stake_cents / 100:.2f}",
-                    f"Why it qualifies: {candidate.explanation.summary}",
-                    "Matched contracts:",
-                    *[f"- {item}" for item in candidate.explanation.matched_contracts],
-                    "Assumptions:",
-                    *[f"- {item}" for item in candidate.explanation.assumptions],
-                    "Cost adjustments:",
-                    *[
-                        f"- {key.replace('_', ' ')}: {value} bps"
-                        for key, value in candidate.explanation.cost_adjustments_bps.items()
-                    ],
+                    f"Candidate: {candidate.strategy_label}",
+                    f"Status: {candidate.status}",
+                    f"What the scanner saw: {candidate.summary}",
+                    f"Gross edge before deductions: {candidate.gross_edge_bps} bps",
+                    f"Net edge after deductions: {candidate.net_edge_bps} bps",
+                    f"Venues in play: {', '.join(candidate.venues)}",
+                    f"Suggested paper stake: ${candidate.recommended_stake_cents / 100:.2f}",
+                    (
+                        "Suggested next move: paper this route and watch how it lands in Score."
+                        if candidate.net_edge_bps > 0
+                        else "Suggested next move: skip this route and wait for a cleaner net-positive setup."
+                    ),
+                    "",
+                    "Why it passed or failed",
+                    candidate.explanation.summary,
+                    "",
+                    "What matched",
+                    *[f"- {item}" for item in matched_contracts],
+                    "",
+                    "Assumptions still in play",
+                    *[f"- {item}" for item in assumptions],
+                    "",
+                    "Deductions from gross edge",
+                    *deductions,
                 ]
             )
         )
@@ -520,6 +620,11 @@ class PaperBotsTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
+        self.header_label = QLabel(
+            "Paper Runs turns scanner ideas into a local score history. This is the main progression loop in v1."
+        )
+        self.header_label.setWordWrap(True)
+        layout.addWidget(self.header_label)
         actions = QHBoxLayout()
         self.run_top_button = QPushButton("Paper top route")
         self.refresh_button = QPushButton("Refresh runs")
@@ -540,11 +645,17 @@ class PaperBotsTab(QWidget):
                 f"{run.executed_at.isoformat()} | {run.status} | paper ${run.realized_pnl_cents / 100:.2f}"
             )
         if not runs:
-            self.last_run_text.setPlainText("No paper runs yet. Use the scanner or the quick action in Hangar.")
+            self.last_run_text.setPlainText(
+                "No paper runs yet.\n\n"
+                "The shortest path is:\n"
+                "1. Record a local sample.\n"
+                "2. Inspect one scanner route.\n"
+                "3. Paper it, then check Score."
+            )
 
     def set_last_run(self, run: PaperRunResult | None) -> None:
         if run is None:
-            self.last_run_text.setPlainText("No paper run selected.")
+            self.last_run_text.setPlainText("Run one paper route to create your first score entry and recent-run card.")
             return
         self.last_run_text.setPlainText(
             "\n".join(
@@ -556,6 +667,7 @@ class PaperBotsTab(QWidget):
                     f"Fill ratio: {run.execution.fill_ratio:.2f}",
                     f"Deployed capital: ${run.deployed_capital_cents / 100:.2f}",
                     f"Realized paper PnL: ${run.realized_pnl_cents / 100:.2f}",
+                    f"Opportunity quality: {run.opportunity_quality_score}",
                     f"Notes: {run.notes}",
                 ]
             )
@@ -566,14 +678,19 @@ class ScoreTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
-        self.summary_label = QLabel("No paper score yet.")
+        self.summary_label = QLabel("Paper Score waiting for first route | Live Score locked")
         self.summary_label.setObjectName("heroTitle")
         self.summary_label.setWordWrap(True)
+        self.mode_label = QLabel(
+            "Paper score is the main progression system in v1. Live score stays empty until a future release."
+        )
+        self.mode_label.setWordWrap(True)
         self.detail_text = QPlainTextEdit()
         self.detail_text.setReadOnly(True)
         self.ledger_text = QPlainTextEdit()
         self.ledger_text.setReadOnly(True)
         layout.addWidget(self.summary_label)
+        layout.addWidget(self.mode_label)
         layout.addWidget(self.detail_text)
         layout.addWidget(self.ledger_text)
         layout.addStretch(1)
@@ -584,14 +701,24 @@ class ScoreTab(QWidget):
         ledger_entries: list[ScoreLedgerEntry],
         runs: list[PaperRunResult],
     ) -> None:
+        if not runs:
+            self.summary_label.setText("Paper Score waiting for first route | Live Score locked")
+            self.detail_text.setPlainText(
+                "Paper score is the main loop in Superior v1.\n\n"
+                "1. Record a local sample.\n"
+                "2. Inspect one scanner route.\n"
+                "3. Paper it.\n"
+                "4. Come back here for the first score update."
+            )
+            self.ledger_text.setPlainText(
+                "No ledger entries yet.\n\n"
+                "Your first paper route will create stake and realized-PnL entries here."
+            )
+            return
         self.summary_label.setText(
             f"Paper Score ${snapshot.paper_realized_pnl_cents / 100:.2f} | "
             f"Runs {snapshot.completed_runs} | Hit {snapshot.hit_rate:.1f}%"
         )
-        if not runs:
-            self.detail_text.setPlainText("Run one paper route to light up the Superior score board.")
-            self.ledger_text.setPlainText("No ledger entries yet.")
-            return
         lines = [
             f"Total paper runs: {snapshot.total_runs}",
             f"Completed runs: {snapshot.completed_runs}",
@@ -599,6 +726,7 @@ class ScoreTab(QWidget):
             f"Average realized edge: {snapshot.average_realized_edge_bps} bps",
             f"Current positive streak: {snapshot.current_streak}",
             f"Opportunity quality: {snapshot.opportunity_quality_score}",
+            "Live score: reserved for a later release and intentionally empty in v1.",
             "",
             "Recent paper routes:",
         ]
@@ -620,7 +748,7 @@ class LiveUnlockTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
-        self.summary_label = QLabel("Live mode is locked.")
+        self.summary_label = QLabel("Live gate is locked.")
         self.summary_label.setObjectName("heroTitle")
         self.summary_label.setWordWrap(True)
         self.checklist_text = QPlainTextEdit()
@@ -661,7 +789,7 @@ class LabTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
-        self.status_label = QLabel("Lab is disabled.")
+        self.status_label = QLabel("Lab is off.")
         self.status_label.setObjectName("heroTitle")
         self.enable_checkbox = QCheckBox("Enable Lab for this profile")
         self.save_button = QPushButton("Save Lab setting")
@@ -675,11 +803,11 @@ class LabTab(QWidget):
 
     def update_view(self, profile: AppProfile | None, modules: list[StrategyModule]) -> None:
         if profile is None:
-            self.status_label.setText("Lab is disabled.")
+            self.status_label.setText("Lab is off.")
             self.modules_text.setPlainText("Choose a profile to inspect Lab modules.")
             return
         self.enable_checkbox.setChecked(profile.lab_enabled)
-        self.status_label.setText("Lab is enabled." if profile.lab_enabled else "Lab is disabled.")
+        self.status_label.setText("Lab is on." if profile.lab_enabled else "Lab is off.")
         lines = [
             "High-risk and experimental strategies stay paper-only in v1.",
             "",
@@ -719,23 +847,36 @@ class AboutTab(QWidget):
         )
         text.setWordWrap(True)
         layout.addWidget(text)
+        release_group = QGroupBox("Product build")
+        release_form = QFormLayout(release_group)
+        release_form.addRow("Version", QLabel(__version__))
+        release_form.addRow("Runtime", QLabel("Desktop app for recorder, scanner, paper runs, and diagnostics"))
+        release_form.addRow("Storage posture", QLabel("Config and data stay local. Secrets stay in the OS keychain."))
+        layout.addWidget(release_group)
         info_group = QGroupBox("Paths")
         info_form = QFormLayout(info_group)
         info_form.addRow("Config", QLabel(str(paths.config_dir)))
         info_form.addRow("Data", QLabel(str(paths.data_dir)))
         info_form.addRow("Logs", QLabel(str(paths.log_dir)))
+        info_form.addRow("Exports", QLabel(str(paths.exports_dir)))
         layout.addWidget(info_group)
         buttons = QHBoxLayout()
         self.source_button = QPushButton("Source tree")
         self.readme_button = QPushButton("README")
         self.risk_button = QPushButton("Risk model")
         self.live_button = QPushButton("Live limits")
+        self.privacy_button = QPushButton("Privacy")
+        self.testing_button = QPushButton("Testing")
+        self.issues_button = QPushButton("Open issues")
         self.contrib_button = QPushButton("Strategy guide")
         buttons.addWidget(self.source_button)
         buttons.addWidget(self.readme_button)
         buttons.addWidget(self.risk_button)
         buttons.addWidget(self.live_button)
+        buttons.addWidget(self.privacy_button)
+        buttons.addWidget(self.testing_button)
         buttons.addWidget(self.contrib_button)
+        buttons.addWidget(self.issues_button)
         layout.addLayout(buttons)
         layout.addStretch(1)
 
@@ -913,8 +1054,15 @@ class DesktopMainWindow(QMainWindow):
         self.about_tab.live_button.clicked.connect(
             lambda: self._open_local(_project_root() / "docs" / "live-trading-limitations.md")
         )
+        self.about_tab.privacy_button.clicked.connect(
+            lambda: self._open_local(_project_root() / "docs" / "privacy-and-secrets.md")
+        )
+        self.about_tab.testing_button.clicked.connect(lambda: self._open_local(_project_root() / "docs" / "testing.md"))
         self.about_tab.contrib_button.clicked.connect(
             lambda: self._open_local(_project_root() / "docs" / "strategy-contributor-guide.md")
+        )
+        self.about_tab.issues_button.clicked.connect(
+            lambda: self._open_url("https://github.com/Zwin-ux/arbitrage/issues")
         )
 
     def _setup_tray(self, *, show_tray_icon: bool) -> None:
@@ -1163,7 +1311,7 @@ class DesktopMainWindow(QMainWindow):
             }
         )
         if "polymarket" in equipped_connectors and not updated.first_run_completed:
-            updated.primary_mission = "Record your first local book, then scan and paper one route."
+            updated.primary_mission = "Record your first local sample, inspect one route, and paper it."
         self._profile_store.save_profile(updated)
         self._refresh_profiles(updated.id)
         self._refresh_all_views()
@@ -1214,7 +1362,7 @@ class DesktopMainWindow(QMainWindow):
             updated = profile.model_copy(
                 update={
                     "first_run_completed": True,
-                    "primary_mission": "Keep recorder data healthy, scan edge, and grow your paper score carefully.",
+                    "primary_mission": "Check Score, then repeat the record, scan, and paper loop with discipline.",
                 }
             )
             self._profile_store.save_profile(updated)

@@ -101,8 +101,8 @@ function Get-InstalledSmokeExecutablePath {
     )
 
     $candidates = @(
-        (Join-Path $InstallRoot "market-data-recorder-smoke.exe"),
-        (Join-Path $env:LOCALAPPDATA "Programs\Superior\market-data-recorder-smoke.exe")
+        (Join-Path $InstallRoot "market-data-recorder-smoke\market-data-recorder-smoke.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Superior\market-data-recorder-smoke\market-data-recorder-smoke.exe")
     )
 
     foreach ($candidate in ($candidates | Select-Object -Unique)) {

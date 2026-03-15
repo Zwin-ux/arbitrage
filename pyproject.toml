@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "market-data-recorder"
-version = "0.3.0"
+version = "0.3.1"
 description = "Open-source Superior desktop app for Polymarket learning, explainable scanning, and paper-first prediction-market bots."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -39,6 +39,7 @@ packaging = [
 [project.scripts]
 market-data-recorder = "market_data_recorder.cli:app"
 market-data-recorder-app = "market_data_recorder_desktop.main:main"
+market-data-recorder-qa = "market_data_recorder_desktop.qa_client:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/market_data_recorder", "src/market_data_recorder_desktop"]

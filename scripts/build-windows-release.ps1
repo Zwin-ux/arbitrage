@@ -6,6 +6,21 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $repoRoot
+$releaseLogPath = "$repoRoot\.tmp\build-windows-release.log"
+New-Item -ItemType Directory -Path (Split-Path -Parent $releaseLogPath) -Force | Out-Null
+if (Test-Path $releaseLogPath) {
+    Remove-Item $releaseLogPath -Force
+}
+
+function Write-ReleaseLog {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message
+    )
+
+    $timestamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ss"
+    Add-Content -Path $releaseLogPath -Value "$timestamp $Message"
+}
 
 function Write-ReleaseStage {
     param(
@@ -15,6 +30,7 @@ function Write-ReleaseStage {
 
     Write-Host ""
     Write-Host "==> $Message"
+    Write-ReleaseLog "STAGE $Message"
 }
 
 function Invoke-NativeStep {
@@ -113,8 +129,8 @@ function Get-InstalledSmokeExecutablePath {
     )
 
     $candidates = @(
-        (Join-Path $InstallRoot "market-data-recorder-smoke.exe"),
-        (Join-Path $env:LOCALAPPDATA "Programs\Superior\market-data-recorder-smoke.exe")
+        (Join-Path $InstallRoot "market-data-recorder-smoke\market-data-recorder-smoke.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Superior\market-data-recorder-smoke\market-data-recorder-smoke.exe")
     )
 
     foreach ($candidate in ($candidates | Select-Object -Unique)) {
@@ -150,6 +166,25 @@ function Copy-ReleaseAsset {
     catch {
         Write-Warning "Unable to copy $SourcePath to $DestinationPath. Stage artifact remains available."
     }
+}
+
+function Write-ReleaseChecksums {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$AssetPaths,
+        [Parameter(Mandatory = $true)]
+        [string]$OutputPath
+    )
+
+    $lines = @()
+    foreach ($assetPath in $AssetPaths) {
+        if (-not (Test-Path $assetPath)) {
+            throw "Checksum generation failed because $assetPath does not exist."
+        }
+        $hash = Get-FileHash -Path $assetPath -Algorithm SHA256
+        $lines += "{0} *{1}" -f $hash.Hash.ToLowerInvariant(), (Split-Path $assetPath -Leaf)
+    }
+    Set-Content -Path $OutputPath -Value $lines -Encoding ascii
 }
 
 function Test-InstallerSmoke {
@@ -202,6 +237,7 @@ try {
     Write-ReleaseStage "Locate ISCC"
     $isccPath = & "$repoRoot\scripts\bootstrap-iscc.ps1"
     Write-Host "Using ISCC at $isccPath"
+    Write-ReleaseLog "Using ISCC at $isccPath"
 
     Write-ReleaseStage "Clean running app processes"
     cmd.exe /c "taskkill /F /IM market-data-recorder-app.exe /T >nul 2>nul"
@@ -240,7 +276,8 @@ try {
     }
 
     $bundleDir = "$stageDist\market-data-recorder-app"
-    $smokeExe = "$stageSmokeDist\market-data-recorder-smoke.exe"
+    $smokeBundleDir = "$stageSmokeDist\market-data-recorder-smoke"
+    $smokeExe = "$smokeBundleDir\market-data-recorder-smoke.exe"
     $portableZip = "$stageRoot\market-data-recorder-app-portable.zip"
     Write-ReleaseStage "Build portable zip"
     if (Test-Path $portableZip) {
@@ -253,7 +290,7 @@ try {
     }
 
     Invoke-NativeStep -StageName "Compile installer" -Command {
-        & $isccPath "/DSourceBundleDir=$bundleDir" "/DSourceSmokeExe=$smokeExe" "/DOutputDirPath=$stageInstallerDir" "$repoRoot\packaging\windows\installer.iss"
+        & $isccPath "/DSourceBundleDir=$bundleDir" "/DSourceSmokeDir=$smokeBundleDir" "/DOutputDirPath=$stageInstallerDir" "$repoRoot\packaging\windows\installer.iss"
     }
 
     $installerBuilt = "$stageInstallerDir\market-data-recorder-setup.exe"
@@ -266,11 +303,19 @@ try {
     Copy-ReleaseAsset -SourcePath $portableZip -DestinationPath "$finalDist\market-data-recorder-app-portable.zip"
     Copy-ReleaseAsset -SourcePath $installerBuilt -DestinationPath $installerFinal
 
+    Write-ReleaseStage "Write SHA256 manifest"
+    Write-ReleaseChecksums -AssetPaths @(
+        "$finalDist\market-data-recorder-setup.exe",
+        "$finalDist\market-data-recorder-app-portable.zip"
+    ) -OutputPath "$finalDist\SHA256SUMS.txt"
+
     Write-ReleaseStage "Release assets ready"
     Write-Host "Release assets ready:"
     Write-Host "  Bundle folder: $bundleDir"
     Write-Host "  Portable zip:  $portableZip"
     Write-Host "  Installer:     $installerBuilt"
+    Write-Host "  Checksums:     $finalDist\SHA256SUMS.txt"
+    Write-ReleaseLog "Release assets ready."
 }
 finally {
     Pop-Location

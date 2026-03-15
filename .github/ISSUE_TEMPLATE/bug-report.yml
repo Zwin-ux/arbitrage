@@ -1,0 +1,52 @@
+name: Bug report
+description: Report a product, installer, scanner, or site bug.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for installer problems, broken recorder/scanner flows, paper-score issues, or site regressions.
+  - type: input
+    id: surface
+    attributes:
+      label: Surface
+      description: Which part broke?
+      placeholder: Desktop app, installer, scanner, score, QA client, site
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include exact steps, commands, or clicks.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include Windows version, app version, and whether you used the installer or portable zip.
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Logs or diagnostics
+      description: Paste relevant errors or attach the diagnostics bundle if you exported one.
+    validations:
+      required: false

@@ -82,7 +82,7 @@ class WelcomePage(QWizardPage):
         layout = QVBoxLayout(self)
         intro = QLabel(
             "Superior walks you through a local-first profile, safe defaults, optional credentials, "
-            "and a first-run plan. Most users can finish this setup in a few minutes."
+            "and a first-run plan. Most users can finish this setup in a few minutes and reach the first paper run without entering keys."
         )
         intro.setWordWrap(True)
         intro.setObjectName("heroText")
@@ -528,6 +528,8 @@ class SetupWizard(QWizard):
             for provider_id, payload in self.credentials_page.payloads().items():
                 if provider_id not in [venue.lower() for venue in selected_venues]:
                     continue
+                if not any(value.strip() for value in payload.values()):
+                    continue
                 result = self._credential_vault.save(profile.id, provider_id, payload)
                 if result.status == "invalid":
                     QMessageBox.warning(
@@ -653,5 +655,6 @@ class SetupWizard(QWizard):
             "First launch plan:\n"
             "- Open Hangar and boot the recorder to build local market data.\n"
             "- Scan edge after the first recording sample completes.\n"
-            "- Keep paper score as the primary goal until the live-gate checklist is intentionally complete."
+            "- Run one paper route and use Score as the main progression surface.\n"
+            "- Keep live-gate work optional until you intentionally want it."
         )

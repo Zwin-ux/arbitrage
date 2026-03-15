@@ -1,8 +1,12 @@
 # Superior
 
+![Superior emblem](docs/assets/superior-emblem.png)
+
 Open-source, Windows-first prediction-market desktop app for learning Polymarket, recording market data, scanning explainable arbitrage ideas, and paper-testing bots before any live unlock.
 
 The public brand is `Superior`. The current Python package name and CLI entrypoints remain `market-data-recorder` in v1 to avoid breaking existing packaging and release links.
+
+You can complete the first paper loop without entering any venue credentials: equip Polymarket, record a local sample, inspect one route, paper it, and watch Score update.
 
 ## What it includes
 
@@ -52,6 +56,13 @@ Launch the desktop app:
 market-data-recorder-app
 ```
 
+Launch the desktop QA client:
+
+```bash
+market-data-recorder-qa
+market-data-recorder-qa --headless --output .tmp/qa-report.json
+```
+
 Run the recorder and analysis CLI:
 
 ```bash
@@ -93,6 +104,8 @@ Secrets are not stored in those paths.
 - [`docs/risk-model.md`](docs/risk-model.md)
 - [`docs/live-trading-limitations.md`](docs/live-trading-limitations.md)
 - [`docs/privacy-and-secrets.md`](docs/privacy-and-secrets.md)
+- [`docs/first-paper-run.md`](docs/first-paper-run.md)
+- [`docs/release-checklist.md`](docs/release-checklist.md)
 - [`docs/strategy-contributor-guide.md`](docs/strategy-contributor-guide.md)
 - [`docs/release-process.md`](docs/release-process.md)
 
@@ -104,6 +117,7 @@ Secrets are not stored in those paths.
 - Release build script: [`scripts/build-windows-release.ps1`](scripts/build-windows-release.ps1)
 - Packaged app smoke test: [`scripts/smoke-test-windows-release.py`](scripts/smoke-test-windows-release.py)
 - Installer smoke test: [`scripts/smoke-test-installer.ps1`](scripts/smoke-test-installer.ps1)
+- Release manifest: `dist/SHA256SUMS.txt`
 
 ## Public site
 
@@ -119,8 +133,9 @@ Railway should host only the public site. The app runtime, secrets, and user dat
 ```bash
 pytest -q
 python -m mypy src tests
+market-data-recorder-qa --headless --output .tmp/qa-report.json
 npm.cmd --prefix site run build
 npm.cmd --prefix site run test:browser
 ```
 
-See [`docs/testing.md`](docs/testing.md) for the release and variant-testing workflow.
+See [`docs/testing.md`](docs/testing.md) for the Windows release lane, frontend checks, and the new QA client workflow.

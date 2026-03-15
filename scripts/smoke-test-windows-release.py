@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -30,6 +31,25 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _stop_process_tree(process: subprocess.Popen[bytes]) -> None:
+    if process.poll() is not None:
+        return
+    try:
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/F", "/T"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+        )
+    except subprocess.TimeoutExpired:
+        pass
+    try:
+        process.kill()
+    except OSError:
+        pass
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -38,20 +58,21 @@ def main(argv: list[str] | None = None) -> int:
     if not bundle_exe.exists():
         raise FileNotFoundError(f"Packaged executable was not found: {bundle_exe}")
 
-    with tempfile.TemporaryDirectory(prefix="superior-smoke-") as temp_dir:
-        smoke_output = Path(temp_dir) / "smoke-report.json"
-        env = os.environ.copy()
-        if args.qt_platform:
-            env["QT_QPA_PLATFORM"] = args.qt_platform
+    temp_dir = Path(tempfile.mkdtemp(prefix="superior-smoke-"))
+    smoke_output = temp_dir / "smoke-report.json"
+    env = os.environ.copy()
+    if args.qt_platform:
+        env["QT_QPA_PLATFORM"] = args.qt_platform
 
-        process = subprocess.Popen(
-            [str(bundle_exe), "--smoke-test", "--smoke-output", str(smoke_output)],
-            env=env,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+    process = subprocess.Popen(
+        [str(bundle_exe), "--smoke-test", "--smoke-output", str(smoke_output)],
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
+    try:
         deadline = time.monotonic() + args.timeout_seconds
         while time.monotonic() < deadline:
             if smoke_output.exists():
@@ -61,33 +82,14 @@ def main(argv: list[str] | None = None) -> int:
             time.sleep(0.2)
 
         if process.poll() is None and not smoke_output.exists():
-            subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/F", "/T"],
-                check=False,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                pass
+            _stop_process_tree(process)
             raise RuntimeError(
                 f"Packaged app smoke test timed out after {args.timeout_seconds} seconds."
             )
 
-        if process.poll() is None:
-            subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/F", "/T"],
-                check=False,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                pass
-
-        if process.returncode != 0:
+        if smoke_output.exists():
+            _stop_process_tree(process)
+        elif process.returncode != 0:
             raise RuntimeError(
                 "Packaged app smoke test failed.\n"
                 f"Exit code: {process.returncode}"
@@ -109,6 +111,9 @@ def main(argv: list[str] | None = None) -> int:
             raise RuntimeError(f"Smoke report indicates the Superior icon is missing.\nReport: {json.dumps(report, indent=2)}")
 
         print(json.dumps(report, indent=2))
+    finally:
+        _stop_process_tree(process)
+        shutil.rmtree(temp_dir, ignore_errors=True)
     return 0
 
 
