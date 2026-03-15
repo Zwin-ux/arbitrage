@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -71,19 +72,90 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _repolish(widget: QWidget) -> None:
+    style = widget.style()
+    style.unpolish(widget)
+    style.polish(widget)
+    widget.update()
+
+
+class SignalBadge(QFrame):
+    def __init__(self, label: str) -> None:
+        super().__init__()
+        self.setProperty("signalBadge", True)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(2)
+        self.title_label = QLabel(label.upper())
+        self.title_label.setProperty("signalTitle", True)
+        self.value_label = QLabel("OFFLINE")
+        self.value_label.setProperty("signalValue", True)
+        layout.addWidget(self.title_label)
+        layout.addWidget(self.value_label)
+        self.set_state("offline", tone="locked")
+
+    def set_state(self, value: str, *, tone: str) -> None:
+        self.value_label.setText(value.upper())
+        self.setProperty("tone", tone)
+        self.value_label.setProperty("tone", tone)
+        _repolish(self)
+        _repolish(self.value_label)
+
+
+class StatusTile(QFrame):
+    def __init__(self, title: str) -> None:
+        super().__init__()
+        self.setProperty("statusTile", True)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(4)
+        self.title_label = QLabel(title.upper())
+        self.title_label.setProperty("statusTitle", True)
+        self.value_label = QLabel("IDLE")
+        self.value_label.setProperty("statusValue", True)
+        self.detail_label = QLabel("")
+        self.detail_label.setWordWrap(True)
+        self.detail_label.setProperty("statusDetail", True)
+        layout.addWidget(self.title_label)
+        layout.addWidget(self.value_label)
+        layout.addWidget(self.detail_label)
+        self.set_state("idle", "Waiting for input.", tone="idle")
+
+    def set_state(self, value: str, detail: str, *, tone: str) -> None:
+        self.value_label.setText(value.upper())
+        self.detail_label.setText(detail)
+        self.setProperty("tone", tone)
+        self.value_label.setProperty("tone", tone)
+        _repolish(self)
+        _repolish(self.value_label)
+
+
 class HomeTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
 
-        self.safe_state_label = QLabel("Paper mode active | Live gate locked | Lab off")
+        self.safe_state_label = QLabel("Hangar mission control")
         self.safe_state_label.setObjectName("heroTitle")
         self.next_step_label = QLabel("Create a loadout and record your first local Polymarket book.")
         self.next_step_label.setWordWrap(True)
         layout.addWidget(self.safe_state_label)
+
+        signal_row = QHBoxLayout()
+        signal_row.setSpacing(8)
+        self.paper_state_badge = SignalBadge("Paper mode")
+        self.live_state_badge = SignalBadge("Live gate")
+        self.lab_state_badge = SignalBadge("Lab")
+        signal_row.addWidget(self.paper_state_badge)
+        signal_row.addWidget(self.live_state_badge)
+        signal_row.addWidget(self.lab_state_badge)
+        signal_row.addStretch(1)
+        layout.addLayout(signal_row)
         layout.addWidget(self.next_step_label)
 
         mission_group = QGroupBox("Mission board")
+        mission_group.setProperty("panelTone", "primary")
         mission_layout = QVBoxLayout(mission_group)
         self.mission_label = QLabel("Mission: Equip Polymarket and record your first book.")
         self.mission_label.setObjectName("heroText")
@@ -95,8 +167,9 @@ class HomeTab(QWidget):
         layout.addWidget(mission_group)
 
         setup_group = QGroupBox("Launch lane")
+        setup_group.setProperty("panelTone", "normal")
         setup_layout = QVBoxLayout(setup_group)
-        self.setup_progress_label = QLabel("Most users can finish the first-run path in a few minutes.")
+        self.setup_progress_label = QLabel("Next step: GUIDED LOADOUT")
         self.setup_progress_label.setObjectName("heroText")
         self.setup_progress_label.setWordWrap(True)
         self.setup_steps_label = QLabel()
@@ -115,7 +188,52 @@ class HomeTab(QWidget):
         setup_layout.addLayout(setup_actions)
         layout.addWidget(setup_group)
 
+        primary_action_row = QHBoxLayout()
+        primary_action_row.setSpacing(10)
+        self.start_button = QPushButton("Boot recorder")
+        self.stop_button = QPushButton("Stop [idle]")
+        self.stop_button.setProperty("buttonRole", "secondary")
+        primary_action_row.addWidget(self.start_button)
+        primary_action_row.addWidget(self.stop_button)
+        primary_action_row.addStretch(1)
+        layout.addLayout(primary_action_row)
+
+        tool_action_row = QHBoxLayout()
+        tool_action_row.setSpacing(8)
+        self.replay_button = QPushButton("Replay [locked]")
+        self.replay_button.setProperty("buttonRole", "secondary")
+        self.verify_button = QPushButton("Verify [locked]")
+        self.verify_button.setProperty("buttonRole", "secondary")
+        self.scan_button = QPushButton("Scan edge [locked]")
+        self.scan_button.setProperty("buttonRole", "secondary")
+        self.paper_button = QPushButton("Paper route [locked]")
+        self.paper_button.setProperty("buttonRole", "secondary")
+        for button in (self.replay_button, self.verify_button, self.scan_button, self.paper_button):
+            tool_action_row.addWidget(button)
+        tool_action_row.addStretch(1)
+        layout.addLayout(tool_action_row)
+
+        console_group = QGroupBox("System console")
+        console_group.setProperty("panelTone", "normal")
+        console_layout = QVBoxLayout(console_group)
+        tile_row = QHBoxLayout()
+        tile_row.setSpacing(8)
+        self.recorder_tile = StatusTile("Recorder")
+        self.scanner_tile = StatusTile("Scanner")
+        self.route_tile = StatusTile("Route")
+        tile_row.addWidget(self.recorder_tile)
+        tile_row.addWidget(self.scanner_tile)
+        tile_row.addWidget(self.route_tile)
+        console_layout.addLayout(tile_row)
+        self.system_log = QPlainTextEdit()
+        self.system_log.setReadOnly(True)
+        self.system_log.setProperty("consoleRole", "system")
+        self.system_log.setMaximumHeight(120)
+        console_layout.addWidget(self.system_log)
+        layout.addWidget(console_group)
+
         loop_group = QGroupBox("Golden path")
+        loop_group.setProperty("panelTone", "subtle")
         loop_layout = QVBoxLayout(loop_group)
         self.loop_label = QLabel("Golden path: 0 of 4 milestones complete")
         self.loop_label.setObjectName("heroText")
@@ -127,30 +245,8 @@ class HomeTab(QWidget):
         loop_layout.addWidget(self.loop_steps_label)
         layout.addWidget(loop_group)
 
-        action_row = QHBoxLayout()
-        self.start_button = QPushButton("Boot recorder")
-        self.stop_button = QPushButton("Stop")
-        self.stop_button.setProperty("buttonRole", "secondary")
-        self.replay_button = QPushButton("Replay")
-        self.replay_button.setProperty("buttonRole", "secondary")
-        self.verify_button = QPushButton("Verify")
-        self.verify_button.setProperty("buttonRole", "secondary")
-        self.scan_button = QPushButton("Scan edge")
-        self.scan_button.setProperty("buttonRole", "secondary")
-        self.paper_button = QPushButton("Paper top route")
-        self.paper_button.setProperty("buttonRole", "secondary")
-        for button in (
-            self.start_button,
-            self.stop_button,
-            self.replay_button,
-            self.verify_button,
-            self.scan_button,
-            self.paper_button,
-        ):
-            action_row.addWidget(button)
-        layout.addLayout(action_row)
-
         status_group = QGroupBox("Hangar state")
+        status_group.setProperty("panelTone", "ghost")
         status_layout = QFormLayout(status_group)
         self.brand_label = QLabel("Superior")
         self.profile_label = QLabel("No profile selected")
@@ -170,16 +266,22 @@ class HomeTab(QWidget):
         layout.addWidget(status_group)
 
         capability_group = QGroupBox("Capability lights")
+        capability_group.setProperty("panelTone", "ghost")
         capability_layout = QVBoxLayout(capability_group)
         self.capability_text = QPlainTextEdit()
         self.capability_text.setReadOnly(True)
+        self.capability_text.setProperty("consoleRole", "system")
+        self.capability_text.setMaximumHeight(88)
         capability_layout.addWidget(self.capability_text)
         layout.addWidget(capability_group)
 
         connections_group = QGroupBox("Equipped connectors")
+        connections_group.setProperty("panelTone", "ghost")
         connections_layout = QVBoxLayout(connections_group)
         self.connections_text = QPlainTextEdit()
         self.connections_text.setReadOnly(True)
+        self.connections_text.setProperty("consoleRole", "system")
+        self.connections_text.setMaximumHeight(76)
         connections_layout.addWidget(self.connections_text)
         layout.addWidget(connections_group)
         layout.addStretch(1)
@@ -193,6 +295,7 @@ class HomeTab(QWidget):
         checklist: LiveUnlockChecklist | None,
         score_snapshot: ScoreSnapshot,
         capability_states: list[CapabilityState],
+        candidate_count: int = 0,
     ) -> None:
         if profile is None:
             self.brand_label.setText("Superior")
@@ -202,24 +305,33 @@ class HomeTab(QWidget):
             self.data_label.setText("No database yet")
             self.risk_label.setText("No risk policy")
             self.warning_label.setText("No warnings")
-            self.safe_state_label.setText("Paper mode active | Live gate locked | Lab off")
+            self.safe_state_label.setText("Hangar mission control")
+            self.paper_state_badge.set_state("active", tone="active")
+            self.live_state_badge.set_state("locked", tone="locked")
+            self.lab_state_badge.set_state("offline", tone="idle")
             self.next_step_label.setText("Use setup to create a Superior profile and equip Polymarket.")
             self.mission_label.setText("Mission: Equip Polymarket and record your first book.")
             self.score_label.setText("Paper score: waiting for first run")
-            self.setup_progress_label.setText(
-                "The easiest start is a guided loadout with Polymarket equipped, no credentials yet, and one clean recorder sample."
-            )
+            self.setup_progress_label.setText("Next step: GUIDED LOADOUT")
             self.setup_steps_label.setText(
-                "1. Create your first profile with Guided mode on.\n"
-                "2. Equip Polymarket and leave credentials blank if you only want recorder plus paper mode.\n"
-                "3. Boot the recorder, then scan edge after market data appears."
+                self._format_checklist(
+                    [
+                        ("NEXT", "Create your first profile with Guided mode on."),
+                        ("WAIT", "Equip Polymarket and leave credentials blank if you only want recorder plus paper mode."),
+                        ("WAIT", "Boot the recorder, then scan edge after market data appears."),
+                    ]
+                )
             )
             self.loop_label.setText("Golden path: 0 of 4 milestones complete")
             self.loop_steps_label.setText(
-                "[NEXT] Equip Polymarket loadout - Create a guided profile with Polymarket equipped.\n"
-                "[WAIT] Record local sample - Recorder stays off until a profile exists.\n"
-                "[WAIT] Inspect scanner route - Scanner waits for local market data.\n"
-                "[WAIT] Earn paper score - Score lights up after the first paper route."
+                self._format_checklist(
+                    [
+                        ("NEXT", "Equip Polymarket loadout - Create a guided profile with Polymarket equipped."),
+                        ("WAIT", "Record local sample - Recorder stays off until a profile exists."),
+                        ("WAIT", "Inspect scanner route - Scanner waits for local market data."),
+                        ("WAIT", "Earn paper score - Score lights up after the first paper route."),
+                    ]
+                )
             )
             self.open_setup_button.setText("Create first profile")
             self.capability_text.setPlainText(
@@ -228,26 +340,73 @@ class HomeTab(QWidget):
                 "Paper score: blocked until the first paper run lands."
             )
             self.connections_text.setPlainText("No active venue connections.")
-            self.start_button.setEnabled(False)
-            self.stop_button.setEnabled(False)
-            self.replay_button.setEnabled(False)
-            self.verify_button.setEnabled(False)
-            self.scan_button.setEnabled(False)
-            self.paper_button.setEnabled(False)
+            self.recorder_tile.set_state("blocked", "Equip a loadout before recorder boot is available.", tone="locked")
+            self.scanner_tile.set_state("waiting", "Scanner unlocks after local book capture starts.", tone="idle")
+            self.route_tile.set_state("empty", "No route can be priced until scanner data exists.", tone="idle")
+            self.system_log.setPlainText(
+                "\n".join(
+                    [
+                        "[BOOT] No active profile loaded.",
+                        "[REC] Recorder offline until a Polymarket loadout exists.",
+                        "[SCAN] Waiting for first local book sample.",
+                        "[ROUTE] Paper score will remain dark until the first paper route lands.",
+                    ]
+                )
+            )
+            self._set_action_button(
+                self.start_button,
+                enabled=False,
+                active_text="Boot recorder",
+                inactive_text="Boot recorder [blocked]",
+                reason="Create a guided profile first.",
+            )
+            self._set_action_button(
+                self.stop_button,
+                enabled=False,
+                active_text="Stop recorder",
+                inactive_text="Stop [idle]",
+                reason="Recorder is not running.",
+            )
+            self._set_action_button(
+                self.replay_button,
+                enabled=False,
+                active_text="Replay logs",
+                inactive_text="Replay [locked]",
+                reason="No local data yet.",
+            )
+            self._set_action_button(
+                self.verify_button,
+                enabled=False,
+                active_text="Verify data",
+                inactive_text="Verify [locked]",
+                reason="No local data yet.",
+            )
+            self._set_action_button(
+                self.scan_button,
+                enabled=False,
+                active_text="Scan edge",
+                inactive_text="Scan edge [locked]",
+                reason="Recorder data must land first.",
+            )
+            self._set_action_button(
+                self.paper_button,
+                enabled=False,
+                active_text="Paper route",
+                inactive_text="Paper route [locked]",
+                reason="Scanner needs a route first.",
+            )
             return
         has_data = status.summary is not None and (
             status.summary.raw_messages > 0 or status.summary.book_snapshots > 0
         )
         is_running = status.state == "running"
-        live_state_map = {
-            "locked": "Live gate locked",
-            "shadow": "Shadow live staged",
-            "micro": "Micro live staged",
-            "experimental": "Experimental live staged",
-        }
-        live_state = live_state_map.get(profile.live_mode, "Live gate locked")
-        lab_state = "Lab on" if profile.lab_enabled else "Lab off"
-        self.safe_state_label.setText(f"Paper mode active | {live_state} | {lab_state}")
+        self.safe_state_label.setText("Hangar mission control")
+        self.paper_state_badge.set_state("active", tone="active")
+        self.live_state_badge.set_state(
+            "locked" if profile.live_mode == "locked" else profile.live_mode,
+            tone="locked" if profile.live_mode == "locked" else "warning",
+        )
+        self.lab_state_badge.set_state("online" if profile.lab_enabled else "offline", tone="warning" if profile.lab_enabled else "idle")
         scanner_ready = any(state.capability_id == "scanner" and state.ready for state in capability_states)
         loadout_ready = "polymarket" in profile.equipped_connectors and bool(profile.equipped_modules)
         score_ready = score_snapshot.total_runs > 0
@@ -334,7 +493,7 @@ class HomeTab(QWidget):
         completed_steps = sum(1 for _label, ready, _message in step_specs if ready)
         self.loop_label.setText(f"Golden path: {completed_steps} of {len(step_specs)} milestones complete")
         first_incomplete_seen = False
-        loop_lines: list[str] = []
+        loop_lines: list[tuple[str, str]] = []
         for label, ready, message in step_specs:
             if ready:
                 marker = "DONE"
@@ -343,102 +502,219 @@ class HomeTab(QWidget):
                 first_incomplete_seen = True
             else:
                 marker = "WAIT"
-            loop_lines.append(f"[{marker}] {label} - {message}")
-        self.loop_steps_label.setText("\n".join(loop_lines))
+            loop_lines.append((marker, f"{label} - {message}"))
+        self.loop_steps_label.setText(self._format_checklist(loop_lines))
         self.open_setup_button.setText("Edit setup")
         if profile.live_unlocked:
-            self.setup_progress_label.setText(
-                "This profile has cleared the local gate. Keep score, diagnostics, and connector state explicit."
-            )
+            self.setup_progress_label.setText("Next step: HOLD THE SYSTEM STEADY")
             self.setup_steps_label.setText(
-                "1. Recorder, scanner, and paper score are already in place.\n"
-                "2. Revisit Loadout if you want to change connectors or strategy modules.\n"
-                "3. Treat live execution as a separate decision, not the default workflow."
+                self._format_checklist(
+                    [
+                        ("DONE", "Recorder, scanner, and paper score are already in place."),
+                        ("NEXT", "Revisit Loadout if you want to change connectors or strategy modules."),
+                        ("WAIT", "Treat live execution as a separate decision, not the default workflow."),
+                    ]
+                )
             )
         elif is_running:
-            self.setup_progress_label.setText(
-                "Recorder is running now. Let it gather a sample so the scanner can read real local market data."
-            )
+            self.setup_progress_label.setText("Next step: RECORDER PASS IN PROGRESS")
             self.setup_steps_label.setText(
-                "1. Wait for message and book counts to grow in Hangar state.\n"
-                "2. Scan edge when the recorder finishes or once the data looks healthy.\n"
-                "3. Paper the top route before thinking about live readiness."
+                self._format_checklist(
+                    [
+                        ("DONE", "Recorder is running now."),
+                        ("NEXT", "Wait for message and book counts to grow in Hangar state."),
+                        ("WAIT", "Scan edge when the recorder finishes or once the data looks healthy."),
+                        ("WAIT", "Paper the top route before thinking about live readiness."),
+                    ]
+                )
             )
         elif not has_data:
-            self.setup_progress_label.setText(
-                "Loadout is nearly complete. The next useful step is a first recorder pass so the rest of the product has context."
-            )
+            self.setup_progress_label.setText("Next step: FIRST RECORDER PASS")
             self.setup_steps_label.setText(
-                "1. Click Boot recorder to build your local database.\n"
-                "2. Watch for raw message and book counts to appear.\n"
-                "3. Scan edge, then run a paper test from Hangar or Scanner."
+                self._format_checklist(
+                    [
+                        ("NEXT", "Click Boot recorder to build your local database."),
+                        ("WAIT", "Watch for raw message and book counts to appear."),
+                        ("WAIT", "Scan edge, then run a paper test from Hangar or Scanner."),
+                    ]
+                )
             )
         elif checklist is not None and checklist.outstanding:
             outstanding = "\n".join(
                 f"- {check.label}: {check.message}" for check in checklist.outstanding[:3]
             )
-            self.setup_progress_label.setText(
-                "Paper workflow is healthy. The remaining gate items are optional until you intentionally want live readiness."
-            )
+            self.setup_progress_label.setText("Next step: KEEP PAPER HEALTHY")
             self.setup_steps_label.setText(
                 "Outstanding live-gate items:\n"
                 f"{outstanding}\n"
                 "You can keep using recorder, scanner, and paper score without finishing these right now."
             )
         elif profile.live_mode == "shadow":
-            self.setup_progress_label.setText(
-                "Shadow live is staged. Superior can now record would-be live decisions while keeping real orders off."
-            )
+            self.setup_progress_label.setText("Next step: SHADOW LIVE REVIEW")
             self.setup_steps_label.setText(
-                "1. Keep scanning and papering so the score board stays honest.\n"
-                "2. Use Scanner preview to inspect the live plan before thinking about micro-live.\n"
-                "3. Only arm micro-live after credentials and diagnostics stay clean."
+                self._format_checklist(
+                    [
+                        ("DONE", "Shadow live is staged with real orders still off."),
+                        ("NEXT", "Keep scanning and papering so the score board stays honest."),
+                        ("WAIT", "Use Scanner preview to inspect the live plan before thinking about micro-live."),
+                        ("WAIT", "Only arm micro-live after credentials and diagnostics stay clean."),
+                    ]
+                )
             )
         elif profile.live_mode in {"micro", "experimental"}:
-            self.setup_progress_label.setText(
-                "Experimental live is armed. Keep caps tiny, diagnostics clear, and treat paper score as the primary truth."
-            )
+            self.setup_progress_label.setText("Next step: PROTECT THE CAPS")
             self.setup_steps_label.setText(
-                "1. Use Scanner preview to confirm each candidate still clears the live gate.\n"
-                "2. Keep loadout scope narrow and avoid enabling extra connectors casually.\n"
-                "3. Reset to locked if diagnostics or confidence degrade."
+                self._format_checklist(
+                    [
+                        ("DONE", "Experimental live is armed."),
+                        ("NEXT", "Use Scanner preview to confirm each candidate still clears the live gate."),
+                        ("WAIT", "Keep loadout scope narrow and avoid enabling extra connectors casually."),
+                        ("WAIT", "Reset to locked if diagnostics or confidence degrade."),
+                    ]
+                )
             )
         else:
-            self.setup_progress_label.setText(
-                "This profile is in a clean paper-first state with local data ready for scanning and paper score."
-            )
+            self.setup_progress_label.setText("Next step: SCAN ONE CLEAN ROUTE")
             self.setup_steps_label.setText(
-                "1. Scan edge whenever you want the newest candidates.\n"
-                "2. Use Paper Runs or the Hangar quick action to test the top opportunity.\n"
-                "3. Revisit Loadout only if you want to change connectors, coach, or modules."
+                self._format_checklist(
+                    [
+                        ("DONE", "Local recorder data is ready for scanning."),
+                        ("NEXT", "Scan edge whenever you want the newest candidates."),
+                        ("WAIT", "Use Paper Runs or the Hangar quick action to test the top opportunity."),
+                        ("WAIT", "Revisit Loadout only if you want to change connectors, coach, or modules."),
+                    ]
+                )
             )
-        self.start_button.setEnabled(not is_running)
-        self.stop_button.setEnabled(is_running)
-        self.replay_button.setEnabled(has_data and not is_running)
-        self.verify_button.setEnabled(has_data and not is_running)
-        self.scan_button.setEnabled(has_data)
-        self.paper_button.setEnabled(has_data)
+        recorder_detail = (
+            f"{status.summary.raw_messages} messages / {status.summary.book_snapshots} books captured."
+            if status.summary is not None
+            else "No local market file yet."
+        )
+        if is_running:
+            self.recorder_tile.set_state("capturing", recorder_detail, tone="active")
+        elif has_data:
+            self.recorder_tile.set_state("ready", recorder_detail, tone="active")
+        elif loadout_ready:
+            self.recorder_tile.set_state("idle", "Loadout is armed. Boot the recorder for a first pass.", tone="warning")
+        else:
+            self.recorder_tile.set_state("blocked", "Polymarket and a strategy module are required first.", tone="locked")
+        if scanner_ready and candidate_count > 0:
+            self.scanner_tile.set_state("routes found", f"{candidate_count} candidate routes are cached locally.", tone="active")
+        elif scanner_ready:
+            self.scanner_tile.set_state("ready", "Scanner is armed and waiting for a refresh.", tone="warning")
+        elif has_data:
+            self.scanner_tile.set_state("standby", "Local books exist, but the scanner still needs a refresh.", tone="warning")
+        else:
+            self.scanner_tile.set_state("waiting", "Recorder data has to land before scanner routes exist.", tone="locked")
+        if score_ready:
+            self.route_tile.set_state("paper scored", f"{score_snapshot.completed_runs} paper runs have landed in the score ledger.", tone="active")
+        elif candidate_count > 0:
+            self.route_tile.set_state("route ready", "A candidate is available. Paper it to light the score board.", tone="warning")
+        else:
+            self.route_tile.set_state("empty", "No top route is staged yet.", tone="locked")
+        self.system_log.setPlainText(
+            "\n".join(
+                [
+                    f"[SYS] Profile online: {profile.display_name}",
+                    f"[REC] {self.recorder_tile.value_label.text()} :: {self.recorder_tile.detail_label.text()}",
+                    f"[SCAN] {self.scanner_tile.value_label.text()} :: {self.scanner_tile.detail_label.text()}",
+                    f"[ROUTE] {self.route_tile.value_label.text()} :: {self.route_tile.detail_label.text()}",
+                    f"[SAFE] PAPER=ACTIVE | LIVE={profile.live_mode.upper()} | LAB={'ON' if profile.lab_enabled else 'OFF'}",
+                ]
+            )
+        )
+        self._set_action_button(
+            self.start_button,
+            enabled=not is_running,
+            active_text="Boot recorder",
+            inactive_text="Boot recorder [busy]",
+            reason="Recorder already running." if is_running else "Recorder ready.",
+        )
+        self._set_action_button(
+            self.stop_button,
+            enabled=is_running,
+            active_text="Stop recorder",
+            inactive_text="Stop [idle]",
+            reason="Recorder is not running." if not is_running else "Stop the current recorder pass.",
+        )
+        self._set_action_button(
+            self.replay_button,
+            enabled=has_data and not is_running,
+            active_text="Replay logs",
+            inactive_text="Replay [locked]",
+            reason="Need a completed local sample before replay." if not has_data else "Recorder pass must finish first.",
+        )
+        self._set_action_button(
+            self.verify_button,
+            enabled=has_data and not is_running,
+            active_text="Verify data",
+            inactive_text="Verify [locked]",
+            reason="Need a completed local sample before verify." if not has_data else "Recorder pass must finish first.",
+        )
+        self._set_action_button(
+            self.scan_button,
+            enabled=has_data,
+            active_text="Scan edge",
+            inactive_text="Scan edge [locked]",
+            reason="Recorder data must land before the scanner becomes useful.",
+        )
+        self._set_action_button(
+            self.paper_button,
+            enabled=candidate_count > 0,
+            active_text="Paper route",
+            inactive_text="Paper route [locked]",
+            reason="Refresh scan first so a viable route exists.",
+        )
+
+    @staticmethod
+    def _format_checklist(items: list[tuple[str, str]]) -> str:
+        prefix_map = {
+            "DONE": "[x]",
+            "NEXT": "[>]",
+            "WAIT": "[ ]",
+            "BLOCKED": "[!]",
+        }
+        return "\n".join(f"{prefix_map.get(prefix, '[ ]')} {message}" for prefix, message in items)
+
+    @staticmethod
+    def _set_action_button(
+        button: QPushButton,
+        *,
+        enabled: bool,
+        active_text: str,
+        inactive_text: str,
+        reason: str,
+    ) -> None:
+        button.setEnabled(enabled)
+        button.setText(active_text if enabled else inactive_text)
+        button.setToolTip(reason)
 
 
 class LoadoutTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
         self.header_label = QLabel("Equip connectors and modules to shape what the app exposes.")
         self.header_label.setObjectName("heroTitle")
         self.header_label.setWordWrap(True)
         layout.addWidget(self.header_label)
 
+        loadout_row = QHBoxLayout()
+        loadout_row.setSpacing(10)
+
         connectors_group = QGroupBox("Connector loadout")
+        connectors_group.setProperty("panelTone", "normal")
         connectors_layout = QVBoxLayout(connectors_group)
         self.polymarket_checkbox = QCheckBox("Equip Polymarket Connector")
         self.kalshi_checkbox = QCheckBox("Equip Kalshi Connector")
         self.coach_checkbox = QCheckBox("Equip Coach Link")
         for checkbox in (self.polymarket_checkbox, self.kalshi_checkbox, self.coach_checkbox):
             connectors_layout.addWidget(checkbox)
-        layout.addWidget(connectors_group)
+        loadout_row.addWidget(connectors_group)
 
         modules_group = QGroupBox("Strategy loadout")
+        modules_group.setProperty("panelTone", "subtle")
         modules_layout = QVBoxLayout(modules_group)
         self.internal_binary_checkbox = QCheckBox("Equip Internal Binary")
         self.cross_venue_checkbox = QCheckBox("Equip Cross-Venue")
@@ -451,7 +727,8 @@ class LoadoutTab(QWidget):
             self.maker_lab_checkbox,
         ):
             modules_layout.addWidget(checkbox)
-        layout.addWidget(modules_group)
+        loadout_row.addWidget(modules_group)
+        layout.addLayout(loadout_row)
 
         action_row = QHBoxLayout()
         self.save_button = QPushButton("Save loadout")
@@ -464,6 +741,8 @@ class LoadoutTab(QWidget):
 
         self.state_text = QPlainTextEdit()
         self.state_text.setReadOnly(True)
+        self.state_text.setProperty("consoleRole", "system")
+        self.state_text.setMaximumHeight(190)
         layout.addWidget(self.state_text)
         layout.addStretch(1)
 
@@ -1044,20 +1323,38 @@ class DesktopMainWindow(QMainWindow):
         header.addWidget(self.profile_selector, stretch=1)
         header.addWidget(self.setup_button)
 
+        nav_group_row = QHBoxLayout()
+        nav_group_row.setSpacing(8)
+        self.nav_group_labels: dict[str, QLabel] = {}
+        for group_id, text in (
+            ("control", "CONTROL  Hangar | Loadout"),
+            ("operations", "OPERATIONS  Scanner | Paper"),
+            ("analysis", "ANALYSIS  Score | Diagnostics"),
+            ("knowledge", "KNOWLEDGE  Learn"),
+            ("system", "SYSTEM  Live Gate | About"),
+        ):
+            label = QLabel(text)
+            label.setProperty("navGroup", True)
+            self.nav_group_labels[group_id] = label
+            nav_group_row.addWidget(label)
+        nav_group_row.addStretch(1)
+
         self.tabs = QTabWidget()
         self.tabs.addTab(self.home_tab, "Hangar")
         self.tabs.addTab(self.loadout_tab, "Loadout")
-        self.tabs.addTab(self.learn_tab, "Learn")
         self.tabs.addTab(self.scanner_tab, "Scanner")
-        self.tabs.addTab(self.paper_bots_tab, "Paper Runs")
+        self.tabs.addTab(self.paper_bots_tab, "Paper")
         self.tabs.addTab(self.score_tab, "Score")
-        self.tabs.addTab(self.live_unlock_tab, "Live Gate")
         self.tabs.addTab(self.diagnostics_tab, "Diagnostics")
+        self.tabs.addTab(self.learn_tab, "Learn")
+        self.tabs.addTab(self.live_unlock_tab, "Live Gate")
         self.tabs.addTab(self.about_tab, "About")
+        self.tabs.currentChanged.connect(self._update_nav_group_highlight)
 
         central = QWidget()
         central_layout = QVBoxLayout(central)
         central_layout.addLayout(header)
+        central_layout.addLayout(nav_group_row)
         central_layout.addWidget(self.tabs)
         self.setCentralWidget(central)
         self.setStatusBar(QStatusBar(self))
@@ -1066,6 +1363,7 @@ class DesktopMainWindow(QMainWindow):
         self._setup_tray(show_tray_icon=show_tray_icon)
         self._refresh_profiles()
         self._refresh_all_views()
+        self._update_nav_group_highlight(self.tabs.currentIndex())
         self._refresh_timer = QTimer(self)
         self._refresh_timer.timeout.connect(self._refresh_status_only)
         self._refresh_timer.start(1000)
@@ -1271,6 +1569,7 @@ class DesktopMainWindow(QMainWindow):
             checklist=checklist,
             score_snapshot=score_snapshot,
             capability_states=capability_states,
+            candidate_count=len(self._latest_candidates),
         )
         self.live_unlock_tab.update_view(profile, checklist, live_status)
         self.diagnostics_tab.text.setPlainText(
@@ -1299,18 +1598,19 @@ class DesktopMainWindow(QMainWindow):
         self._previous_state = status.state
 
     def _refresh_all_views(self) -> None:
-        self._refresh_status_only()
         self._refresh_scanner()
         self._refresh_portfolio_views()
         profile = self._current_profile()
         self.lab_tab.update_view(profile, self._opportunity_engine.strategy_modules())
         self._sync_lab_tab_visibility(profile)
+        self._update_nav_group_highlight(self.tabs.currentIndex())
 
     def _refresh_scanner(self) -> None:
         profile = self._current_profile()
         self._latest_candidates = self._opportunity_engine.scan(profile) if profile is not None else []
         self.scanner_tab.update_candidates(self._latest_candidates)
         self.scanner_tab.set_details(self._selected_candidate())
+        self._refresh_status_only()
 
     def _refresh_portfolio_views(self) -> None:
         profile = self._current_profile()
@@ -1653,9 +1953,25 @@ class DesktopMainWindow(QMainWindow):
         tab_index = self.tabs.indexOf(self.lab_tab)
         should_show = profile is not None and profile.lab_enabled
         if should_show and tab_index < 0:
-            self.tabs.insertTab(self.tabs.count() - 2, self.lab_tab, "Lab")
+            self.tabs.insertTab(4, self.lab_tab, "Lab")
         if not should_show and tab_index >= 0:
             self.tabs.removeTab(tab_index)
+
+    def _update_nav_group_highlight(self, current_index: int) -> None:
+        current_widget = self.tabs.widget(current_index)
+        if current_widget in {self.home_tab, self.loadout_tab}:
+            active_group = "control"
+        elif current_widget in {self.scanner_tab, self.paper_bots_tab, self.lab_tab}:
+            active_group = "operations"
+        elif current_widget in {self.score_tab, self.diagnostics_tab}:
+            active_group = "analysis"
+        elif current_widget is self.learn_tab:
+            active_group = "knowledge"
+        else:
+            active_group = "system"
+        for group_id, label in self.nav_group_labels.items():
+            label.setProperty("active", group_id == active_group)
+            _repolish(label)
 
     def _sync_startup_manager(self) -> None:
         if not self._startup_manager.supported():

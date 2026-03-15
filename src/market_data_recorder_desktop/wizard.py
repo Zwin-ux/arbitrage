@@ -427,7 +427,7 @@ class SetupWizard(QWizard):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Superior setup")
-        self.setWizardStyle(QWizard.WizardStyle.ModernStyle)
+        self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
         self.resize(920, 680)
 
         self._profile_store = profile_store
