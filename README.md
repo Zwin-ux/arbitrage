@@ -111,6 +111,8 @@ Secrets are not stored in those paths.
 - [`docs/strategy-contributor-guide.md`](docs/strategy-contributor-guide.md)
 - [`docs/release-process.md`](docs/release-process.md)
 - [`docs/superior-graphics-system.md`](docs/superior-graphics-system.md)
+- [`docs/prompt-pack-implementation-map.md`](docs/prompt-pack-implementation-map.md)
+- [`docs/reference/superior_codex_prompt_pack_pro/README.md`](docs/reference/superior_codex_prompt_pack_pro/README.md)
 
 ## Packaging
 
@@ -118,6 +120,7 @@ Secrets are not stored in those paths.
 - Inno Setup script: [`packaging/windows/installer.iss`](packaging/windows/installer.iss)
 - Official Inno Setup bootstrap: [`scripts/bootstrap-iscc.ps1`](scripts/bootstrap-iscc.ps1)
 - Release build script: [`scripts/build-windows-release.ps1`](scripts/build-windows-release.ps1)
+- macOS PoC starter files: [`packaging/macos_poc/README.md`](packaging/macos_poc/README.md)
 - Packaged app smoke test: [`scripts/smoke-test-windows-release.py`](scripts/smoke-test-windows-release.py)
 - Installer smoke test: [`scripts/smoke-test-installer.ps1`](scripts/smoke-test-installer.ps1)
 - Release manifest: `dist/SHA256SUMS.txt`

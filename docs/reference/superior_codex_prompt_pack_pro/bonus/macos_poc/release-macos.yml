@@ -1,0 +1,36 @@
+name: macOS PoC Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-macos-poc:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,packaging]"
+
+      - name: Run tests
+        run: |
+          pytest -q
+          python -m mypy src tests
+
+      - name: Build macOS PoC
+        run: |
+          chmod +x bonus/macos_poc/build-macos-release.sh
+          bonus/macos_poc/build-macos-release.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: superior-macos-poc
+          path: dist-macos

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.superior.recorder</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Applications/Superior.app/Contents/MacOS/Superior</string>
+      <string>--background-recorder</string>
+    </array>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>~/Library/Logs/Superior/launchagent.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>~/Library/Logs/Superior/launchagent.err.log</string>
+  </dict>
+</plist>
