@@ -180,6 +180,10 @@ class ProfileStore:
         duplicate.auto_start = False
         duplicate.live_unlocked = False
         duplicate.first_run_completed = False
+        duplicate.experimental_live_enabled = False
+        duplicate.live_mode = "locked"
+        duplicate.paper_gate_passed = False
+        duplicate.paper_gate_passed_at = None
         duplicate.data_dir = self._paths.data_dir / duplicate.id
         duplicate.primary_mission = _primary_mission(duplicate.primary_goal, duplicate.enabled_venues)
         now = datetime.now(timezone.utc)
@@ -200,6 +204,10 @@ class ProfileStore:
         imported.id = str(uuid.uuid4())
         imported.auto_start = False
         imported.live_unlocked = False
+        imported.experimental_live_enabled = False
+        imported.live_mode = "locked"
+        imported.paper_gate_passed = False
+        imported.paper_gate_passed_at = None
         if not imported.data_dir.is_absolute():
             imported.data_dir = self._paths.data_dir / imported.id
         if not imported.primary_mission:

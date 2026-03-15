@@ -99,7 +99,7 @@ def replay(
     output_jsonl: Path | None = typer.Option(default=None, help="Optional JSONL export path."),
 ) -> None:
     settings = _settings()
-    storage = DuckDBStorage(db_path or settings.duckdb_path)
+    storage = DuckDBStorage(db_path or settings.duckdb_path, read_only=True)
     try:
         engine = ReplayEngine(storage)
         if output_jsonl is not None:
@@ -116,7 +116,7 @@ def verify(
     db_path: Path | None = typer.Option(default=None, help="Override DuckDB path."),
 ) -> None:
     settings = _settings()
-    storage = DuckDBStorage(db_path or settings.duckdb_path)
+    storage = DuckDBStorage(db_path or settings.duckdb_path, read_only=True)
     try:
         verifier = RecorderVerifier(storage)
         report = verifier.verify()
@@ -140,7 +140,7 @@ def arbitrage(
     ),
 ) -> None:
     settings = _settings()
-    storage = DuckDBStorage(db_path or settings.duckdb_path)
+    storage = DuckDBStorage(db_path or settings.duckdb_path, read_only=True)
     try:
         analyzer = ArbitrageAnalyzer(storage)
         opportunities = analyzer.find_opportunities(

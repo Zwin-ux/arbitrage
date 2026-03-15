@@ -16,6 +16,7 @@ StrategyTier = Literal["core", "lab"]
 OpportunityStatus = Literal["candidate", "rejected", "monitor"]
 PaperRunStatus = Literal["completed", "skipped"]
 ScoreboardMode = Literal["paper", "live"]
+LiveMode = Literal["locked", "shadow", "micro", "experimental"]
 ConnectorId = Literal["polymarket", "kalshi", "coach"]
 ModuleId = Literal[
     "internal-binary",
@@ -68,6 +69,14 @@ class AppProfile(BaseModel):
     scoreboard_mode: ScoreboardMode = "paper"
     first_run_completed: bool = False
     primary_mission: str = "Equip Polymarket and record your first book."
+    experimental_live_enabled: bool = False
+    live_mode: LiveMode = "locked"
+    live_target_venue: str = "Polymarket"
+    live_position_cap_cents: int = 100
+    live_daily_cap_cents: int = 500
+    live_allowed_strategy_ids: list[str] = Field(default_factory=lambda: ["internal-binary"])
+    paper_gate_passed: bool = False
+    paper_gate_passed_at: datetime | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -163,6 +172,32 @@ class LiveUnlockChecklist(BaseModel):
     @property
     def outstanding(self) -> list[LiveUnlockCheck]:
         return [check for check in self.checks if not check.passed]
+
+
+class ExperimentalLiveStatus(BaseModel):
+    current_mode: LiveMode = "locked"
+    recommended_mode: LiveMode = "locked"
+    paper_gate_passed: bool = False
+    available_modes: list[LiveMode] = Field(default_factory=lambda: cast(list[LiveMode], ["locked"]))
+    venue_scope: list[str] = Field(default_factory=list)
+    strategy_scope: list[str] = Field(default_factory=list)
+    position_cap_cents: int = 0
+    daily_cap_cents: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class ExperimentalLivePlan(BaseModel):
+    mode: LiveMode = "locked"
+    send_orders: bool = False
+    venue_label: str = "Polymarket"
+    strategy_id: str = ""
+    order_style: Literal["shadow", "post_only", "post_only_or_taker"] = "shadow"
+    min_net_edge_bps: int = 0
+    max_position_cents: int = 0
+    max_daily_cap_cents: int = 0
+    message: str = ""
+    blockers: list[str] = Field(default_factory=list)
 
 
 class CanonicalContract(BaseModel):

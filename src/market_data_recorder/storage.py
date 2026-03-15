@@ -22,13 +22,17 @@ from .models import (
 
 
 class DuckDBStorage:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, read_only: bool = False):
         self._path = path
-        if str(path) != ":memory:":
+        self._read_only = read_only
+        if not read_only and str(path) != ":memory:":
             path.parent.mkdir(parents=True, exist_ok=True)
-        self._connection = duckdb.connect(str(path))
-        self._initialize_schema()
-        self._raw_sequence = self._read_next_sequence()
+        self._connection = duckdb.connect(str(path), read_only=read_only)
+        if read_only:
+            self._raw_sequence = 0
+        else:
+            self._initialize_schema()
+            self._raw_sequence = self._read_next_sequence()
 
     def close(self) -> None:
         self._connection.close()

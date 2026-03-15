@@ -44,7 +44,7 @@ def _default_record_runner(
 
 
 def _default_replay_runner(db_path: Path) -> str:
-    storage = DuckDBStorage(db_path)
+    storage = DuckDBStorage(db_path, read_only=True)
     try:
         return ReplayEngine(storage).replay_summary().model_dump_json(indent=2)
     finally:
@@ -52,7 +52,7 @@ def _default_replay_runner(db_path: Path) -> str:
 
 
 def _default_verify_runner(db_path: Path) -> str:
-    storage = DuckDBStorage(db_path)
+    storage = DuckDBStorage(db_path, read_only=True)
     try:
         return RecorderVerifier(storage).verify().model_dump_json(indent=2)
     finally:
@@ -199,7 +199,7 @@ class EngineController:
         if not db_path.exists():
             return DashboardSummary(db_path=db_path)
         try:
-            storage = DuckDBStorage(db_path)
+            storage = DuckDBStorage(db_path, read_only=True)
         except Exception:
             return DashboardSummary(db_path=db_path)
         try:

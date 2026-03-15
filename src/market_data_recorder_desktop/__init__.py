@@ -3,7 +3,7 @@
 from .app_types import AppProfile, CredentialStatus, EngineStatus, RunPreset
 from .controller import EngineController
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 __all__ = [
     "AppProfile",

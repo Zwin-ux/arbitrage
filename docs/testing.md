@@ -59,6 +59,7 @@ The QA client runs deterministic local scenarios for:
 - scanner detection on seeded Polymarket fixtures
 - first paper loop without credentials
 - paper-score ledger updates
+- experimental live graduation
 - live-gate lock and unlock rules
 - coach guardrails
 - engine controller state transitions

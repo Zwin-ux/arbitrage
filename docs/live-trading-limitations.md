@@ -2,13 +2,14 @@
 
 Superior v1 is paper-first.
 
-## Live mode is intentionally limited
+## Experimental live is intentionally limited
 
-- Live mode is hidden until the checklist passes.
-- Credentials must be present and validated locally.
-- Risk acknowledgements must be saved.
-- Paper activity must exist.
-- Critical diagnostics issues block unlock.
+- Live begins as a staged rollout: `locked`, `shadow`, `micro`, then `experimental`.
+- `Shadow` mode never sends real orders. It records would-be live decisions only.
+- `Micro` and `experimental` modes are Polymarket-first in v1.
+- Validated credentials, paper activity, and risk acknowledgements must exist before live modes above `shadow`.
+- Critical diagnostics issues block progression.
+- Tiny live caps are intentional. The point is controlled experimentation, not broad consumer autonomy.
 
 ## Live mode does not mean autonomy
 
@@ -16,6 +17,7 @@ Superior v1 is paper-first.
 - The coach cannot unlock live mode.
 - The coach cannot override risk controls.
 - Experimental Lab strategies do not bypass the paper-first gate.
+- Paper score and live score remain separate.
 
 ## Hosted services
 

@@ -47,6 +47,7 @@ from .bot_services import (
     CapabilityService,
     ConnectorLoadoutService,
     ContractMatcher,
+    ExperimentalLiveService,
     KalshiVenueAdapter,
     OpportunityEngine,
     PaperExecutionEngine,
@@ -481,6 +482,65 @@ def _first_paper_loop_without_credentials(sandbox: QASandbox) -> QAScenarioOutco
     )
 
 
+def _experimental_live_graduation(sandbox: QASandbox) -> QAScenarioOutcome:
+    profile = sandbox.create_profile(
+        display_name="QA Experimental Live",
+        live_rules_accepted=True,
+        risk_limits_acknowledged=True,
+    )
+    sandbox.credential_vault.save(
+        profile.id,
+        "polymarket",
+        {
+            "api_key": "qa-live-key",
+            "api_secret": "qa-live-secret",
+            "api_passphrase": "qa-live-passphrase",
+        },
+    )
+    sandbox.seed_internal_binary_fixture(profile)
+    candidate = _top_candidate(sandbox.opportunity_engine.scan(profile))
+    for _ in range(3):
+        sandbox.paper_execution_engine.paper_trade(profile, candidate)
+    connections = [adapter.connection(profile, sandbox.credential_vault) for adapter in sandbox.venue_adapters]
+    credential_statuses = sandbox.credential_vault.statuses_for_profile(profile.id)
+    score_snapshot = sandbox.score_service.snapshot(profile)
+    checklist = sandbox.unlock_service.checklist(
+        profile,
+        venue_connections=connections,
+        engine_status=EngineStatus(),
+        credential_statuses=credential_statuses,
+    )
+    live_service = ExperimentalLiveService()
+    live_status = live_service.status(
+        profile,
+        score_snapshot=score_snapshot,
+        engine_status=EngineStatus(),
+        venue_connections=connections,
+        credential_statuses=credential_statuses,
+        checklist=checklist,
+    )
+    promoted = live_service.promote(profile, status=live_status, target_mode="experimental")
+    artifact = sandbox.write_json_artifact(
+        "experimental-live-status.json",
+        {
+            "score_snapshot": score_snapshot.model_dump(mode="json"),
+            "checklist": checklist.model_dump(mode="json"),
+            "live_status": live_status.model_dump(mode="json"),
+            "promoted_profile": promoted.model_dump(mode="json"),
+        },
+    )
+    return QAScenarioOutcome(
+        summary="A disciplined paper profile can graduate into experimental live stages without bypassing the Polymarket-first safety envelope.",
+        evidence=[
+            f"Available modes: {', '.join(live_status.available_modes)}",
+            f"Recommended mode: {live_status.recommended_mode}",
+            f"Completed paper runs: {score_snapshot.completed_runs}",
+            f"Promoted mode: {promoted.live_mode}",
+        ],
+        artifacts=[artifact],
+    )
+
+
 def _live_gate_stays_locked_by_default(sandbox: QASandbox) -> QAScenarioOutcome:
     profile = sandbox.create_profile(display_name="QA Locked Live Gate")
     connections = [adapter.connection(profile, sandbox.credential_vault) for adapter in sandbox.venue_adapters]
@@ -698,6 +758,17 @@ SCENARIOS: tuple[QAScenarioDefinition, ...] = (
             "The score board updates from the same local ledger-backed source of truth.",
         ),
         runner=_first_paper_loop_without_credentials,
+    ),
+    QAScenarioDefinition(
+        id="experimental-live-graduation",
+        title="Experimental Live Graduation",
+        category="experimental-live",
+        acceptance_criteria=(
+            "Repeated paper runs can open shadow, micro, and experimental live stages in order.",
+            "The graduation path stays Polymarket-first and requires validated credentials for micro-live and above.",
+            "The resulting profile still records experimental live as gated, explicit, and separate from paper score.",
+        ),
+        runner=_experimental_live_graduation,
     ),
     QAScenarioDefinition(
         id="live-gate-stays-locked-by-default",

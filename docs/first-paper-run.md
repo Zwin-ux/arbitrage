@@ -81,3 +81,5 @@ If the score board is still empty, verify that the paper run completed instead o
 That is a successful first run.
 
 Do not treat the live gate as the next default step. Superior v1 is paper-first, and the point of the first run is to prove the loop works with local evidence before you add more risk.
+
+If you want the next step later, the safest one is `shadow` mode in `Live Gate`, not broad live trading.

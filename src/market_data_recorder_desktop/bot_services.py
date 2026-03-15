@@ -23,6 +23,8 @@ from .app_types import (
     ContractMatch,
     CredentialStatus,
     EngineStatus,
+    ExperimentalLivePlan,
+    ExperimentalLiveStatus,
     LiveUnlockCheck,
     LiveUnlockChecklist,
     OpportunityCandidate,
@@ -132,7 +134,7 @@ class PolymarketVenueAdapter(VenueAdapter):
         db_path = profile.data_dir / "market_data.duckdb"
         if not db_path.exists():
             return []
-        storage = DuckDBStorage(db_path)
+        storage = DuckDBStorage(db_path, read_only=True)
         try:
             rows = storage.fetch_latest_market_quotes()
         finally:
@@ -350,7 +352,11 @@ class CapabilityService:
                 label="Live Gate",
                 equipped=True,
                 ready=checklist.live_ready,
-                message="Checklist complete." if checklist.live_ready else "Live stays locked until every local rule passes.",
+                message=(
+                    "Micro-live gate is clear, but consumer live still stays experimental."
+                    if checklist.live_ready
+                    else "Live stays locked until every local rule passes."
+                ),
             ),
         ]
 
@@ -878,11 +884,94 @@ class PaperExecutionEngine:
 
 
 class LiveExecutionEngine:
-    def preview(self, candidate: OpportunityCandidate) -> str:
-        return (
-            f"Live execution is still locked. {candidate.strategy_label} can be inspected and papered, "
-            "but Superior does not expose consumer live trading yet."
+    def plan(
+        self,
+        profile: AppProfile,
+        candidate: OpportunityCandidate,
+        live_status: ExperimentalLiveStatus,
+    ) -> ExperimentalLivePlan:
+        if profile.live_mode == "locked":
+            return ExperimentalLivePlan(
+                mode="locked",
+                send_orders=False,
+                venue_label=profile.live_target_venue,
+                strategy_id=candidate.strategy_id,
+                order_style="shadow",
+                max_position_cents=0,
+                max_daily_cap_cents=profile.live_daily_cap_cents,
+                message="Experimental live is locked. Finish the paper-first graduation steps first.",
+                blockers=["Current profile is still locked."],
+            )
+        if candidate.strategy_id not in profile.live_allowed_strategy_ids:
+            return ExperimentalLivePlan(
+                mode=profile.live_mode,
+                send_orders=False,
+                venue_label=profile.live_target_venue,
+                strategy_id=candidate.strategy_id,
+                order_style="shadow" if profile.live_mode == "shadow" else "post_only",
+                min_net_edge_bps=0,
+                max_position_cents=profile.live_position_cap_cents,
+                max_daily_cap_cents=profile.live_daily_cap_cents,
+                message="This strategy is outside the current experimental live scope for the profile.",
+                blockers=["Strategy is not on the live allowlist."],
+            )
+        if profile.live_mode == "shadow":
+            return ExperimentalLivePlan(
+                mode="shadow",
+                send_orders=False,
+                venue_label=profile.live_target_venue,
+                strategy_id=candidate.strategy_id,
+                order_style="shadow",
+                min_net_edge_bps=max(candidate.net_edge_bps, 40),
+                max_position_cents=profile.live_position_cap_cents,
+                max_daily_cap_cents=profile.live_daily_cap_cents,
+                message="Shadow mode records the would-be order plan locally and sends nothing.",
+            )
+        order_style = "post_only" if candidate.net_edge_bps < 150 else "post_only_or_taker"
+        min_edge = 75 if profile.live_mode == "micro" else 60
+        blockers: list[str] = []
+        if candidate.net_edge_bps < min_edge:
+            blockers.append(f"Net edge {candidate.net_edge_bps} bps is below the {min_edge} bps gate for {profile.live_mode}.")
+        return ExperimentalLivePlan(
+            mode=profile.live_mode,
+            send_orders=not blockers,
+            venue_label=profile.live_target_venue,
+            strategy_id=candidate.strategy_id,
+            order_style=order_style,
+            min_net_edge_bps=min_edge,
+            max_position_cents=profile.live_position_cap_cents,
+            max_daily_cap_cents=profile.live_daily_cap_cents,
+            message=(
+                "Experimental live stays deterministic: post-only first, tiny caps, and strict kill switches."
+                if not blockers
+                else "Candidate blocked by the current experimental-live rule set."
+            ),
+            blockers=blockers,
         )
+
+    def preview(
+        self,
+        profile: AppProfile,
+        candidate: OpportunityCandidate,
+        live_status: ExperimentalLiveStatus,
+    ) -> str:
+        plan = self.plan(profile, candidate, live_status)
+        lines = [
+            f"Mode: {plan.mode}",
+            f"Venue: {plan.venue_label}",
+            f"Strategy: {plan.strategy_id}",
+            f"Order style: {plan.order_style}",
+            f"Min net edge gate: {plan.min_net_edge_bps} bps",
+            f"Position cap: ${plan.max_position_cents / 100:.2f}",
+            f"Daily cap: ${plan.max_daily_cap_cents / 100:.2f}",
+            f"Would send live orders: {'yes' if plan.send_orders else 'no'}",
+            "",
+            plan.message,
+        ]
+        if plan.blockers:
+            lines.extend(["", "Blockers:"])
+            lines.extend(f"- {blocker}" for blocker in plan.blockers)
+        return "\n".join(lines)
 
 
 class UnlockService:
@@ -943,6 +1032,107 @@ class UnlockService:
             ),
         ]
         return LiveUnlockChecklist(checks=checks, live_ready=all(check.passed for check in checks))
+
+
+class ExperimentalLiveService:
+    _mode_order = ["locked", "shadow", "micro", "experimental"]
+
+    def status(
+        self,
+        profile: AppProfile,
+        *,
+        score_snapshot: ScoreSnapshot,
+        engine_status: EngineStatus,
+        venue_connections: list[VenueConnection],
+        credential_statuses: list[CredentialStatus],
+        checklist: LiveUnlockChecklist,
+    ) -> ExperimentalLiveStatus:
+        diagnostics_clear = engine_status.summary is None or engine_status.summary.latest_warning is None
+        paper_gate_passed = (
+            score_snapshot.completed_runs >= 1
+            and score_snapshot.total_runs >= 1
+            and score_snapshot.average_realized_edge_bps >= 0
+            and diagnostics_clear
+        )
+        validated_polymarket = any(
+            status.provider_id == "polymarket" and status.status == "validated"
+            for status in credential_statuses
+        )
+        polymarket_ready = any(
+            connection.venue_id == "polymarket" and connection.mode in {"configured", "live_ready"}
+            for connection in venue_connections
+        )
+        shadow_ready = paper_gate_passed and profile.live_rules_accepted and profile.risk_limits_acknowledged
+        micro_ready = shadow_ready and validated_polymarket and polymarket_ready and checklist.live_ready
+        experimental_ready = micro_ready and score_snapshot.completed_runs >= 3 and diagnostics_clear
+
+        available_modes = ["locked"]
+        if shadow_ready:
+            available_modes.append("shadow")
+        if micro_ready:
+            available_modes.append("micro")
+        if experimental_ready:
+            available_modes.append("experimental")
+
+        recommended_mode = "locked"
+        if experimental_ready:
+            recommended_mode = "experimental"
+        elif micro_ready:
+            recommended_mode = "micro"
+        elif shadow_ready:
+            recommended_mode = "shadow"
+
+        warnings: list[str] = []
+        if not diagnostics_clear:
+            warnings.append("Diagnostics must stay clear before any experimental live stage is armed.")
+        if profile.live_target_venue != "Polymarket":
+            warnings.append("Experimental live stays Polymarket-first in v1.")
+        if any(strategy_id not in {"internal-binary", "cross-venue-complement"} for strategy_id in profile.live_allowed_strategy_ids):
+            warnings.append("Only core strategies belong in experimental live v1.")
+
+        notes = [
+            "Shadow mode writes would-be live decisions locally and never sends an order.",
+            "Micro-live is Polymarket-first with tiny caps and post-only preference.",
+            "Experimental live remains deterministic and separate from paper score.",
+        ]
+        if "micro" not in available_modes:
+            notes.append("Micro-live still requires validated Polymarket credentials and a clean live checklist.")
+        if "experimental" not in available_modes:
+            notes.append("Experimental live only appears after repeated paper runs, not after one lucky score.")
+
+        return ExperimentalLiveStatus(
+            current_mode=profile.live_mode,
+            recommended_mode=recommended_mode,
+            paper_gate_passed=paper_gate_passed,
+            available_modes=available_modes,
+            venue_scope=[profile.live_target_venue],
+            strategy_scope=list(profile.live_allowed_strategy_ids),
+            position_cap_cents=profile.live_position_cap_cents,
+            daily_cap_cents=profile.live_daily_cap_cents,
+            warnings=warnings,
+            notes=notes,
+        )
+
+    def can_promote(self, status: ExperimentalLiveStatus, target_mode: str) -> bool:
+        return target_mode in status.available_modes
+
+    def promote(self, profile: AppProfile, *, status: ExperimentalLiveStatus, target_mode: str) -> AppProfile:
+        if target_mode not in self._mode_order:
+            raise ValueError(f"Unsupported live mode: {target_mode}")
+        if target_mode != "locked" and target_mode not in status.available_modes:
+            raise ValueError(f"{target_mode} is still blocked for this profile.")
+        paper_gate_passed_at = profile.paper_gate_passed_at
+        if status.paper_gate_passed and paper_gate_passed_at is None:
+            paper_gate_passed_at = datetime.now(timezone.utc)
+        return profile.model_copy(
+            update={
+                "experimental_live_enabled": target_mode != "locked",
+                "live_mode": target_mode,
+                "live_unlocked": target_mode in {"micro", "experimental"},
+                "paper_gate_passed": status.paper_gate_passed,
+                "paper_gate_passed_at": paper_gate_passed_at,
+            }
+        )
 
 
 class AssistantService:
@@ -1011,7 +1201,10 @@ class AssistantService:
             if checklist is None:
                 return f"{preface}\n\nNo profile is active, so there is no live-gate checklist to review yet."
             if checklist.live_ready:
-                return f"{preface}\n\nThis profile satisfies the current local live gate. Superior still keeps consumer live trading out of scope in v1."
+                return (
+                    f"{preface}\n\nThis profile satisfies the current local live gate. "
+                    "The next step is shadow or micro-live under the experimental rollout, not broad consumer live trading."
+                )
             missing = "\n".join(f"- {item.label}: {item.message}" for item in checklist.outstanding)
             return f"{preface}\n\nLive gate is still closed. Finish these items first:\n{missing}"
         if "reject" in lowered or "opportunity" in lowered or "scanner" in lowered:

@@ -10,11 +10,20 @@ from market_data_recorder.models import (
     PolymarketMarket,
 )
 from market_data_recorder.storage import DuckDBStorage
-from market_data_recorder_desktop.app_types import AppProfile, EngineStatus, PaperRunResult
+from market_data_recorder_desktop.app_types import (
+    AppProfile,
+    EngineStatus,
+    LiveUnlockChecklist,
+    OpportunityCandidate,
+    PaperRunResult,
+    ScoreSnapshot,
+)
 from market_data_recorder_desktop.bot_services import (
     CapabilityService,
     ConnectorLoadoutService,
     ContractMatcher,
+    ExperimentalLiveService,
+    LiveExecutionEngine,
     OpportunityEngine,
     PaperRunStore,
     PolymarketVenueAdapter,
@@ -199,3 +208,106 @@ def test_loadout_and_capability_services_surface_equipped_states(app_paths: Any,
     assert "polymarket" in loadout.equipped_connectors
     assert any(item.capability_id == "coach" and item.equipped for item in connector_states)
     assert any(item.capability_id == "recorder" and item.ready for item in capability_states)
+
+
+def test_experimental_live_service_promotes_from_shadow_to_micro(app_paths: Any, fake_keyring: Any) -> None:
+    profile = AppProfile(
+        id="profile-5",
+        display_name="Experimental Live",
+        data_dir=app_paths.data_dir / "profile-5",
+        enabled_venues=["Polymarket"],
+        live_rules_accepted=True,
+        risk_limits_acknowledged=True,
+        live_allowed_strategy_ids=["internal-binary"],
+    )
+    vault = CredentialVault(backend=fake_keyring)
+    vault.save(
+        profile.id,
+        "polymarket",
+        {
+            "api_key": "key",
+            "api_secret": "secret",
+            "api_passphrase": "pass",
+        },
+    )
+    paper_store = PaperRunStore()
+    paper_store.append_run(
+        profile,
+        PaperRunResult(
+            run_id="run-live-1",
+            profile_id=profile.id,
+            executed_at=datetime.now(timezone.utc),
+            strategy_ids=["internal-binary"],
+            candidate_ids=["cand-live-1"],
+            status="completed",
+            deployed_capital_cents=1000,
+            expected_edge_bps=120,
+            realized_pnl_cents=18,
+            realized_edge_bps=92,
+            notes="paper pass",
+        ),
+    )
+    connections = [PolymarketVenueAdapter().connection(profile, vault)]
+    credential_statuses = vault.statuses_for_profile(profile.id)
+    checklist = UnlockService(paper_store).checklist(
+        profile,
+        venue_connections=connections,
+        engine_status=EngineStatus(),
+        credential_statuses=credential_statuses,
+    )
+    live_service = ExperimentalLiveService()
+    live_status = live_service.status(
+        profile,
+        score_snapshot=ScoreService(paper_store).snapshot(profile),
+        engine_status=EngineStatus(),
+        venue_connections=connections,
+        credential_statuses=credential_statuses,
+        checklist=checklist,
+    )
+
+    assert "shadow" in live_status.available_modes
+    assert "micro" in live_status.available_modes
+    promoted = live_service.promote(profile, status=live_status, target_mode="micro")
+    assert promoted.live_mode == "micro"
+    assert promoted.live_unlocked is True
+    assert promoted.experimental_live_enabled is True
+
+
+def test_live_execution_preview_respects_shadow_and_micro_rules(app_paths: Any, fake_keyring: Any) -> None:
+    profile = AppProfile(
+        id="profile-6",
+        display_name="Preview",
+        data_dir=app_paths.data_dir / "profile-6",
+        enabled_venues=["Polymarket"],
+        live_mode="shadow",
+        experimental_live_enabled=True,
+        live_allowed_strategy_ids=["internal-binary"],
+    )
+    candidate = OpportunityCandidate(
+        id="cand-6",
+        strategy_id="internal-binary",
+        strategy_label="Internal Binary",
+        market_slug="preview-market",
+        summary="Preview candidate",
+        venues=["Polymarket"],
+        gross_edge_bps=120,
+        net_edge_bps=80,
+        recommended_stake_cents=1000,
+        explanation={"summary": "ok"},
+    )
+    live_status = ExperimentalLiveService().status(
+        profile,
+        score_snapshot=ScoreSnapshot(completed_runs=1, total_runs=1, average_realized_edge_bps=60),
+        engine_status=EngineStatus(),
+        venue_connections=[],
+        credential_statuses=[],
+        checklist=LiveUnlockChecklist(),
+    )
+    shadow_preview = LiveExecutionEngine().preview(profile, candidate, live_status)
+    assert "Shadow mode" in shadow_preview
+    assert "Would send live orders: no" in shadow_preview
+
+    micro_profile = profile.model_copy(update={"live_mode": "micro"})
+    micro_status = live_status.model_copy(update={"current_mode": "micro"})
+    micro_preview = LiveExecutionEngine().preview(micro_profile, candidate, micro_status)
+    assert "Mode: micro" in micro_preview

@@ -38,6 +38,19 @@ def test_qa_suite_supports_first_paper_loop_without_credentials(tmp_path: Path) 
     assert "no keys" in text or "no polymarket credentials" in text
 
 
+def test_qa_suite_supports_experimental_live_graduation(tmp_path: Path) -> None:
+    report = run_suite(
+        tmp_path / "qa-experimental-live",
+        scenario_ids=["experimental-live-graduation"],
+    )
+
+    assert len(report.scenarios) == 1
+    assert report.scenarios[0].status == "passed"
+    text = "\n".join([report.scenarios[0].summary, *report.scenarios[0].evidence]).lower()
+    assert "experimental live" in text
+    assert "promoted mode: experimental" in text
+
+
 def test_qa_client_window_renders_report(qtbot: Any, tmp_path: Path) -> None:
     report = run_suite(tmp_path / "qa-window", scenario_ids=["guided-profile-bootstrap"])
     window = QAClientWindow(workspace=tmp_path / "qa-window", scenario_ids=["guided-profile-bootstrap"])

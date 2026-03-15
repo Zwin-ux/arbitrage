@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, QUrl
@@ -34,6 +35,7 @@ from .app_types import (
     ConnectorLoadout,
     CredentialStatus,
     EngineStatus,
+    ExperimentalLiveStatus,
     LiveUnlockChecklist,
     OpportunityCandidate,
     PaperRunResult,
@@ -47,6 +49,7 @@ from .bot_services import (
     AssistantService,
     CapabilityService,
     ConnectorLoadoutService,
+    ExperimentalLiveService,
     LiveExecutionEngine,
     OpportunityEngine,
     PaperExecutionEngine,
@@ -236,7 +239,13 @@ class HomeTab(QWidget):
             status.summary.raw_messages > 0 or status.summary.book_snapshots > 0
         )
         is_running = status.state == "running"
-        live_state = "Live gate clear" if profile.live_unlocked else "Live gate locked"
+        live_state_map = {
+            "locked": "Live gate locked",
+            "shadow": "Shadow live staged",
+            "micro": "Micro live staged",
+            "experimental": "Experimental live staged",
+        }
+        live_state = live_state_map.get(profile.live_mode, "Live gate locked")
         lab_state = "Lab on" if profile.lab_enabled else "Lab off"
         self.safe_state_label.setText(f"Paper mode active | {live_state} | {lab_state}")
         scanner_ready = any(state.capability_id == "scanner" and state.ready for state in capability_states)
@@ -250,6 +259,10 @@ class HomeTab(QWidget):
             self.next_step_label.setText("Next step: boot the recorder so Superior has local books to inspect.")
         elif not score_ready:
             self.next_step_label.setText("Next step: inspect a scanner route and paper it to light up the score board.")
+        elif profile.paper_gate_passed and profile.live_mode == "locked":
+            self.next_step_label.setText(
+                "Next step: keep scoring in paper mode or stage shadow live if you want an experimental dry run."
+            )
         elif checklist is not None and checklist.outstanding:
             self.next_step_label.setText("Next step: keep the paper loop healthy. Live-gate items are optional for now.")
         else:
@@ -371,6 +384,24 @@ class HomeTab(QWidget):
                 "Outstanding live-gate items:\n"
                 f"{outstanding}\n"
                 "You can keep using recorder, scanner, and paper score without finishing these right now."
+            )
+        elif profile.live_mode == "shadow":
+            self.setup_progress_label.setText(
+                "Shadow live is staged. Superior can now record would-be live decisions while keeping real orders off."
+            )
+            self.setup_steps_label.setText(
+                "1. Keep scanning and papering so the score board stays honest.\n"
+                "2. Use Scanner preview to inspect the live plan before thinking about micro-live.\n"
+                "3. Only arm micro-live after credentials and diagnostics stay clean."
+            )
+        elif profile.live_mode in {"micro", "experimental"}:
+            self.setup_progress_label.setText(
+                "Experimental live is armed. Keep caps tiny, diagnostics clear, and treat paper score as the primary truth."
+            )
+            self.setup_steps_label.setText(
+                "1. Use Scanner preview to confirm each candidate still clears the live gate.\n"
+                "2. Keep loadout scope narrow and avoid enabling extra connectors casually.\n"
+                "3. Reset to locked if diagnostics or confidence degrade."
             )
         else:
             self.setup_progress_label.setText(
@@ -751,38 +782,98 @@ class LiveUnlockTab(QWidget):
         self.summary_label = QLabel("Live gate is locked.")
         self.summary_label.setObjectName("heroTitle")
         self.summary_label.setWordWrap(True)
+        self.mode_label = QLabel(
+            "Experimental Live graduates from paper into shadow, then tiny Polymarket live modes."
+        )
+        self.mode_label.setWordWrap(True)
         self.checklist_text = QPlainTextEdit()
         self.checklist_text.setReadOnly(True)
+        self.policy_text = QPlainTextEdit()
+        self.policy_text.setReadOnly(True)
         self.live_rules_checkbox = QCheckBox("I understand that Superior does not guarantee profits and that live trading can lose money.")
         self.risk_ack_checkbox = QCheckBox("I understand the active risk policy and daily loss caps.")
         actions = QHBoxLayout()
         self.save_button = QPushButton("Save acknowledgements")
         self.refresh_button = QPushButton("Refresh checklist")
-        self.unlock_button = QPushButton("Attempt unlock")
+        self.shadow_button = QPushButton("Enter shadow")
+        self.shadow_button.setProperty("buttonRole", "secondary")
+        self.micro_button = QPushButton("Arm micro-live")
+        self.micro_button.setProperty("buttonRole", "secondary")
+        self.experimental_button = QPushButton("Arm experimental")
+        self.experimental_button.setProperty("buttonRole", "secondary")
+        self.reset_button = QPushButton("Reset to locked")
+        self.reset_button.setProperty("buttonRole", "secondary")
         actions.addWidget(self.save_button)
         actions.addWidget(self.refresh_button)
-        actions.addWidget(self.unlock_button)
+        actions.addWidget(self.shadow_button)
+        actions.addWidget(self.micro_button)
+        actions.addWidget(self.experimental_button)
+        actions.addWidget(self.reset_button)
         layout.addWidget(self.summary_label)
+        layout.addWidget(self.mode_label)
         layout.addWidget(self.checklist_text)
+        layout.addWidget(self.policy_text)
         layout.addWidget(self.live_rules_checkbox)
         layout.addWidget(self.risk_ack_checkbox)
         layout.addLayout(actions)
         layout.addStretch(1)
 
-    def update_view(self, profile: AppProfile | None, checklist: LiveUnlockChecklist | None) -> None:
-        if profile is None or checklist is None:
+    def update_view(
+        self,
+        profile: AppProfile | None,
+        checklist: LiveUnlockChecklist | None,
+        live_status: ExperimentalLiveStatus | None,
+    ) -> None:
+        if profile is None or checklist is None or live_status is None:
             self.summary_label.setText("Live gate is locked.")
+            self.mode_label.setText("Choose a profile to inspect the experimental live rollout.")
             self.checklist_text.setPlainText("Choose a profile to see the live-gate checklist.")
+            self.policy_text.setPlainText("No experimental live profile loaded.")
+            self.shadow_button.setEnabled(False)
+            self.micro_button.setEnabled(False)
+            self.experimental_button.setEnabled(False)
+            self.reset_button.setEnabled(False)
             return
         self.live_rules_checkbox.setChecked(profile.live_rules_accepted)
         self.risk_ack_checkbox.setChecked(profile.risk_limits_acknowledged)
-        self.summary_label.setText("Live gate clear." if checklist.live_ready else "Live gate is locked.")
+        mode_titles = {
+            "locked": "Live gate is locked.",
+            "shadow": "Shadow live is armed.",
+            "micro": "Micro-live is armed.",
+            "experimental": "Experimental live is armed.",
+        }
+        self.summary_label.setText(mode_titles.get(profile.live_mode, "Live gate is locked."))
+        available = ", ".join(live_status.available_modes)
+        self.mode_label.setText(
+            f"Current mode: {profile.live_mode}. Recommended next mode: {live_status.recommended_mode}. "
+            f"Available modes now: {available}."
+        )
         lines = []
         for check in checklist.checks:
             status = "PASS" if check.passed else "BLOCKED"
             lines.append(f"[{status}] {check.label}")
             lines.append(f"  {check.message}")
         self.checklist_text.setPlainText("\n".join(lines))
+        policy_lines = [
+            f"Paper gate passed: {'yes' if live_status.paper_gate_passed else 'no'}",
+            f"Venue scope: {', '.join(live_status.venue_scope) or 'none'}",
+            f"Strategy scope: {', '.join(live_status.strategy_scope) or 'none'}",
+            f"Position cap: ${live_status.position_cap_cents / 100:.2f}",
+            f"Daily cap: ${live_status.daily_cap_cents / 100:.2f}",
+            "",
+            "Mode notes:",
+        ]
+        policy_lines.extend(f"- {note}" for note in live_status.notes)
+        if live_status.warnings:
+            policy_lines.extend(["", "Warnings:"])
+            policy_lines.extend(f"- {warning}" for warning in live_status.warnings)
+        self.policy_text.setPlainText("\n".join(policy_lines))
+        self.shadow_button.setEnabled("shadow" in live_status.available_modes and profile.live_mode != "shadow")
+        self.micro_button.setEnabled("micro" in live_status.available_modes and profile.live_mode != "micro")
+        self.experimental_button.setEnabled(
+            "experimental" in live_status.available_modes and profile.live_mode != "experimental"
+        )
+        self.reset_button.setEnabled(profile.live_mode != "locked" or profile.experimental_live_enabled)
 
 
 class LabTab(QWidget):
@@ -898,6 +989,7 @@ class DesktopMainWindow(QMainWindow):
         paper_store: PaperRunStore,
         score_service: ScoreService,
         paper_execution_engine: PaperExecutionEngine,
+        experimental_live_service: ExperimentalLiveService,
         live_execution_engine: LiveExecutionEngine,
         unlock_service: UnlockService,
         assistant_service: AssistantService,
@@ -918,6 +1010,7 @@ class DesktopMainWindow(QMainWindow):
         self._paper_store = paper_store
         self._score_service = score_service
         self._paper_execution_engine = paper_execution_engine
+        self._experimental_live_service = experimental_live_service
         self._live_execution_engine = live_execution_engine
         self._unlock_service = unlock_service
         self._assistant_service = assistant_service
@@ -1041,7 +1134,10 @@ class DesktopMainWindow(QMainWindow):
 
         self.live_unlock_tab.save_button.clicked.connect(self._save_unlock_preferences)
         self.live_unlock_tab.refresh_button.clicked.connect(self._refresh_all_views)
-        self.live_unlock_tab.unlock_button.clicked.connect(self._attempt_unlock)
+        self.live_unlock_tab.shadow_button.clicked.connect(lambda: self._set_live_mode("shadow"))
+        self.live_unlock_tab.micro_button.clicked.connect(lambda: self._set_live_mode("micro"))
+        self.live_unlock_tab.experimental_button.clicked.connect(lambda: self._set_live_mode("experimental"))
+        self.live_unlock_tab.reset_button.clicked.connect(lambda: self._set_live_mode("locked"))
 
         self.lab_tab.save_button.clicked.connect(self._save_lab_setting)
 
@@ -1156,6 +1252,18 @@ class DesktopMainWindow(QMainWindow):
             if profile is not None and checklist is not None
             else []
         )
+        live_status = (
+            self._experimental_live_service.status(
+                profile,
+                score_snapshot=score_snapshot,
+                engine_status=status,
+                venue_connections=connections,
+                credential_statuses=credential_statuses,
+                checklist=checklist,
+            )
+            if profile is not None and checklist is not None
+            else None
+        )
         self.home_tab.update_view(
             profile=profile,
             status=status,
@@ -1164,7 +1272,7 @@ class DesktopMainWindow(QMainWindow):
             score_snapshot=score_snapshot,
             capability_states=capability_states,
         )
-        self.live_unlock_tab.update_view(profile, checklist)
+        self.live_unlock_tab.update_view(profile, checklist, live_status)
         self.diagnostics_tab.text.setPlainText(
             self._diagnostics.diagnostics_text(
                 profile=profile,
@@ -1228,6 +1336,25 @@ class DesktopMainWindow(QMainWindow):
         if profile is None:
             return []
         return self._credential_vault.statuses_for_profile(profile.id)
+
+    def _experimental_live_status(self, profile: AppProfile) -> ExperimentalLiveStatus:
+        status = self._controller.status(profile)
+        connections = self._venue_connections(profile)
+        credential_statuses = self._credential_statuses(profile)
+        checklist = self._unlock_service.checklist(
+            profile,
+            venue_connections=connections,
+            engine_status=status,
+            credential_statuses=credential_statuses,
+        )
+        return self._experimental_live_service.status(
+            profile,
+            score_snapshot=self._score_service.snapshot(profile),
+            engine_status=status,
+            venue_connections=connections,
+            credential_statuses=credential_statuses,
+            checklist=checklist,
+        )
 
     def _selected_candidate(self) -> OpportunityCandidate | None:
         current_item = self.scanner_tab.candidate_list.currentItem()
@@ -1308,6 +1435,13 @@ class DesktopMainWindow(QMainWindow):
                 "ai_coach_enabled": "coach" in equipped_connectors,
                 "lab_enabled": lab_enabled or profile.lab_enabled,
                 "default_strategy_tier": "lab" if lab_enabled else "core",
+                "live_target_venue": "Polymarket" if "polymarket" in equipped_connectors else enabled_venues[0],
+                "live_allowed_strategy_ids": [
+                    module_id
+                    for module_id in equipped_modules
+                    if module_id in {"internal-binary", "cross-venue-complement"}
+                ]
+                or profile.live_allowed_strategy_ids,
             }
         )
         if "polymarket" in equipped_connectors and not updated.first_run_completed:
@@ -1358,25 +1492,43 @@ class DesktopMainWindow(QMainWindow):
 
     def _execute_paper_candidate(self, profile: AppProfile, candidate: OpportunityCandidate) -> None:
         self._last_paper_run = self._paper_execution_engine.paper_trade(profile, candidate)
+        active_profile = profile
         if not profile.first_run_completed:
-            updated = profile.model_copy(
+            active_profile = profile.model_copy(
                 update={
                     "first_run_completed": True,
                     "primary_mission": "Check Score, then repeat the record, scan, and paper loop with discipline.",
                 }
             )
-            self._profile_store.save_profile(updated)
-            self._refresh_profiles(updated.id)
+            self._profile_store.save_profile(active_profile)
+            self._refresh_profiles(active_profile.id)
+        live_status = self._experimental_live_status(active_profile)
+        if live_status.paper_gate_passed and not active_profile.paper_gate_passed:
+            active_profile = active_profile.model_copy(
+                update={
+                    "paper_gate_passed": True,
+                    "paper_gate_passed_at": datetime.now(timezone.utc),
+                    "primary_mission": "Paper gate passed. Keep score honest, then decide whether to stage shadow live.",
+                }
+            )
+            self._profile_store.save_profile(active_profile)
+            self._refresh_profiles(active_profile.id)
         self._refresh_portfolio_views()
         self._refresh_status_only()
         self.statusBar().showMessage("Paper route recorded.", 4000)
 
     def _preview_live_lock(self) -> None:
+        profile = self._current_profile()
         candidate = self._selected_candidate()
-        if candidate is None:
+        if profile is None or candidate is None:
             QMessageBox.information(self, "Choose a candidate", "Pick a scanner result first.")
             return
-        QMessageBox.information(self, "Live preview", self._live_execution_engine.preview(candidate))
+        live_status = self._experimental_live_status(profile)
+        QMessageBox.information(
+            self,
+            "Experimental live preview",
+            self._live_execution_engine.preview(profile, candidate, live_status),
+        )
 
     def _ask_coach(self) -> None:
         profile = self._current_profile()
@@ -1424,32 +1576,43 @@ class DesktopMainWindow(QMainWindow):
         self._refresh_status_only()
         self.statusBar().showMessage("Unlock preferences saved.", 4000)
 
-    def _attempt_unlock(self) -> None:
+    def _set_live_mode(self, target_mode: str) -> None:
         profile = self._current_profile()
         if profile is None:
             return
         self._save_unlock_preferences()
         updated_profile = self._current_profile()
         assert updated_profile is not None
-        checklist = self._unlock_service.checklist(
-            updated_profile,
-            venue_connections=self._venue_connections(updated_profile),
-            engine_status=self._controller.status(updated_profile),
-            credential_statuses=self._credential_statuses(updated_profile),
-        )
-        if not checklist.live_ready:
-            QMessageBox.warning(self, "Live gate still locked", "Finish the checklist items before any live path appears.")
+        live_status = self._experimental_live_status(updated_profile)
+        if target_mode != "locked" and not self._experimental_live_service.can_promote(live_status, target_mode):
+            QMessageBox.warning(
+                self,
+                "Experimental live still blocked",
+                f"{target_mode.title()} mode is not ready yet. Check the checklist and warnings first.",
+            )
             self._refresh_status_only()
             return
-        unlocked = updated_profile.model_copy(update={"live_unlocked": True})
-        self._profile_store.save_profile(unlocked)
-        self._refresh_profiles(unlocked.id)
-        self._refresh_status_only()
-        QMessageBox.information(
-            self,
-            "Live gate clear",
-            "This profile has satisfied the local unlock checklist. Superior still keeps consumer live execution as a separate deterministic path.",
+        promoted = self._experimental_live_service.promote(
+            updated_profile,
+            status=live_status,
+            target_mode=target_mode,
         )
+        if target_mode == "shadow" and not promoted.primary_mission.startswith("Review shadow-live"):
+            promoted = promoted.model_copy(
+                update={
+                    "primary_mission": "Review shadow-live plans before arming any real-money path.",
+                }
+            )
+        self._profile_store.save_profile(promoted)
+        self._refresh_profiles(promoted.id)
+        self._refresh_status_only()
+        mode_message = {
+            "locked": "Profile returned to the fully locked paper-first posture.",
+            "shadow": "Shadow live is armed. Superior will keep this in dry-run mode only.",
+            "micro": "Micro-live is armed. Keep the caps tiny and the venue scope narrow.",
+            "experimental": "Experimental live is armed. This stays deterministic and high-friction on purpose.",
+        }
+        QMessageBox.information(self, "Experimental live", mode_message[target_mode])
 
     def _save_lab_setting(self) -> None:
         profile = self._current_profile()

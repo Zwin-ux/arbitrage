@@ -86,6 +86,31 @@ function Wait-ForPath {
     return (Test-Path $Path)
 }
 
+function Reset-Directory {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (Test-Path $Path) {
+        try {
+            Remove-Item $Path -Recurse -Force -ErrorAction Stop
+        }
+        catch {
+            cmd.exe /c "rmdir /s /q ""$Path"" >nul 2>nul"
+        }
+    }
+
+    if (Test-Path $Path) {
+        Start-Sleep -Milliseconds 500
+        if (Test-Path $Path) {
+            throw "Unable to clear directory $Path before release build."
+        }
+    }
+
+    New-Item -ItemType Directory -Path $Path -Force | Out-Null
+}
+
 function Get-InstalledExecutablePath {
     param(
         [Parameter(Mandatory = $true)]
@@ -262,10 +287,7 @@ try {
     if (Test-Path "$repoRoot\.tmp\build-release") {
         Remove-Item "$repoRoot\.tmp\build-release" -Recurse -Force
     }
-    if (Test-Path $stageRoot) {
-        Remove-Item $stageRoot -Recurse -Force -ErrorAction SilentlyContinue
-    }
-    New-Item -ItemType Directory -Path $stageRoot | Out-Null
+    Reset-Directory -Path $stageRoot
 
     Invoke-NativeStep -StageName "Build PyInstaller bundle" -Command {
         python -m PyInstaller --noconfirm --distpath $stageDist --workpath $stageWork packaging\windows\market_data_recorder_app.spec

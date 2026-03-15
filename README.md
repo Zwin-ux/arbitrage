@@ -26,6 +26,7 @@ You can complete the first paper loop without entering any venue credentials: eq
 - Secrets: OS keychain only
 - Default mode: guided beginner, paper first
 - Live mode: locked until the checklist passes
+- Experimental live: staged as `shadow`, `micro`, and `experimental` after paper progress
 - Lab strategies: explicit opt-in and paper-only in v1
 - Profit claims: none; the software aims to be stable and transparent, not to guarantee returns
 
@@ -84,6 +85,7 @@ The Superior shell is built around:
 - `Paper Bots`: deterministic paper runs against current candidates
 - `Score`: local paper ledger, score board, and recent run history
 - `Live Gate`: checklist and acknowledgements
+- `Experimental Live`: shadow-first graduation path with tiny Polymarket-first caps
 - `Lab`: explicit experimental surface
 - `Diagnostics` and `About`
 

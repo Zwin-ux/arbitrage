@@ -65,6 +65,12 @@ class DiagnosticsService:
                     f"Guided mode: {profile.guided_mode}",
                     f"Lab enabled: {profile.lab_enabled}",
                     f"Live unlocked: {profile.live_unlocked}",
+                    f"Experimental live enabled: {profile.experimental_live_enabled}",
+                    f"Experimental live mode: {profile.live_mode}",
+                    f"Live target venue: {profile.live_target_venue}",
+                    f"Live position cap: {profile.live_position_cap_cents}",
+                    f"Live daily cap: {profile.live_daily_cap_cents}",
+                    f"Paper gate passed: {profile.paper_gate_passed}",
                     f"AI coach enabled: {profile.ai_coach_enabled}",
                     f"Risk policy: {profile.risk_policy_id}",
                 ]
