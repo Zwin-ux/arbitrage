@@ -1,10 +1,21 @@
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QCloseEvent,
+    QDesktopServices,
+    QFont,
+    QPaintEvent,
+    QPainter,
+    QPen,
+    QRadialGradient,
+)
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -128,6 +139,195 @@ class StatusTile(QFrame):
         self.value_label.setProperty("tone", tone)
         _repolish(self)
         _repolish(self.value_label)
+
+
+class ArcadeScannerWidget(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self._phase = 0
+        self._scan_state = "standby"
+        self._signals_found = 0
+        self._routes_ready = 0
+        self._top_edge_bps = 0
+        self._top_label = "Waiting for first route"
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._advance_phase)
+        self._timer.start(80)
+        self.setMinimumHeight(300)
+
+    def sizeHint(self) -> QSize:
+        return QSize(720, 320)
+
+    def set_snapshot(
+        self,
+        *,
+        scan_state: str,
+        signals_found: int,
+        routes_ready: int,
+        top_edge_bps: int,
+        top_label: str,
+    ) -> None:
+        self._scan_state = scan_state
+        self._signals_found = signals_found
+        self._routes_ready = routes_ready
+        self._top_edge_bps = top_edge_bps
+        self._top_label = top_label
+        self.update()
+
+    def _advance_phase(self) -> None:
+        self._phase = (self._phase + 1) % 180
+        self.update()
+
+    def paintEvent(self, _event: QPaintEvent) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        rect = QRectF(self.rect()).adjusted(10, 10, -10, -10)
+        palette = self._palette_for_state()
+
+        painter.fillRect(self.rect(), QColor("#061127"))
+        painter.fillRect(rect, QColor("#081630"))
+        painter.setPen(QPen(palette["border"], 2))
+        painter.drawRoundedRect(rect, 8, 8)
+
+        inner_rect = rect.adjusted(18, 18, -18, -18)
+        center = QPointF(inner_rect.center().x(), inner_rect.top() + inner_rect.height() * 0.47)
+        radius = min(inner_rect.width(), inner_rect.height()) * 0.34
+
+        for angle in range(0, 360, 6):
+            radians = math.radians(angle)
+            inner_radius = radius * 0.28
+            outer_radius = radius * 1.12
+            start = QPointF(
+                center.x() + math.cos(radians) * inner_radius,
+                center.y() + math.sin(radians) * inner_radius,
+            )
+            end = QPointF(
+                center.x() + math.cos(radians) * outer_radius,
+                center.y() + math.sin(radians) * outer_radius,
+            )
+            color = QColor(palette["vector"])
+            color.setAlpha(60 if angle % 24 == 0 else 28)
+            painter.setPen(QPen(color, 1))
+            painter.drawLine(start, end)
+
+        sweep_angle = (self._phase * 2.0) % 360.0
+        sweep_radians = math.radians(sweep_angle)
+        sweep_end = QPointF(
+            center.x() + math.cos(sweep_radians) * radius * 1.1,
+            center.y() + math.sin(sweep_radians) * radius * 1.1,
+        )
+        painter.setPen(QPen(palette["accent"], 2))
+        painter.drawLine(center, sweep_end)
+
+        for ring_index, ring_factor in enumerate((0.42, 0.68, 0.94), start=1):
+            ring_color = QColor(palette["vector"])
+            ring_color.setAlpha(70 if ring_index == 2 else 38)
+            painter.setPen(QPen(ring_color, 1))
+            painter.drawEllipse(center, radius * ring_factor, radius * ring_factor)
+
+        pulse = 1.0 + 0.06 * math.sin(self._phase / 8.0)
+        core_gradient = QRadialGradient(center, radius * 0.18 * pulse)
+        core_gradient.setColorAt(0.0, QColor("#ffffff"))
+        core_gradient.setColorAt(0.35, palette["accent"])
+        core_gradient.setColorAt(1.0, QColor(0, 0, 0, 0))
+        painter.setBrush(core_gradient)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(center, radius * 0.18 * pulse, radius * 0.18 * pulse)
+
+        dot_angles = (22, 88, 148, 214, 276, 332)
+        for index, angle in enumerate(dot_angles):
+            radians = math.radians(angle + self._phase * 0.6)
+            orbit_radius = radius * (0.64 if index % 2 == 0 else 0.82)
+            dot_center = QPointF(
+                center.x() + math.cos(radians) * orbit_radius,
+                center.y() + math.sin(radians) * orbit_radius,
+            )
+            dot_color = palette["signal"] if index < max(1, min(self._signals_found, len(dot_angles))) else palette["vector"]
+            dot_alpha = 230 if index < self._signals_found else 110
+            color = QColor(dot_color)
+            color.setAlpha(dot_alpha)
+            painter.setBrush(color)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(dot_center, 4.5, 4.5)
+
+        control_bar = QRectF(inner_rect.left() + 28, inner_rect.bottom() - 36, inner_rect.width() - 56, 14)
+        stripe_colors = (QColor("#00f0ff"), QColor("#7cffb2"), QColor("#ff3ed2"), QColor("#ffd700"))
+        stripe_width = max(6.0, control_bar.width() / 36.0)
+        stripe_x = control_bar.left()
+        stripe_index = 0
+        while stripe_x < control_bar.right():
+            painter.fillRect(
+                QRectF(stripe_x, control_bar.top(), min(stripe_width, control_bar.right() - stripe_x), control_bar.height()),
+                stripe_colors[stripe_index % len(stripe_colors)],
+            )
+            stripe_x += stripe_width
+            stripe_index += 1
+        painter.setPen(QPen(palette["border"], 1))
+        painter.drawRect(control_bar)
+
+        self._draw_text_block(painter, rect, palette)
+        self._draw_scanlines(painter, rect)
+
+    def _draw_text_block(self, painter: QPainter, rect: QRectF, palette: dict[str, QColor]) -> None:
+        painter.setPen(palette["label"])
+        title_font = QFont("Cascadia Mono", 10)
+        title_font.setBold(True)
+        painter.setFont(title_font)
+        painter.drawText(rect.adjusted(18, 14, -18, -18), Qt.AlignmentFlag.AlignLeft, "MARKET SCAN")
+        painter.drawText(rect.adjusted(18, 14, -18, -18), Qt.AlignmentFlag.AlignRight, self._scan_state.upper())
+
+        body_font = QFont("Cascadia Mono", 9)
+        painter.setFont(body_font)
+        metrics = [
+            f"SIGNALS  {self._signals_found:02d}",
+            f"ROUTES   {self._routes_ready:02d}",
+            f"TOP EDGE {self._top_edge_bps:+d} BPS",
+            f"FOCUS    {self._top_label[:22].upper()}",
+        ]
+        baseline_y = int(rect.top()) + 42
+        for index, line in enumerate(metrics):
+            painter.setPen(palette["label"])
+            painter.drawText(int(rect.left()) + 20, baseline_y + index * 18, line)
+
+        painter.setPen(palette["accent"])
+        painter.drawText(
+            int(rect.left()) + 20,
+            int(rect.bottom()) - 52,
+            "SCANNER FOCUS LOCKED TO LOCAL BOOKS",
+        )
+        painter.setPen(palette["vector"])
+        painter.drawText(
+            int(rect.left()) + 20,
+            int(rect.bottom()) - 18,
+            "PAPER-FIRST  |  LOCAL SIGNALS  |  NET EDGE ONLY",
+        )
+
+    @staticmethod
+    def _draw_scanlines(painter: QPainter, rect: QRectF) -> None:
+        scanline_color = QColor(255, 255, 255, 12)
+        painter.setPen(QPen(scanline_color, 1))
+        y = int(rect.top()) + 1
+        while y < int(rect.bottom()):
+            painter.drawLine(int(rect.left()) + 1, y, int(rect.right()) - 1, y)
+            y += 4
+
+    def _palette_for_state(self) -> dict[str, QColor]:
+        if self._scan_state == "active":
+            accent = QColor("#7cffb2")
+            signal = QColor("#7cffb2")
+        elif self._scan_state == "locked":
+            accent = QColor("#ffd700")
+            signal = QColor("#ffd700")
+        else:
+            accent = QColor("#00f0ff")
+            signal = QColor("#ff3ed2")
+        return {
+            "border": QColor("#1fd6ff"),
+            "vector": QColor("#00f0ff"),
+            "signal": signal,
+            "accent": accent,
+            "label": QColor("#d9f7ff"),
+        }
 
 
 class HomeTab(QWidget):
@@ -847,11 +1047,32 @@ class ScannerTab(QWidget):
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
         self.header_label = QLabel(
             "Scanner reads your local market sample and explains whether a route survives cost deductions."
         )
+        self.header_label.setObjectName("heroTitle")
         self.header_label.setWordWrap(True)
         layout.addWidget(self.header_label)
+
+        focus_group = QGroupBox("Scanner focus")
+        focus_group.setProperty("panelTone", "primary")
+        focus_layout = QVBoxLayout(focus_group)
+        self.visual_label = QLabel(
+            "A radial scan keeps the tab centered on one machine-like visual instead of drifting into dashboard clutter."
+        )
+        self.visual_label.setWordWrap(True)
+        self.visual_label.setObjectName("heroText")
+        self.focus_display = ArcadeScannerWidget()
+        self.metrics_text = QPlainTextEdit()
+        self.metrics_text.setReadOnly(True)
+        self.metrics_text.setProperty("consoleRole", "system")
+        self.metrics_text.setMaximumHeight(82)
+        focus_layout.addWidget(self.visual_label)
+        focus_layout.addWidget(self.focus_display)
+        focus_layout.addWidget(self.metrics_text)
+        layout.addWidget(focus_group)
+
         actions = QHBoxLayout()
         self.refresh_button = QPushButton("Refresh scan")
         self.paper_button = QPushButton("Paper selected")
@@ -859,13 +1080,42 @@ class ScannerTab(QWidget):
         actions.addWidget(self.refresh_button)
         actions.addWidget(self.paper_button)
         actions.addWidget(self.live_preview_button)
+        actions.addStretch(1)
         layout.addLayout(actions)
 
+        content_row = QHBoxLayout()
+        content_row.setSpacing(10)
+        candidates_group = QGroupBox("Signal routes")
+        candidates_group.setProperty("panelTone", "subtle")
+        candidates_layout = QVBoxLayout(candidates_group)
         self.candidate_list = QListWidget()
+        self.candidate_list.setMaximumWidth(360)
+        candidates_layout.addWidget(self.candidate_list)
+
+        details_group = QGroupBox("Route explanation")
+        details_group.setProperty("panelTone", "normal")
+        details_layout = QVBoxLayout(details_group)
         self.details_text = QPlainTextEdit()
         self.details_text.setReadOnly(True)
-        layout.addWidget(self.candidate_list)
-        layout.addWidget(self.details_text)
+        self.details_text.setProperty("consoleRole", "system")
+        details_layout.addWidget(self.details_text)
+        content_row.addWidget(candidates_group)
+        content_row.addWidget(details_group, stretch=1)
+        layout.addLayout(content_row)
+
+        self.focus_display.set_snapshot(
+            scan_state="standby",
+            signals_found=0,
+            routes_ready=0,
+            top_edge_bps=0,
+            top_label="Waiting for first route",
+        )
+        self.metrics_text.setPlainText(
+            "STATE      standby\n"
+            "SIGNALS    0\n"
+            "ROUTES     0\n"
+            "TOP EDGE   +0 bps"
+        )
 
     def update_candidates(self, candidates: list[OpportunityCandidate]) -> None:
         self.candidate_list.clear()
@@ -875,7 +1125,41 @@ class ScannerTab(QWidget):
             )
             item.setData(32, candidate.id)
             self.candidate_list.addItem(item)
+        if candidates:
+            top_candidate = max(candidates, key=lambda candidate: candidate.net_edge_bps)
+            scan_state = "active" if top_candidate.net_edge_bps > 0 else "locked"
+            self.focus_display.set_snapshot(
+                scan_state=scan_state,
+                signals_found=len(candidates),
+                routes_ready=sum(1 for candidate in candidates if candidate.net_edge_bps > 0),
+                top_edge_bps=top_candidate.net_edge_bps,
+                top_label=top_candidate.strategy_label,
+            )
+            self.metrics_text.setPlainText(
+                "\n".join(
+                    [
+                        f"STATE      {scan_state}",
+                        f"SIGNALS    {len(candidates)}",
+                        f"ROUTES     {sum(1 for candidate in candidates if candidate.net_edge_bps > 0)}",
+                        f"TOP EDGE   {top_candidate.net_edge_bps:+d} bps",
+                        f"FOCUS      {top_candidate.strategy_label}",
+                    ]
+                )
+            )
         if not candidates:
+            self.focus_display.set_snapshot(
+                scan_state="standby",
+                signals_found=0,
+                routes_ready=0,
+                top_edge_bps=0,
+                top_label="Waiting for first route",
+            )
+            self.metrics_text.setPlainText(
+                "STATE      standby\n"
+                "SIGNALS    0\n"
+                "ROUTES     0\n"
+                "TOP EDGE   +0 bps"
+            )
             self.details_text.setPlainText(
                 "No scanner candidates yet.\n\n"
                 "The fastest path is:\n"

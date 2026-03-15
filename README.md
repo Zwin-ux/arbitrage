@@ -110,6 +110,7 @@ Secrets are not stored in those paths.
 - [`docs/release-checklist.md`](docs/release-checklist.md)
 - [`docs/strategy-contributor-guide.md`](docs/strategy-contributor-guide.md)
 - [`docs/release-process.md`](docs/release-process.md)
+- [`docs/superior-graphics-system.md`](docs/superior-graphics-system.md)
 
 ## Packaging
 
