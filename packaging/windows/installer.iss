@@ -1,6 +1,6 @@
 #define AppName "Superior"
 #ifndef AppVersion
-  #define AppVersion "0.4.1"
+  #define AppVersion "0.4.2"
 #endif
 #define AppPublisher "Superior"
 #define AppExeName "market-data-recorder-app.exe"

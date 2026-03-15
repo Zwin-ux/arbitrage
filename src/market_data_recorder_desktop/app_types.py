@@ -25,6 +25,7 @@ BotSlotState = Literal["empty", "armed", "staged", "running", "banked", "blocked
 SessionState = Literal["idle", "running", "banked", "blocked", "complete"]
 BotRoutePreference = Literal["highest_edge", "best_quality", "balanced"]
 BotDecisionType = Literal["skip", "stage", "enter", "bank", "blocked"]
+BotRecipeSource = Literal["starter", "forked", "custom"]
 BotEventType = Literal[
     "session_start",
     "bot_armed",
@@ -276,8 +277,28 @@ class BotBlueprint(BaseModel):
     lab_only: bool = False
 
 
+class BotRecipe(BaseModel):
+    recipe_id: str
+    profile_id: str | None = None
+    label: str
+    description: str
+    strategy_family: ModuleId
+    min_net_edge_bps: int = 20
+    target_stake_cents: int = 1_500
+    max_assignments: int = 1
+    route_preference: BotRoutePreference = "highest_edge"
+    lab_only: bool = False
+    enabled: bool = True
+    source_kind: BotRecipeSource = "starter"
+    source_recipe_id: str | None = None
+    source_blueprint_id: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class BotConfig(BaseModel):
     blueprint_id: str
+    recipe_id: str | None = None
     slot_id: str
     label: str
     strategy_family: ModuleId
@@ -286,10 +307,13 @@ class BotConfig(BaseModel):
     max_assignments: int = 1
     route_preference: BotRoutePreference = "highest_edge"
     enabled: bool = True
+    source_kind: BotRecipeSource = "starter"
+    source_blueprint_id: str | None = None
 
 
 class BotRegistryEntry(BaseModel):
     blueprint_id: str
+    recipe_id: str | None = None
     label: str
     family_label: str
     description: str
@@ -301,6 +325,8 @@ class BotRegistryEntry(BaseModel):
     unlock_label: str = ""
     slot_label: str = ""
     tone: SemanticStateColor = "idle"
+    source_kind: BotRecipeSource = "starter"
+    source_blueprint_id: str | None = None
 
 
 class BotSlot(BaseModel):

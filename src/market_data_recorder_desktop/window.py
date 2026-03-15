@@ -76,6 +76,7 @@ from .bot_services import (
     UnlockService,
     VenueAdapter,
 )
+from .bot_recipes import BotRecipeStore
 from .controller import EngineController
 from .credentials import CredentialVault
 from .diagnostics import DiagnosticsService
@@ -826,9 +827,16 @@ class LoadoutTab(QWidget):
         bot_bay_layout.addWidget(self.bot_bay_text)
         lower_row.addWidget(bot_bay_group, 3)
 
-        registry_group = QGroupBox("Starter registry")
+        registry_group = QGroupBox("Bot garage")
         registry_group.setProperty("panelTone", "normal")
         registry_layout = QVBoxLayout(registry_group)
+        fork_row = QHBoxLayout()
+        self.fork_source_combo = QComboBox()
+        self.fork_button = QPushButton("Fork selected bot")
+        self.fork_button.setProperty("buttonRole", "secondary")
+        fork_row.addWidget(self.fork_source_combo, 1)
+        fork_row.addWidget(self.fork_button)
+        registry_layout.addLayout(fork_row)
         self.registry_text = QPlainTextEdit()
         self.registry_text.setReadOnly(True)
         self.registry_text.setProperty("consoleRole", "system")
@@ -867,6 +875,9 @@ class LoadoutTab(QWidget):
             self.bot_bay_text.setPlainText("No bot slots yet.")
             self.registry_text.setPlainText("No starter registry yet.")
             self.unlock_text.setPlainText("No unlock track yet.")
+            self.fork_source_combo.clear()
+            self.fork_source_combo.setEnabled(False)
+            self.fork_button.setEnabled(False)
             for checkbox in (
                 self.polymarket_checkbox,
                 self.kalshi_checkbox,
@@ -936,13 +947,17 @@ class LoadoutTab(QWidget):
                 ]
             )
         self.bot_bay_text.setPlainText("\n".join(bay_lines))
-        registry_lines = ["STARTER REGISTRY", ""]
+        registry_lines = ["BOT GARAGE", ""]
+        self.fork_source_combo.clear()
         if not registry_entries:
-            registry_lines.append("No starter bots are visible until a module is equipped.")
+            registry_lines.append("No visible bot recipes yet. Equip a module to surface starter bots.")
         for entry in registry_entries:
+            source_label = "LOCAL FORK" if entry.source_kind == "forked" else "STARTER"
+            self.fork_source_combo.addItem(f"{entry.label} [{source_label.lower()}]", entry.recipe_id)
             registry_lines.extend(
                 [
                     f"{entry.status.upper():<9} {entry.label}",
+                    f"  SOURCE  {source_label}",
                     f"  FAMILY  {entry.family_label}",
                     f"  GATE    {entry.min_net_edge_bps}+ bps",
                     f"  STYLE   {entry.route_preference.replace('_', ' ')}",
@@ -953,6 +968,8 @@ class LoadoutTab(QWidget):
                     "",
                 ]
             )
+        self.fork_source_combo.setEnabled(self.fork_source_combo.count() > 0)
+        self.fork_button.setEnabled(self.fork_source_combo.count() > 0)
         self.registry_text.setPlainText("\n".join(registry_lines).rstrip())
         unlock_lines = ["UNLOCK TRACK", ""]
         if not unlocks:
@@ -1774,7 +1791,8 @@ class DesktopMainWindow(QMainWindow):
         self._paper_store = paper_store
         self._score_service = score_service
         self._paper_execution_engine = paper_execution_engine
-        self._bot_config_service = BotConfigService()
+        self._bot_recipe_store = BotRecipeStore()
+        self._bot_config_service = BotConfigService(self._bot_recipe_store)
         self._bot_registry_service = BotRegistryService(self._bot_config_service)
         self._session_store = SessionEventStore(paper_store)
         self._unlock_track_service = UnlockTrackService()
@@ -1898,6 +1916,7 @@ class DesktopMainWindow(QMainWindow):
 
         self.loadout_tab.save_button.clicked.connect(self._save_loadout)
         self.loadout_tab.refresh_button.clicked.connect(self._refresh_all_views)
+        self.loadout_tab.fork_button.clicked.connect(self._fork_selected_recipe)
 
         self.learn_tab.ask_button.clicked.connect(self._ask_coach)
 
@@ -2213,11 +2232,22 @@ class DesktopMainWindow(QMainWindow):
             preset_labels=[(preset.id, preset.label) for preset in self._controller.presets()],
             parent=self,
         )
+        wizard.setWindowModality(Qt.WindowModality.WindowModal)
+        wizard.raise_()
+        wizard.activateWindow()
         if wizard.exec() == SetupWizard.DialogCode.Accepted:
             self._sync_startup_manager()
             self._refresh_profiles(wizard.created_profile_id)
+            self.tabs.setCurrentWidget(self.home_tab)
             self._refresh_all_views()
-            self.statusBar().showMessage("Profile created.", 4000)
+            self.raise_()
+            self.activateWindow()
+            profile = self._current_profile()
+            profile_name = profile.display_name if profile is not None else "Profile"
+            self.statusBar().showMessage(
+                f"{profile_name} is ready. Boot recorder to start the first paper-safe loop.",
+                6000,
+            )
 
     def _on_profile_changed(self) -> None:
         self._refresh_all_views()
@@ -2336,6 +2366,22 @@ class DesktopMainWindow(QMainWindow):
         self._refresh_profiles(updated.id)
         self._refresh_all_views()
         self.statusBar().showMessage("Loadout saved.", 4000)
+
+    def _fork_selected_recipe(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            return
+        recipe_id = self.loadout_tab.fork_source_combo.currentData()
+        if not isinstance(recipe_id, str) or not recipe_id:
+            QMessageBox.information(self, "Choose a bot", "Choose a visible bot recipe before forking it locally.")
+            return
+        try:
+            recipe = self._bot_config_service.fork_recipe(profile, recipe_id)
+        except KeyError:
+            QMessageBox.warning(self, "Bot not found", "The selected bot recipe is no longer available.")
+            return
+        self._refresh_all_views()
+        self.statusBar().showMessage(f"Forked {recipe.label} into the local bot garage.", 5000)
 
     def _run_preset(self, preset_id: str) -> None:
         profile = self._current_profile()

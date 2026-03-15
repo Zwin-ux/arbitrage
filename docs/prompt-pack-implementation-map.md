@@ -20,11 +20,16 @@ The pack is an implementation kit, not a source drop. Most of the files are repo
 Integrated or substantially represented in the current repo:
 
 - `00_master_north_star`
+- `03_consolidate_duplicate_ui_primitives`
 - `05_theme_tokens_polybius_arcade`
 - `06_hangar_mission_control_rebuild`
 - `07_loadout_to_bot_bay`
+- `08_scanner_centerpiece_and_truthful_visualization`
 - `09_paper_runs_score_attack`
 - `10_live_gate_and_experimental_live`
+- `12_bot_garage_and_registry`
+- `13_bot_recipe_format_and_forking`
+- `15_paper_execution_decision_trace`
 - `17_qa_client_scenarios_and_artifacts`
 - `18_site_brand_refresh_and_variant_lab`
 - `19_windows_release_polish`
@@ -33,9 +38,7 @@ Integrated or substantially represented in the current repo:
 Partially implemented and good candidates for the next cleanup pass:
 
 - `02_brand_and_naming_unification`
-- `03_consolidate_duplicate_ui_primitives`
 - `04_shell_navigation_and_state_overlays`
-- `08_scanner_centerpiece_and_truthful_visualization`
 - `16_assistant_guardrails_and_learn_tab`
 - `22_ci_matrix_and_release_pipeline`
 - `23_final_polish_pass`
@@ -44,10 +47,7 @@ Partially implemented and good candidates for the next cleanup pass:
 Still mostly future-facing:
 
 - `11_replay_lab_foundation`
-- `12_bot_garage_and_registry`
-- `13_bot_recipe_format_and_forking`
 - `14_opportunity_engine_v2`
-- `15_paper_execution_decision_trace`
 - `20_macos_poc_cross_platform_qt`
 - `21_macos_packaging_and_launchagent`
 - `26_one_shot_full_transform`
@@ -57,10 +57,10 @@ Still mostly future-facing:
 For the next high-value implementation cycle, use this order:
 
 1. `session_bundles/02_arcade_shell.md`
-2. `prompts/03_consolidate_duplicate_ui_primitives.md`
-3. `prompts/08_scanner_centerpiece_and_truthful_visualization.md`
-4. `prompts/12_bot_garage_and_registry.md`
-5. `prompts/15_paper_execution_decision_trace.md`
+2. `prompts/04_shell_navigation_and_state_overlays.md`
+3. `prompts/14_opportunity_engine_v2.md`
+4. `prompts/16_assistant_guardrails_and_learn_tab.md`
+5. `prompts/23_final_polish_pass.md`
 6. `session_bundles/05_release_candidate.md`
 
 ## Repo Mapping

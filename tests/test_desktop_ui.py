@@ -31,6 +31,7 @@ from market_data_recorder_desktop.main import _smoke_report, main
 from market_data_recorder_desktop.paths import AppPaths
 from market_data_recorder_desktop.profiles import ProfileStore
 from market_data_recorder_desktop.startup import UnsupportedStartupManager
+import market_data_recorder_desktop.window as desktop_window_module
 from market_data_recorder_desktop.window import DesktopMainWindow
 from market_data_recorder_desktop.wizard import SetupWizard
 
@@ -258,6 +259,43 @@ def test_main_window_runs_default_preset(
     controller.shutdown()
 
 
+def test_main_window_can_fork_bot_recipe_from_loadout(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Garage Window",
+        template="Guided",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    selector_index = window.profile_selector.findData(profile.id)
+    window.profile_selector.setCurrentIndex(selector_index)
+    window._refresh_all_views()  # noqa: SLF001
+    assert "Scout Bot" in window.loadout_tab.registry_text.toPlainText()
+
+    window.loadout_tab.fork_source_combo.setCurrentIndex(0)
+    qtbot.mouseClick(window.loadout_tab.fork_button, Qt.MouseButton.LeftButton)
+    qtbot.waitUntil(lambda: "LOCAL FORK" in window.loadout_tab.registry_text.toPlainText(), timeout=1500)
+
+    assert "Scout Bot Mk II" in window.loadout_tab.registry_text.toPlainText()
+    assert "Scout Bot Mk II" in window.loadout_tab.bot_bay_text.toPlainText()
+    controller.shutdown()
+
+
 def test_main_window_empty_state_surfaces_guided_setup(
     qtbot: Any,
     app_paths: AppPaths,
@@ -284,6 +322,61 @@ def test_main_window_empty_state_surfaces_guided_setup(
     label_text = " ".join(label.text() for label in window.findChildren(QLabel))
     assert "CONTROL  Hangar | Loadout" not in label_text
     assert "OPERATIONS  Scanner | Paper" not in label_text
+    controller.shutdown()
+
+
+def test_main_window_setup_wizard_handoff_selects_profile_and_focuses_hangar(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+    monkeypatch: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+        allow_setup_wizard_on_empty_profiles=False,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    class FakeWizard:
+        DialogCode = SetupWizard.DialogCode
+
+        def __init__(self, **kwargs: Any) -> None:
+            self._store = kwargs["profile_store"]
+            self.created_profile_id: str | None = None
+
+        def setWindowModality(self, _modality: Any) -> None:
+            return
+
+        def raise_(self) -> None:
+            return
+
+        def activateWindow(self) -> None:
+            return
+
+        def exec(self) -> int:
+            profile = self._store.create_profile(
+                display_name="Wizard Return",
+                template="Guided",
+                enabled_venues=["Polymarket"],
+            )
+            self.created_profile_id = profile.id
+            return self.DialogCode.Accepted
+
+    monkeypatch.setattr(desktop_window_module, "SetupWizard", FakeWizard)
+
+    window._open_setup_wizard()  # noqa: SLF001
+
+    current_profile = window._current_profile()  # noqa: SLF001
+    assert current_profile is not None
+    assert current_profile.display_name == "Wizard Return"
+    assert window.tabs.currentWidget() is window.home_tab
+    assert "Wizard Return is ready." in window.statusBar().currentMessage()
     controller.shutdown()
 
 
@@ -352,7 +445,7 @@ def test_main_window_surfaces_starter_registry_and_scanner_tactical_board(
     window._refresh_scanner()  # noqa: SLF001
     window._refresh_status_only()  # noqa: SLF001
 
-    assert "STARTER REGISTRY" in window.loadout_tab.registry_text.toPlainText()
+    assert "BOT GARAGE" in window.loadout_tab.registry_text.toPlainText()
     assert "Scout Bot" in window.loadout_tab.registry_text.toPlainText()
     assert "TACTICAL BOARD" in window.scanner_tab.route_board_text.toPlainText()
     assert "READY" in window.scanner_tab.route_board_text.toPlainText()

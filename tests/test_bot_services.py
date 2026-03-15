@@ -455,6 +455,69 @@ def test_bot_registry_service_surfaces_starter_bot_states(app_paths: Any, fake_k
     assert any(entry.family_label == "Cross-Venue" for entry in entries)
 
 
+def test_bot_config_service_forks_starter_recipe_into_local_recipe(app_paths: Any, fake_keyring: Any) -> None:
+    del fake_keyring
+    profile = AppProfile(
+        id="profile-9b",
+        display_name="Garage",
+        data_dir=app_paths.data_dir / "profile-9b",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    service = BotConfigService()
+
+    fork = service.fork_recipe(profile, "scout-bot")
+    recipes = service.recipes(profile)
+
+    assert fork.source_kind == "forked"
+    assert fork.source_recipe_id == "scout-bot"
+    assert fork.source_blueprint_id == "scout-bot"
+    assert any(recipe.recipe_id == fork.recipe_id for recipe in recipes)
+    assert any(recipe.label == "Scout Bot Mk II" for recipe in recipes)
+
+
+def test_bot_config_service_arms_local_fork_before_starter_recipe(app_paths: Any, fake_keyring: Any) -> None:
+    del fake_keyring
+    profile = AppProfile(
+        id="profile-9c",
+        display_name="Garage Order",
+        data_dir=app_paths.data_dir / "profile-9c",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    service = BotConfigService()
+    fork = service.fork_recipe(profile, "scout-bot")
+
+    configs = service.configs(profile, ScoreSnapshot(profile_id=profile.id, available_bot_slots=1))
+
+    assert configs[0].recipe_id == fork.recipe_id
+    assert configs[0].source_kind == "forked"
+    assert configs[0].label == "Scout Bot Mk II"
+
+
+def test_bot_registry_service_surfaces_local_forked_recipe(app_paths: Any, fake_keyring: Any) -> None:
+    del fake_keyring
+    profile = AppProfile(
+        id="profile-9d",
+        display_name="Garage Registry",
+        data_dir=app_paths.data_dir / "profile-9d",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    config_service = BotConfigService()
+    config_service.fork_recipe(profile, "scout-bot")
+    snapshot = ScoreSnapshot(profile_id=profile.id, available_bot_slots=1)
+    unlocks = UnlockTrackService().unlocks(profile, snapshot)
+
+    entries = BotRegistryService(config_service).entries(profile, snapshot, unlocks)
+
+    assert any(entry.source_kind == "forked" and entry.status == "armed" for entry in entries)
+    assert any(entry.label == "Scout Bot Mk II" for entry in entries)
+
+
 def test_paper_simulation_engine_generates_human_trace_lines(app_paths: Any, fake_keyring: Any) -> None:
     del fake_keyring
     profile = AppProfile(

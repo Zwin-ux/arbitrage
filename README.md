@@ -107,6 +107,7 @@ Secrets are not stored in those paths.
 - [`docs/live-trading-limitations.md`](docs/live-trading-limitations.md)
 - [`docs/privacy-and-secrets.md`](docs/privacy-and-secrets.md)
 - [`docs/first-paper-run.md`](docs/first-paper-run.md)
+- [`docs/bot-recipes.md`](docs/bot-recipes.md)
 - [`docs/release-checklist.md`](docs/release-checklist.md)
 - [`docs/strategy-contributor-guide.md`](docs/strategy-contributor-guide.md)
 - [`docs/release-process.md`](docs/release-process.md)

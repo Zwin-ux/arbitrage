@@ -7,6 +7,7 @@ from .app_types import (
     AppProfile,
     BotBlueprint,
     BotConfig,
+    BotRecipe,
     BotRegistryEntry,
     BotSlot,
     DecisionTraceLine,
@@ -23,6 +24,7 @@ from .app_types import (
     UnlockState,
 )
 from .bot_services import PaperExecutionEngine, PaperRunStore
+from .bot_recipes import BotRecipeStore
 
 
 def _score_delta_for_run(run: PaperRunResult) -> int:
@@ -53,6 +55,9 @@ def _route_preference_label(route_preference: str) -> str:
 
 
 class BotConfigService:
+    def __init__(self, recipe_store: BotRecipeStore | None = None) -> None:
+        self._recipe_store = recipe_store or BotRecipeStore()
+
     def blueprints(self, profile: AppProfile) -> list[BotBlueprint]:
         blueprints: list[BotBlueprint] = []
         if "internal-binary" in profile.equipped_modules:
@@ -105,21 +110,57 @@ class BotConfigService:
             )
         return blueprints
 
+    def recipes(self, profile: AppProfile) -> list[BotRecipe]:
+        starter_recipes = [
+            self._recipe_store.recipe_from_blueprint(profile, blueprint) for blueprint in self.blueprints(profile)
+        ]
+        local_recipes = self._recipe_store.list_local_recipes(profile)
+        return [*local_recipes, *starter_recipes]
+
+    def recipe_by_id(self, profile: AppProfile, recipe_id: str) -> BotRecipe | None:
+        for recipe in self.recipes(profile):
+            if recipe.recipe_id == recipe_id:
+                return recipe
+        return None
+
+    def fork_recipe(self, profile: AppProfile, recipe_id: str, *, new_label: str | None = None) -> BotRecipe:
+        recipe = self.recipe_by_id(profile, recipe_id)
+        if recipe is None:
+            raise KeyError(f"Unknown bot recipe: {recipe_id}")
+        return self._recipe_store.fork_recipe(profile, recipe, new_label=new_label)
+
+    def _armable_recipes(self, profile: AppProfile) -> list[BotRecipe]:
+        armable: list[BotRecipe] = []
+        for recipe in self.recipes(profile):
+            if not recipe.enabled:
+                continue
+            if recipe.strategy_family not in profile.equipped_modules:
+                continue
+            if recipe.lab_only and not profile.lab_enabled:
+                continue
+            armable.append(recipe)
+        return armable
+
     def configs(self, profile: AppProfile, score_snapshot: ScoreSnapshot) -> list[BotConfig]:
         unlocked_slots = max(1, min(score_snapshot.available_bot_slots, 3))
-        blueprints = self.blueprints(profile)
+        recipes = self._armable_recipes(profile)
         configs: list[BotConfig] = []
-        for index, blueprint in enumerate(blueprints[:unlocked_slots], start=1):
+        for index, recipe in enumerate(recipes[:unlocked_slots], start=1):
+            source_blueprint_id = recipe.source_blueprint_id or recipe.recipe_id
             configs.append(
                 BotConfig(
-                    blueprint_id=blueprint.id,
+                    blueprint_id=source_blueprint_id,
+                    recipe_id=recipe.recipe_id,
                     slot_id=f"slot-{index}",
-                    label=blueprint.label,
-                    strategy_family=blueprint.strategy_family,
-                    min_net_edge_bps=blueprint.min_net_edge_bps,
-                    max_position_cents=min(profile.live_position_cap_cents * 10, blueprint.target_stake_cents),
-                    max_assignments=blueprint.max_assignments,
-                    route_preference=blueprint.route_preference,
+                    label=recipe.label,
+                    strategy_family=recipe.strategy_family,
+                    min_net_edge_bps=recipe.min_net_edge_bps,
+                    max_position_cents=min(profile.live_position_cap_cents * 10, recipe.target_stake_cents),
+                    max_assignments=recipe.max_assignments,
+                    route_preference=recipe.route_preference,
+                    enabled=recipe.enabled,
+                    source_kind=recipe.source_kind,
+                    source_blueprint_id=source_blueprint_id,
                 )
             )
         return configs
@@ -151,9 +192,13 @@ class BotConfigService:
                     slot_id=slot_id,
                     label=f"Slot {index}",
                     state="armed",
-                    bot_id=config.blueprint_id,
+                    bot_id=config.recipe_id or config.blueprint_id,
                     bot_label=config.label,
-                    detail=f"Armed for {config.strategy_family} at {config.min_net_edge_bps}+ bps.",
+                    detail=(
+                        f"Armed for {config.strategy_family} at {config.min_net_edge_bps}+ bps."
+                        if config.source_kind == "starter"
+                        else f"Forked recipe armed at {config.min_net_edge_bps}+ bps."
+                    ),
                 )
             )
         return slots
@@ -169,24 +214,45 @@ class BotRegistryService:
         score_snapshot: ScoreSnapshot,
         unlocks: list[UnlockState],
     ) -> list[BotRegistryEntry]:
-        configs = {config.blueprint_id: config for config in self._bot_config_service.configs(profile, score_snapshot)}
+        configs = {
+            (config.recipe_id or config.blueprint_id): config
+            for config in self._bot_config_service.configs(profile, score_snapshot)
+        }
         next_unlock = next((unlock for unlock in unlocks if not unlock.unlocked), None)
         entries: list[BotRegistryEntry] = []
-        for index, blueprint in enumerate(self._bot_config_service.blueprints(profile), start=1):
-            if blueprint.id in configs:
+        armable_ids = {
+            recipe.recipe_id
+            for recipe in self._bot_config_service.recipes(profile)
+            if recipe.enabled
+            and recipe.strategy_family in profile.equipped_modules
+            and (not recipe.lab_only or profile.lab_enabled)
+        }
+        for index, recipe in enumerate(self._bot_config_service.recipes(profile), start=1):
+            config = configs.get(recipe.recipe_id)
+            if config is not None:
                 status = "armed"
-                slot_label = configs[blueprint.id].slot_id.replace("-", " ").title()
+                slot_label = config.slot_id.replace("-", " ").title()
                 unlock_label = f"Armed in {slot_label}."
                 tone = "active"
-            elif blueprint.lab_only and not profile.lab_enabled:
+            elif recipe.lab_only and not profile.lab_enabled:
                 status = "offline"
                 slot_label = "Lab only"
                 unlock_label = "Enable Lab to surface this starter bot."
                 tone = "locked"
-            elif index <= score_snapshot.available_bot_slots:
+            elif not recipe.enabled:
+                status = "offline"
+                slot_label = "Disabled"
+                unlock_label = "Recipe is saved locally but disabled."
+                tone = "locked"
+            elif recipe.strategy_family not in profile.equipped_modules:
+                status = "offline"
+                slot_label = "Module missing"
+                unlock_label = "Equip this strategy module before the recipe can arm."
+                tone = "warning"
+            elif recipe.recipe_id in armable_ids and index <= score_snapshot.available_bot_slots:
                 status = "available"
                 slot_label = f"Slot {index}"
-                unlock_label = "Current bot bay has room to arm this bot."
+                unlock_label = "Current bot bay has room to arm this recipe."
                 tone = "warning"
             else:
                 status = "locked"
@@ -195,18 +261,21 @@ class BotRegistryService:
                 tone = "locked"
             entries.append(
                 BotRegistryEntry(
-                    blueprint_id=blueprint.id,
-                    label=blueprint.label,
-                    family_label=_family_label(blueprint.strategy_family),
-                    description=blueprint.description,
-                    min_net_edge_bps=blueprint.min_net_edge_bps,
-                    target_stake_cents=blueprint.target_stake_cents,
-                    route_preference=blueprint.route_preference,
-                    lab_only=blueprint.lab_only,
+                    blueprint_id=recipe.source_blueprint_id or recipe.recipe_id,
+                    recipe_id=recipe.recipe_id,
+                    label=recipe.label,
+                    family_label=_family_label(recipe.strategy_family),
+                    description=recipe.description,
+                    min_net_edge_bps=recipe.min_net_edge_bps,
+                    target_stake_cents=recipe.target_stake_cents,
+                    route_preference=recipe.route_preference,
+                    lab_only=recipe.lab_only,
                     status=status,
                     unlock_label=unlock_label,
                     slot_label=slot_label,
                     tone=tone,
+                    source_kind=recipe.source_kind,
+                    source_blueprint_id=recipe.source_blueprint_id,
                 )
             )
         return entries
@@ -511,11 +580,12 @@ class PaperSimulationEngine:
         completed_runs: list[PaperRunResult] = []
 
         for config in configs:
+            bot_id = config.recipe_id or config.blueprint_id
             slot = BotSlot(
                 slot_id=config.slot_id,
                 label=config.slot_id.replace("-", " ").title(),
                 state="armed",
-                bot_id=config.blueprint_id,
+                bot_id=bot_id,
                 bot_label=config.label,
                 detail=f"Armed at {config.min_net_edge_bps}+ bps.",
             )
@@ -526,7 +596,7 @@ class PaperSimulationEngine:
                     session_id=session_id,
                     occurred_at=datetime.now(timezone.utc),
                     slot_id=config.slot_id,
-                    bot_id=config.blueprint_id,
+                    bot_id=bot_id,
                     event_type="bot_armed",
                     title=f"{config.label} armed",
                     detail=f"Watching {config.strategy_family} routes with a {config.min_net_edge_bps} bps gate.",
@@ -540,7 +610,7 @@ class PaperSimulationEngine:
                 slot.detail = "No staged route cleared this bot gate."
                 decisions.append(
                     PaperBotDecision(
-                        bot_id=config.blueprint_id,
+                        bot_id=bot_id,
                         slot_id=config.slot_id,
                         decision="blocked",
                         reason="No current candidate matched the bot gate.",
@@ -561,7 +631,7 @@ class PaperSimulationEngine:
                         session_id=session_id,
                         occurred_at=datetime.now(timezone.utc),
                         slot_id=config.slot_id,
-                        bot_id=config.blueprint_id,
+                        bot_id=bot_id,
                         event_type="blocked",
                         title=f"{config.label} blocked",
                         detail="No local route matched the configured strategy family and edge threshold.",
@@ -576,7 +646,7 @@ class PaperSimulationEngine:
             slot.detail = f"Staged {candidate.strategy_label} at {candidate.net_edge_bps} bps."
             decisions.append(
                 PaperBotDecision(
-                    bot_id=config.blueprint_id,
+                    bot_id=bot_id,
                     slot_id=config.slot_id,
                     decision="stage",
                     reason=f"Candidate cleared the {config.min_net_edge_bps} bps bot gate.",
@@ -606,7 +676,7 @@ class PaperSimulationEngine:
                     session_id=session_id,
                     occurred_at=datetime.now(timezone.utc),
                     slot_id=config.slot_id,
-                    bot_id=config.blueprint_id,
+                    bot_id=bot_id,
                     event_type="route_staged",
                     title=f"{config.label} staged route",
                     detail=f"{candidate.strategy_label} cleared the bot gate at {candidate.net_edge_bps} bps.",
@@ -630,7 +700,7 @@ class PaperSimulationEngine:
             )
             decisions.append(
                 PaperBotDecision(
-                    bot_id=config.blueprint_id,
+                    bot_id=bot_id,
                     slot_id=config.slot_id,
                     decision="bank" if run.status == "completed" else "blocked",
                     reason=run.notes,
@@ -678,7 +748,7 @@ class PaperSimulationEngine:
                     session_id=session_id,
                     occurred_at=run.executed_at,
                     slot_id=config.slot_id,
-                    bot_id=config.blueprint_id,
+                    bot_id=bot_id,
                     event_type="paper_banked" if run.status == "completed" else "blocked",
                     title=f"{config.label} {'banked score' if run.status == 'completed' else 'blocked'}",
                     detail=(
