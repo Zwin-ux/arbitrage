@@ -116,3 +116,71 @@ def test_windows_startup_manager_writes_launcher(tmp_path: Path) -> None:
     assert launcher.exists()
     manager.set_enabled(False)
     assert not launcher.exists()
+
+
+def test_arbitrage_service_returns_empty_when_no_db(app_paths: AppPaths) -> None:
+    from market_data_recorder_desktop.bot_services import ArbitrageService
+    from market_data_recorder_desktop.profiles import ProfileStore
+
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Arb",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+    )
+    service = ArbitrageService()
+    result = service.find_opportunities(profile, min_edge="0")
+    assert result == []
+
+
+def test_arbitrage_service_finds_buy_all_outcomes_opportunity(app_paths: AppPaths) -> None:
+    from datetime import datetime, timezone
+
+    from market_data_recorder.models import BestBidAskEvent
+    from market_data_recorder.storage import DuckDBStorage
+    from market_data_recorder_desktop.bot_services import ArbitrageService
+    from market_data_recorder_desktop.profiles import ProfileStore
+
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Arb",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+    )
+    db_path = profile.data_dir / "market_data.duckdb"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    storage = DuckDBStorage(db_path)
+    try:
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="yes-token",
+                market="market-a",
+                best_bid="0.45",
+                best_ask="0.47",
+                spread=None,
+                timestamp="1000",
+            ),
+            recorded_at=datetime.now(timezone.utc),
+        )
+        storage.store_best_bid_ask(
+            BestBidAskEvent(
+                event_type="best_bid_ask",
+                asset_id="no-token",
+                market="market-a",
+                best_bid="0.48",
+                best_ask="0.50",
+                spread=None,
+                timestamp="1000",
+            ),
+            recorded_at=datetime.now(timezone.utc),
+        )
+    finally:
+        storage.close()
+
+    service = ArbitrageService()
+    opportunities = service.find_opportunities(profile, min_edge="0.01")
+    assert len(opportunities) == 1
+    assert opportunities[0].market == "market-a"
+    assert opportunities[0].strategy == "buy_all_outcomes"
+    assert float(opportunities[0].guaranteed_profit) > 0.01
