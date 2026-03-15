@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
@@ -95,6 +97,9 @@ from .startup import StartupManager
 from .ui.hangar import HomeTab as HangarHomeTab
 from .ui.shell import DesktopShell
 from .wizard import SetupWizard
+
+
+_log = logging.getLogger(__name__)
 
 
 def _project_root() -> Path:
@@ -1334,10 +1339,9 @@ class ArbitrageTab(QWidget):
 
         filter_row = QHBoxLayout()
         filter_row.addWidget(QLabel("Min edge (e.g. 0.01):"))
-        self.min_edge_input = QPlainTextEdit()
-        self.min_edge_input.setMaximumHeight(34)
+        self.min_edge_input = QLineEdit()
         self.min_edge_input.setPlaceholderText("0")
-        self.min_edge_input.setProperty("consoleRole", "system")
+        self.min_edge_input.setMaximumWidth(120)
         filter_row.addWidget(self.min_edge_input)
         self.refresh_button = QPushButton("Refresh arbitrage")
         filter_row.addWidget(self.refresh_button)
@@ -2200,7 +2204,7 @@ class DesktopMainWindow(QMainWindow):
 
     def _refresh_arbitrage(self) -> None:
         profile = self._current_profile()
-        min_edge = self.arb_tab.min_edge_input.toPlainText().strip() or "0"
+        min_edge = self.arb_tab.min_edge_input.text().strip() or "0"
         try:
             self._latest_arb_opportunities = (
                 self._arb_service.find_opportunities(profile, min_edge=min_edge)
@@ -2208,6 +2212,7 @@ class DesktopMainWindow(QMainWindow):
                 else []
             )
         except Exception:
+            _log.exception("ArbitrageService.find_opportunities failed")
             self._latest_arb_opportunities = []
         self.arb_tab.update_opportunities(self._latest_arb_opportunities)
         selected = self._latest_arb_opportunities[0] if self._latest_arb_opportunities else None
