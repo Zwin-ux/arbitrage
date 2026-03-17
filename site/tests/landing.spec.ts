@@ -4,9 +4,9 @@ test("homepage keeps the primary download path visible", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: /learn the market\./i })).toBeVisible();
-  await expect(page.getByText(/windows prediction-market scanner/i)).toBeVisible();
+  await expect(page.getByText(/prediction-market bot for windows/i)).toBeVisible();
   await expect(
-    page.getByText(/local-first desktop bot os for recording public market books/i)
+    page.getByText(/helps you watch public prediction markets, understand why a route looks interesting/i)
   ).toBeVisible();
   const downloadLink = page.getByRole("link", { name: /download/i }).first();
   await expect(downloadLink).toBeVisible();
@@ -41,10 +41,10 @@ test("control and focus variants stay intentionally different", async ({ page })
   await page.goto("/lab/control/");
   await expect(page.getByRole("heading", { name: /learn the market\./i })).toBeVisible();
   await expect(
-    page.getByText(/local-first desktop bot os for recording public market books/i)
+    page.getByText(/helps you watch public prediction markets, understand why a route looks interesting/i)
   ).toBeVisible();
 
   await page.goto("/lab/focus/");
   await expect(page.getByRole("heading", { name: /track the books\./i })).toBeVisible();
-  await expect(page.getByText(/keeps the bot feed and paper score honest/i)).toBeVisible();
+  await expect(page.getByText(/explains scanner output in plain language/i)).toBeVisible();
 });

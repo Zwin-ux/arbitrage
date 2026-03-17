@@ -12,8 +12,8 @@ const shared = {
   checksumsUrl,
   githubUrl,
   brandTitle: "Superior",
-  brandSubtitle: "Paper arb firmware",
-  brandEyebrow: "Cartridge signal OS",
+  brandSubtitle: "Paper-first market bot",
+  brandEyebrow: "Friendly prediction-market app",
   trustItems: ["Open source", "Paper first", "Local first"],
   statusTiles: [
     { label: "Mode", value: "Paper" },
@@ -23,55 +23,55 @@ const shared = {
   featureCards: [
     {
       id: "01",
-      title: "Boot Polymarket",
+      title: "Start with Polymarket",
       tone: "cyan",
-      body: "Load public Polymarket books first, keep keys local, and start the machine without touching live execution.",
+      body: "Connect public Polymarket books, keep your keys local, and get useful signal before you touch anything live.",
     },
     {
       id: "02",
-      title: "Stage bot runs",
+      title: "Try paper bots",
       tone: "magenta",
-      body: "Arm one starter bot, stage explainable routes, and keep the first run compact, readable, and deterministic.",
+      body: "Run a starter bot in paper mode, review clear route explanations, and learn what the bot is actually doing.",
     },
     {
       id: "03",
-      title: "Bank paper score",
+      title: "Unlock live later",
       tone: "yellow",
-      body: "Record honest paper score from real session output while the gate stays dark behind explicit checks.",
+      body: "Build paper history first and keep live mode locked until the product and the user have both earned it.",
     },
   ],
   setupFlow: {
-    eyebrow: "Boot phases",
-    title: "Boot the cart, arm the feed, start the first run.",
-    body: "Install the Windows build, keep the guided cart, and feed the machine with public books before you worry about keys or live controls.",
+    eyebrow: "Getting started",
+    title: "Set it up in a few minutes and start in paper mode.",
+    body: "Install the Windows app, keep the guided path, and start with public market data before you think about credentials or live controls.",
     steps: [
       {
         id: "01",
-        title: "Install the cart",
-        body: "Use the Windows installer for shortcuts, uninstall support, and the cleanest first boot.",
+        title: "Install the app",
+        body: "Use the Windows installer for shortcuts, uninstall support, and the smoothest first run.",
       },
       {
         id: "02",
-        title: "Run boot phases",
-        body: "Pick a mission, keep safe defaults, and leave key slots blank if you only want sample plus paper mode.",
+        title: "Pick the safe path",
+        body: "Choose your goal, keep the default settings, and leave credentials blank if you only want paper mode to start.",
       },
       {
         id: "03",
-        title: "Sample, scan, run",
-        body: "Turn recorder output into explainable routes and paper the top run before anything live wakes up.",
+        title: "Record, scan, test",
+        body: "Turn recorder output into explainable routes and paper-test the best one before anything live wakes up.",
       },
     ],
   },
   firstLaunch: {
-    eyebrow: "Field menu",
-    title: "First ignition",
+    eyebrow: "First launch",
+    title: "A simple first run",
     body: "No exchange account is required to boot Superior into public-data mode and start the first paper session.",
-    menu: ["Boot phases", "No key slots", "Paper first"],
+    menu: ["Guided setup", "No credentials needed", "Paper first"],
   },
   productStory: {
-    eyebrow: "Unit briefing",
-    title: "A prediction-market bot machine with feed, scanner, and score in one shell.",
-    body: "Superior is built around local books, scanner explanations, paper execution history, and explicit trust rules. It is stable software with guardrails, not a profit promise.",
+    eyebrow: "What it is",
+    title: "A simpler way to explore prediction-market bots.",
+    body: "Superior helps you record local books, understand scanner results, and test bot ideas safely. It is careful software with clear guardrails, not a promise of profits.",
   },
   infoCards: [
     {
@@ -90,9 +90,9 @@ const shared = {
       body: "High-risk experiments live behind an explicit Lab toggle and stay paper-only in v1.",
     },
   ],
-  footerTitle: "Download the Windows build or inspect the source before anything else.",
+  footerTitle: "Download the Windows app and try it safely.",
   footerBody:
-    "GitHub Releases hosts the installer. The docs route explains how paper mode, local storage, and live gating work before you touch a trade button.",
+    "GitHub Releases hosts the installer. The docs explain paper mode, local storage, and live gating before you decide to go further.",
   footerChecks: [
     "[OK] install Windows build",
     "[OK] run paper mode first",
@@ -105,7 +105,7 @@ const shared = {
     { href: "/download", label: "Windows build" },
   ],
   primaryCtaLabel: "Download for Windows",
-  secondaryCtaLabel: "Open setup menu",
+  secondaryCtaLabel: "See how setup works",
   secondaryCtaHref: "/download",
 };
 
@@ -116,11 +116,11 @@ export const landingVariants = {
     pageTitle: "Superior | Paper-First Prediction-Market Bot",
     pageDescription:
       "Superior is an open-source Windows desktop app for recording public prediction-market books, inspecting explainable arbitrage routes, and paper-testing them locally before anything live unlocks.",
-    eyebrow: "Windows prediction-market scanner",
-    titleLines: ["Learn the market.", "Scan edge.", "Paper it first."],
+    eyebrow: "Prediction-market bot for Windows",
+    titleLines: ["Learn the market.", "Find price gaps.", "Test safely first."],
     subhead:
-      "Superior is a local-first desktop bot OS for recording public market books, staging explainable arbitrage routes, and banking paper score before anything live unlocks.",
-    systemNote: "BOOT THE REC BUS. STAGE ONE CLEAN ROUTE. KEEP THE GATE LOCKED.",
+      "Superior helps you watch public prediction markets, understand why a route looks interesting, and paper-test bot ideas before you risk real money.",
+    systemNote: "Start in paper mode, see what the bot is doing, and unlock more only when you're ready.",
     tertiaryCta: { label: "GitHub", href: githubUrl, external: true },
     ...shared,
   },
@@ -130,11 +130,11 @@ export const landingVariants = {
     pageTitle: "Superior | Local Arbitrage Bot Setup",
     pageDescription:
       "Superior is a local-first Windows app for watching public prediction-market books, reviewing explainable routes, and testing paper bots before any live path unlocks.",
-    eyebrow: "Local arbitrage bot setup",
-    titleLines: ["Track the books.", "Find the gap.", "Test it first."],
+    eyebrow: "A calmer way to test arbitrage bots",
+    titleLines: ["Track the books.", "Spot the gap.", "Try it safely."],
     subhead:
-      "Built for a tighter path. Superior records public books, surfaces scanner output in plain language, and keeps the bot feed and paper score honest while live stays locked.",
-    systemNote: "LOAD THE CART. WATCH THE FEED. BANK ONLY PAPER SCORE.",
+      "Built for a tighter path. Superior records public books, explains scanner output in plain language, and keeps paper results honest while live stays locked.",
+    systemNote: "You can start small, learn the flow, and keep everything in paper mode until it feels right.",
     tertiaryCta: { label: "GitHub", href: githubUrl, external: true },
     ...shared,
   },
