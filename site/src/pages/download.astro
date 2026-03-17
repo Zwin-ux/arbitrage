@@ -9,127 +9,83 @@ const sourceUrl = "https://github.com/Zwin-ux/arbitrage";
 
 <BaseLayout
   title="Download | Superior"
-  description="Download the Superior Windows build, inspect the release artifacts, and keep paper mode active while live remains locked."
+  description="Download the Superior Windows build, verify the release artifact, and keep the first run inside a paper-first path."
 >
-  <section class="page-hero compact page-hero-split">
-    <div>
-      <p class="eyebrow">Release distribution</p>
-      <h1>Install the Windows build. Keep paper mode active.</h1>
-      <p class="lead">
-        Download Superior, record observed Polymarket books, inspect route deductions, and keep live execution locked until the system checks are complete. Optional Copilot model keys stay local.
-      </p>
-      <div class="hero-actions">
-        <a class="button primary" href={installerUrl}>Download installer</a>
-        <a class="button secondary" href={portableUrl}>Download portable zip</a>
-        <a class="button secondary" href={sourceUrl} target="_blank" rel="noreferrer">View source</a>
+  <section class="machine-page">
+    <header class="machine-page__header">
+      <div class="machine-page__title">
+        <span class="machine-page__label">Download</span>
+        <strong>Windows build / test first</strong>
       </div>
-      <div class="badge-row" aria-label="Download highlights">
-        <span class="badge">Windows-first installer</span>
-        <span class="badge">No exchange account required to start</span>
-        <span class="badge">Paper mode on by default</span>
-      </div>
-    </div>
+      <div class="machine-page__status">LOCAL / LIVE LOCKED</div>
+    </header>
 
-    <aside class="hero-checklist">
-      <p class="eyebrow">First launch</p>
-      <h2>The first run stays short and deliberate.</h2>
-      <ul class="check-list">
-        <li>Create a guided profile with conservative defaults.</li>
-        <li>Keep Polymarket on and leave credentials blank if recorder plus paper mode is enough for now.</li>
-        <li>Add an OpenAI-compatible, Anthropic, Gemini, or Ollama model only if you want Copilot help reading routes or drafting paper bots.</li>
-        <li>Store any later credentials in the OS keychain, not in JSON, DuckDB, or logs.</li>
-        <li>Run the recorder first, then inspect the scanner and paper the route against local market data.</li>
-        <li>If Windows SmartScreen appears, compare the download hash with the release manifest before running it.</li>
-      </ul>
-    </aside>
-  </section>
+    <div class="machine-page__body">
+      <div class="machine-page__column">
+        <div class="machine-page__stack">
+          <div class="machine-page__block">
+            <span>Installer</span>
+            <strong>market-data-recorder-setup.exe</strong>
+            <p>Best path for first setup. Shortcuts and uninstall support included.</p>
+          </div>
+          <div class="machine-page__block">
+            <span>Portable</span>
+            <strong>market-data-recorder-app-portable.zip</strong>
+            <p>Folder build. No installer. Good for demos and isolated runs.</p>
+          </div>
+          <div class="machine-page__block">
+            <span>Verify</span>
+            <strong>SHA256SUMS.txt</strong>
+            <p>Compare the hash before launch if SmartScreen blocks the run.</p>
+          </div>
+        </div>
 
-  <section class="workflow-band">
-    <div class="section-heading">
-      <p class="eyebrow">Sequence</p>
-      <h2>Record first. Inspect the route. Keep live locked.</h2>
-      <p class="lead">
-        The installer, setup flow, and Hangar all point at the same sequence: record books, inspect the route, paper it, and only then decide whether the machine has earned more trust.
-      </p>
-    </div>
-    <div class="workflow-steps">
-      <article>
-        <span>01</span>
-        <h3>Install</h3>
-        <p>Use the Windows installer for shortcuts, uninstall support, and the cleanest consumer setup path.</p>
-      </article>
-      <article>
-        <span>02</span>
-        <h3>Choose safe defaults</h3>
-        <p>Pick a goal, keep the Guided template, and start with the starter risk policy unless you already know the workflow.</p>
-      </article>
-      <article>
-        <span>03</span>
-        <h3>Feed the machine</h3>
-        <p>Start the recorder so Scanner and paper routes work from local evidence instead of assumptions.</p>
-      </article>
-      <article>
-        <span>04</span>
-        <h3>Keep live locked</h3>
-        <p>Credentials, acknowledgements, diagnostics, and paper activity must all pass before live mode becomes available.</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="download-grid">
-    <article class="download-card">
-      <p class="eyebrow">Recommended</p>
-      <h2>Windows installer</h2>
-      <p>
-        Look for <code>market-data-recorder-setup.exe</code> in the latest GitHub release. The filename stays stable in v1 even while the public product name is Superior.
-      </p>
-      <div class="hero-actions">
-        <a class="button primary" href={installerUrl}>Download installer</a>
-      </div>
-      <ul class="signal-list">
-        <li>Creates shortcuts and uninstall support</li>
-        <li>Designed for guided onboarding and paper-first use</li>
-        <li>Best choice if you want the smoothest consumer setup experience</li>
-      </ul>
-    </article>
-    <article class="download-card">
-      <p class="eyebrow">Portable</p>
-      <h2>Windows bundle zip</h2>
-      <p>
-        Look for <code>market-data-recorder-app-portable.zip</code> if you want the portable app folder instead of the installer.
-      </p>
-      <div class="hero-actions">
-        <a class="button secondary" href={portableUrl}>Download portable zip</a>
-      </div>
-      <ul class="signal-list">
-        <li>Contains the app executable and runtime files</li>
-        <li>No installer required</li>
-        <li>Best for testing, demos, and isolated environments</li>
-      </ul>
-    </article>
-    <article class="download-card">
-      <p class="eyebrow">Trust</p>
-      <h2>Verify what you download</h2>
-      <p>Superior ships unsigned in v1. Use the public release manifest and the public repo together:</p>
-      <div class="hero-actions">
-        <a class="button secondary" href={checksumsUrl}>Download SHA256SUMS</a>
-        <a class="button secondary" href={sourceUrl} target="_blank" rel="noreferrer">Open GitHub</a>
-      </div>
-      <ul class="signal-list">
-        <li>Compare the installer or portable zip against <code>SHA256SUMS.txt</code></li>
-        <li>Read the release notes and trust docs before you move beyond paper mode</li>
-        <li>SmartScreen friction is expected until the project has signing infrastructure</li>
-      </ul>
-    </article>
-    <article class="download-card">
-      <p class="eyebrow">Source build</p>
-      <h2>Inspect everything before you run it</h2>
-      <p>If Releases is empty, or if you want source-level visibility first, use the repo directly:</p>
-      <pre><code>python -m pip install -e ".[dev]"
+        <div class="machine-page__code-wrap">
+          <span class="machine-page__code-title">Source path</span>
+          <pre class="machine-page__code"><code>python -m pip install -e ".[dev]"
 market-data-recorder-app</code></pre>
-      <p>
-        That gets you the desktop app without waiting for a packaged binary. Use this path if you want source-level visibility into storage, packaging, and live-unlock guardrails.
-      </p>
-    </article>
+        </div>
+      </div>
+
+      <div class="machine-page__column">
+        <div class="machine-page__list">
+          <div class="machine-page__row">
+            <span>Profile</span>
+            <strong>Create a guided profile.</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Credentials</span>
+            <strong>Leave credentials blank if recorder plus practice mode is enough.</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Copilot</span>
+            <strong>OpenAI-compatible, Anthropic, Gemini, or Ollama are optional.</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Sequence</span>
+            <strong>Record first. Inspect the route. Keep live locked.</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Secrets</span>
+            <strong>Use the OS keychain. Not JSON. Not DuckDB. Not logs.</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="machine-page__controls" aria-label="Download controls">
+      <a class="machine-page__control machine-page__control--primary" href={installerUrl}>
+        <span>Download setup</span>
+      </a>
+      <a class="machine-page__control machine-page__control--secondary" href={portableUrl}>
+        <span>Portable zip</span>
+      </a>
+      <a class="machine-page__control machine-page__control--commit" href={checksumsUrl}>
+        <span>SHA256SUMS</span>
+      </a>
+      <a class="machine-page__control machine-page__control--reset" href={sourceUrl} target="_blank" rel="noreferrer">
+        <span>Source</span>
+      </a>
+    </nav>
   </section>
 </BaseLayout>

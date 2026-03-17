@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@app/*": ["app/*"],
+      "@domain/*": ["domain/*"],
+      "@services/*": ["services/*"],
+      "@presets/*": ["presets/*"],
+      "@screens/*": ["screens/*"],
+      "@ui/*": ["ui/*"],
+      "@tapes/*": ["tapes/*"]
+    }
+  },
+  "include": ["src"]
+}

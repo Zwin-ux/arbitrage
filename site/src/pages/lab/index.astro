@@ -22,8 +22,8 @@ import { landingVariantOrder, landingVariants } from "../../data/landingVariants
       return (
         <article class="content-card">
           <p class="eyebrow">{variant.navLabel}</p>
-          <h2>{variant.titleLines[0]} <span>{variant.titleLines[1]}</span></h2>
-          <p>{variant.subhead}</p>
+          <h2>{variant.heroLine}</h2>
+          <p>{variant.heroSupport}</p>
           <div class="link-row">
             <a class="button-primary" href={`/lab/${variant.key}`}>
               Open variant

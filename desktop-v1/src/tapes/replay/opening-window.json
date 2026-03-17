@@ -1,0 +1,99 @@
+{
+  "id": "replay-opening-window",
+  "name": "Opening Window",
+  "mode": "replay",
+  "source": {
+    "type": "bundled-replay",
+    "label": "Bundled replay tape"
+  },
+  "market": {
+    "venue": "Polymarket",
+    "marketId": "pm-014",
+    "marketSlug": "fed-cut-june",
+    "symbol": "FED",
+    "title": "Fed cut by June"
+  },
+  "timeRange": {
+    "start": "2026-02-19T14:05:00Z",
+    "end": "2026-02-19T14:06:00Z"
+  },
+  "lane": {
+    "baseline": 42,
+    "minValue": 28,
+    "maxValue": 64
+  },
+  "events": [
+    {
+      "id": "r1",
+      "t": 0,
+      "value": 41,
+      "volume": 8,
+      "confidence": 0.34,
+      "eventType": "baseline",
+      "severity": "low",
+      "label": "ready"
+    },
+    {
+      "id": "r2",
+      "t": 1220,
+      "value": 49,
+      "volume": 14,
+      "confidence": 0.61,
+      "eventType": "window_open",
+      "severity": "medium",
+      "label": "window open",
+      "window": {
+        "opensAt": 1220,
+        "closesAt": 1840,
+        "idealCommitAt": 1510,
+        "holdMs": 500,
+        "routeSnapshotId": "r2-snapshot"
+      },
+      "routeSnapshot": {
+        "grossEdgeBps": 290,
+        "feesBps": 60,
+        "slippageBps": 105,
+        "netEdgeBps": 125,
+        "path": ["BUY YES", "SELL NO"],
+        "assumptions": ["thin volume", "faster decay"],
+        "qualityBand": "usable"
+      }
+    },
+    {
+      "id": "r3",
+      "t": 1510,
+      "value": 47,
+      "volume": 12,
+      "confidence": 0.54,
+      "eventType": "route_snapshot",
+      "severity": "medium",
+      "label": "narrow window",
+      "window": {
+        "opensAt": 1220,
+        "closesAt": 1840,
+        "idealCommitAt": 1510,
+        "holdMs": 500,
+        "routeSnapshotId": "r2-snapshot"
+      },
+      "routeSnapshot": {
+        "grossEdgeBps": 290,
+        "feesBps": 60,
+        "slippageBps": 105,
+        "netEdgeBps": 125,
+        "path": ["BUY YES", "SELL NO"],
+        "assumptions": ["thin volume", "faster decay"],
+        "qualityBand": "usable"
+      }
+    },
+    {
+      "id": "r4",
+      "t": 1980,
+      "value": 38,
+      "volume": 6,
+      "confidence": 0.22,
+      "eventType": "hazard",
+      "severity": "high",
+      "label": "too late"
+    }
+  ]
+}

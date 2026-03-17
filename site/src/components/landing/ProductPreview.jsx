@@ -1,67 +1,55 @@
 export default function ProductPreview({ variant }) {
   return (
-    <section className="product-section" id="product">
-      <div className="product-grid-top">
-        <article className="panel-card panel-card-wide">
-          <div className="panel-card-head">
-            <p className="section-label">{variant.setupFlow.eyebrow}</p>
-            <span className="panel-version">v1</span>
-          </div>
-          <h2 className="panel-card-title">{variant.setupFlow.title}</h2>
-          <p className="panel-card-copy">{variant.setupFlow.body}</p>
+    <section className="product-frame" id="how">
+      <div className="product-head">
+        <span>{variant.product.eyebrow}</span>
+        <p>{variant.product.line}</p>
+      </div>
 
-          <div className="setup-step-grid">
-            {variant.setupFlow.steps.map((step) => (
-              <article key={step.id} className="setup-step-card">
-                <span>{step.id}</span>
-                <h3>{step.title}</h3>
-                <p>{step.body}</p>
-              </article>
+      <div className="product-bullets">
+        {variant.product.bullets.map((item) => (
+          <div key={item} className="product-bullet">
+            {item}
+          </div>
+        ))}
+      </div>
+
+      <div className="product-lower">
+        <article className="route-card" aria-label="Route example">
+          <div className="detail-head">
+            <span>{variant.routePreview.eyebrow}</span>
+            <span>{variant.routePreview.routeId}</span>
+          </div>
+          <p className="route-note">{variant.routePreview.note}</p>
+          <div className="route-path">
+            <span>PATH</span>
+            <strong>{variant.routePreview.path}</strong>
+          </div>
+          <div className="route-metrics">
+            {variant.routePreview.metrics.map((metric) => (
+              <div key={metric.label} className="route-metric">
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </div>
             ))}
           </div>
         </article>
 
-        <aside className="panel-card panel-card-narrow">
-          <div className="panel-card-head">
-            <p className="section-label">{variant.firstLaunch.eyebrow}</p>
-            <span className="panel-version">v1</span>
+        <aside className="lock-card" aria-label="Live lock">
+          <div className="detail-head">
+            <span>{variant.lockPanel.eyebrow}</span>
+            <span>OFF</span>
           </div>
-          <h2 className="panel-card-title">{variant.firstLaunch.title}</h2>
-          <p className="panel-card-copy">{variant.firstLaunch.body}</p>
-
-          <div className="menu-panel">
-            <span className="menu-panel-label">Menu</span>
-            {variant.firstLaunch.menu.map((item, index) => (
-              <div key={item} className={`menu-row ${index === 0 ? "menu-row-active" : ""}`}>
-                {item}
+          <p className="lock-note">{variant.lockPanel.line}</p>
+          <div className="lock-rows">
+            {variant.lockPanel.rows.map((row) => (
+              <div key={row.label} className="lock-row">
+                <span>{row.label}</span>
+                <strong>{row.value}</strong>
               </div>
             ))}
           </div>
         </aside>
-      </div>
-
-      <div className="product-grid-bottom">
-        <article className="panel-card panel-card-story">
-          <div className="panel-card-head">
-            <p className="section-label">{variant.productStory.eyebrow}</p>
-            <span className="panel-version">v1</span>
-          </div>
-          <h2 className="panel-card-title">{variant.productStory.title}</h2>
-          <p className="panel-card-copy">{variant.productStory.body}</p>
-        </article>
-
-        <div className="info-card-stack">
-          {variant.infoCards.map((card) => (
-            <article key={card.title} className="info-card">
-              <div className="panel-card-head">
-                <p className="section-label">{card.eyebrow}</p>
-                <span className="panel-version">v1</span>
-              </div>
-              <h3>{card.title}</h3>
-              <p>{card.body}</p>
-            </article>
-          ))}
-        </div>
       </div>
     </section>
   );

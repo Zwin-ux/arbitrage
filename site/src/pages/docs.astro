@@ -5,72 +5,100 @@ const sourceUrl = "https://github.com/Zwin-ux/arbitrage";
 const docsRoot = "https://github.com/Zwin-ux/arbitrage/tree/main/docs";
 ---
 
-<BaseLayout title="Docs | Superior">
-  <section class="page-hero compact">
-    <p class="eyebrow">Docs</p>
-    <h1>Read the product, inspect the code, and keep the trust story visible.</h1>
-    <p class="lead">
-      The site stays light on purpose. The source of truth is still the monorepo, the desktop app, and the trust docs that explain paper mode, local storage, and live gating in plain language.
-    </p>
-    <div class="hero-actions">
-      <a class="button primary" href={sourceUrl} target="_blank" rel="noreferrer">Open GitHub</a>
-      <a class="button secondary" href={`${docsRoot}/first-paper-run.md`} target="_blank" rel="noreferrer">First paper run</a>
-      <a class="button secondary" href={`${docsRoot}/release-checklist.md`} target="_blank" rel="noreferrer">Release checklist</a>
-    </div>
-  </section>
+<BaseLayout title="Docs | Superior" description="Repo docs, build commands, and quality gates for Superior.">
+  <section class="machine-page">
+    <header class="machine-page__header">
+      <div class="machine-page__title">
+        <span class="machine-page__label">Docs</span>
+        <strong>Repo / guides / operations</strong>
+      </div>
+      <div class="machine-page__status">SOURCE / LOCAL / PUBLIC</div>
+    </header>
 
-  <section class="docs-grid">
-    <article class="doc-card">
-      <h2>Quick start</h2>
-      <pre><code>python -m pip install -e ".[dev]"
+    <div class="machine-page__body">
+      <div class="machine-page__column">
+        <div class="machine-page__stack">
+          <div class="machine-page__block">
+            <span>Docs root</span>
+            <strong>GitHub repo docs are the source of truth.</strong>
+            <p>Use the repo for trust docs, first paper run, and release procedures.</p>
+          </div>
+          <div class="machine-page__block">
+            <span>Trust</span>
+            <strong>Risk model / live limitations / privacy and secrets.</strong>
+            <p>Paper-first posture stays visible before any live path is considered.</p>
+          </div>
+          <div class="machine-page__block">
+            <span>Deploy</span>
+            <strong>Railway hosts the site only.</strong>
+            <p>Set the service root to <code>/site</code>. Keep runtime, data, and secrets local.</p>
+          </div>
+        </div>
+
+        <div class="machine-page__list">
+          <div class="machine-page__row">
+            <span>Guide</span>
+            <strong>First paper run</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Release</span>
+            <strong>Release checklist</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Support</span>
+            <strong>Issue templates shorten diagnosis.</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="machine-page__column">
+        <div class="machine-page__code-wrap">
+          <span class="machine-page__code-title">Quick start</span>
+          <pre class="machine-page__code"><code>python -m pip install -e ".[dev]"
 market-data-recorder-app
 market-data-recorder record</code></pre>
-    </article>
-    <article class="doc-card">
-      <h2>Release build</h2>
-      <pre><code>powershell -ExecutionPolicy Bypass -File scripts/bootstrap-iscc.ps1
+        </div>
+
+        <div class="machine-page__code-wrap">
+          <span class="machine-page__code-title">Release build</span>
+          <pre class="machine-page__code"><code>powershell -ExecutionPolicy Bypass -File scripts/bootstrap-iscc.ps1
 powershell -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1</code></pre>
-    </article>
-    <article class="doc-card">
-      <h2>Quality gates</h2>
-      <pre><code>pytest -q
+        </div>
+
+        <div class="machine-page__code-wrap">
+          <span class="machine-page__code-title">Quality gates</span>
+          <pre class="machine-page__code"><code>pytest -q
 python -m mypy src tests
 market-data-recorder-qa --headless --output .tmp/qa-report.json
 npm --prefix site ci
 npm --prefix site run build</code></pre>
-    </article>
-  </section>
+        </div>
+      </div>
+    </div>
 
-  <section class="section-grid">
-    <article class="feature-card">
-      <p class="eyebrow">Key repo docs</p>
-      <h3>Trust surface</h3>
-      <p>Read the risk model, live-trading limitations, privacy and secrets notes, release checklist, first paper run guide, contributor strategy guide, release process, and third-party notices directly in the repo.</p>
-    </article>
-    <article class="feature-card">
-      <p class="eyebrow">Product posture</p>
-      <h3>Paper first, live gated</h3>
-      <p>Superior is stable software with explicit guardrails, not a promise of profits. Users onboard, record local books, inspect explainable routes, and build paper history before any live-gate path appears.</p>
-    </article>
-    <article class="feature-card">
-      <p class="eyebrow">Railway setup</p>
-      <h3>Deploy only the site</h3>
-      <p>Connect the GitHub repo to Railway, set the service root to <code>/site</code>, set the config path to <code>/site/railway.toml</code>, use the default Railway domain, and enable "Wait for CI". The app runtime, user data, and secrets stay off Railway.</p>
-    </article>
-    <article class="feature-card">
-      <p class="eyebrow">QA client</p>
-      <h3>Review evidence directly</h3>
-      <p>The public QA client runs deterministic onboarding, scanner, paper-session, benchmark, experimental-live, and live-gate scenarios and exports a JSON report with scenario artifacts. It is part of the product, not an internal-only script.</p>
-    </article>
-    <article class="feature-card">
-      <p class="eyebrow">Release trust</p>
-      <h3>Hashes and release manifest</h3>
-      <p>Each Windows release should publish installer and portable-zip hashes. Until signing exists, the release manifest and the public repo are the trust story.</p>
-    </article>
-    <article class="feature-card">
-      <p class="eyebrow">Support</p>
-      <h3>Launch issues cleanly</h3>
-      <p>Use the onboarding and bug issue templates in the repo if the installer, first paper run, or connector flow breaks. Those templates are meant to shorten diagnosis, not deflect users.</p>
-    </article>
+    <nav class="machine-page__controls" aria-label="Docs controls">
+      <a class="machine-page__control machine-page__control--primary" href={sourceUrl} target="_blank" rel="noreferrer">
+        <span>Open GitHub</span>
+      </a>
+      <a
+        class="machine-page__control machine-page__control--secondary"
+        href={`${docsRoot}/first-paper-run.md`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <span>First paper run</span>
+      </a>
+      <a
+        class="machine-page__control machine-page__control--commit"
+        href={`${docsRoot}/release-checklist.md`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        <span>Release checklist</span>
+      </a>
+      <a class="machine-page__control machine-page__control--reset" href={docsRoot} target="_blank" rel="noreferrer">
+        <span>Docs root</span>
+      </a>
+    </nav>
   </section>
 </BaseLayout>
