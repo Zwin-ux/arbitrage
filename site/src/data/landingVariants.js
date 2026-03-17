@@ -12,89 +12,128 @@ const shared = {
   checksumsUrl,
   githubUrl,
   brandTitle: "Superior",
-  brandSubtitle: "NES score-attack bot cabinet",
-  trustItems: ["Open source", "Paper-first by default", "Local score ledger"],
-  scannerStats: [
-    { label: "Session", value: "Paper", accent: "green" },
-    { label: "Source", value: "Local books", accent: "cyan" },
-    { label: "Unlocks", value: "Live gated", accent: "yellow" },
+  brandSubtitle: "Arcade market scanner",
+  brandEyebrow: "Paper-first desktop bot",
+  trustItems: ["Open source", "Paper first", "Local profiles"],
+  statusTiles: [
+    { label: "Mode", value: "Paper" },
+    { label: "Storage", value: "Local" },
+    { label: "Unlock", value: "Locked" },
   ],
   featureCards: [
     {
-      eyebrow: "Build bots",
-      title: "Arm the bot bay",
-      body: "Equip a starter bot loadout, keep the rules explicit, and let the machine stage only the routes that clear the paper gate.",
+      id: "01",
+      title: "Polymarket first",
+      tone: "cyan",
+      body: "Connect public market data, keep your own keys local, and learn the venue before you risk capital.",
     },
     {
-      eyebrow: "Stage routes",
-      title: "Feed it local books",
-      body: "Superior records local Polymarket books first, then turns scanner output into staged routes for the active bot slots.",
+      id: "02",
+      title: "Bot module bay",
+      tone: "magenta",
+      body: "Load a starter bot, stage explainable routes, and keep the first paper session tight and readable.",
     },
     {
-      eyebrow: "Bank score",
-      title: "Unlock deeper control",
-      body: "Paper score, mastery, and bot-slot unlocks all come from deterministic paper evidence instead of fake credits or hype.",
+      id: "03",
+      title: "Score attack",
+      tone: "yellow",
+      body: "Bank honest paper score from completed sessions and keep live execution locked behind explicit rules.",
     },
   ],
-  previewHeading: "A score-attack machine, not a finance dashboard.",
-  previewBody:
-    "Superior turns real local market books into a playable paper loop: arm bots, stage routes, start a session, and watch portfolio score move inside one cabinet-like desktop shell.",
-  previewBullets: [
-    "Build and arm a starter bot loadout",
-    "Stage explainable routes from local recorder output",
-    "Bank paper score before any live path unlocks",
+  setupFlow: {
+    eyebrow: "Setup flow",
+    title: "Setup that feels like consumer software instead of exchange plumbing.",
+    body: "Install the Windows app, keep the guided template, and start recording public books before you worry about credentials or live trading.",
+    steps: [
+      {
+        id: "01",
+        title: "Install the Windows build",
+        body: "Use the installer for shortcuts, uninstall support, and the cleanest first-run path.",
+      },
+      {
+        id: "02",
+        title: "Launch guided setup",
+        body: "Pick your goal, keep conservative defaults, and leave credentials blank if you only want recorder plus paper mode.",
+      },
+      {
+        id: "03",
+        title: "Record, scan, paper",
+        body: "Turn recorder output into explainable scanner routes and paper the top candidate before anything live unlocks.",
+      },
+    ],
+  },
+  firstLaunch: {
+    eyebrow: "Field menu",
+    title: "First launch",
+    body: "No exchange account is required to boot Superior into public-data mode and start the first paper session.",
+    menu: ["Guided setup", "Bot garage", "Score lane"],
+  },
+  productStory: {
+    eyebrow: "Unit briefing",
+    title: "A prediction-market bot OS with scanner, feed, and score in one machine.",
+    body: "Superior is built around guided onboarding, scanner explanations, paper execution history, and trust. It is stable software with transparent guardrails, not a promise of guaranteed profits.",
+  },
+  infoCards: [
+    {
+      eyebrow: "Note 01",
+      title: "Open source",
+      body: "The app, site, packaging, and trust docs all live in the public repo.",
+    },
+    {
+      eyebrow: "Note 02",
+      title: "Local first",
+      body: "Profiles, diagnostics, and paper history stay on your machine. Secrets stay in the OS keychain.",
+    },
+    {
+      eyebrow: "Note 03",
+      title: "Lab ready",
+      body: "High-risk experiments live behind an explicit Lab toggle and stay paper-only in v1.",
+    },
   ],
-  previewCtaLabel: "See how it works",
-  previewCtaHref: "/docs",
+  footerTitle: "Download the Windows build or inspect the source before anything else.",
+  footerBody:
+    "GitHub Releases hosts the installer. The docs route explains how paper mode, local storage, and live gating work before you touch a trade button.",
+  footerChecks: [
+    "[OK] install Windows build",
+    "[OK] run paper mode first",
+    "[LOCK] live mode until checklist",
+  ],
   footerLinks: [
     { href: githubUrl, label: "GitHub" },
     { href: "/docs", label: "Documentation" },
     { href: "/roadmap", label: "Roadmap" },
     { href: "/download", label: "Windows build" },
   ],
+  primaryCtaLabel: "Download for Windows",
+  secondaryCtaLabel: "Open setup menu",
+  secondaryCtaHref: "/download",
 };
 
 export const landingVariants = {
   control: {
     key: "control",
     navLabel: "Control",
-    pageTitle: "Superior | NES Score-Attack Bot Cabinet",
+    pageTitle: "Superior | Paper-First Prediction-Market Bot",
     pageDescription:
-      "Superior is an open-source Windows desktop app for building paper-first bot loadouts, staging explainable routes from local books, and chasing portfolio score before live execution exists.",
-    eyebrow: "Windows prediction-market score cabinet",
-    titleLines: ["Build bots.", "Stage routes.", "Bank score first."],
+      "Superior is an open-source Windows desktop app for recording public prediction-market books, inspecting explainable arbitrage routes, and paper-testing them locally before anything live unlocks.",
+    eyebrow: "Open-source prediction-market bot",
+    titleLines: ["Learn the market.", "Scan edge.", "Paper it first."],
     subhead:
-      "Local-first desktop machine for testing arbitrage bots on prediction markets. Record the books, arm the bot bay, run a paper session, and unlock deeper control deliberately.",
-    secondaryCtas: [
-      { label: "View cabinet", href: "#scanner" },
-      { label: "GitHub", href: githubUrl, external: true },
-    ],
-    previewStatus: [
-      { label: "Hangar", value: "Session ready", tone: "cyan" },
-      { label: "Bot Bay", value: "Armed", tone: "magenta" },
-      { label: "Score", value: "Paper only", tone: "green" },
-    ],
+      "Superior is a local-first desktop bot OS for recording public market books, staging explainable arbitrage routes, and banking paper score before anything live unlocks.",
+    tertiaryCta: { label: "GitHub", href: githubUrl, external: true },
     ...shared,
   },
   focus: {
     key: "focus",
     navLabel: "Focus",
-    pageTitle: "Superior | Paper-First Bot Testing Machine",
+    pageTitle: "Superior | Local Arbitrage Bot Setup",
     pageDescription:
-      "Superior is a paper-first desktop machine for advanced testers who want to build bots, chase local score, and keep live execution locked behind real paper evidence.",
-    eyebrow: "Controlled bot testing workflow",
-    titleLines: ["Read the machine.", "Chase score.", "Keep live gated."],
+      "Superior is a local-first Windows app for watching public prediction-market books, reviewing explainable routes, and testing paper bots before any live path unlocks.",
+    eyebrow: "Local arbitrage bot setup",
+    titleLines: ["Track the books.", "Find the gap.", "Test it first."],
     subhead:
-      "Built for a tighter loop. Superior records locally, stages routes into a bot bay, and treats paper score plus unlock progression as the main game layer.",
-    secondaryCtas: [
-      { label: "View cabinet", href: "#scanner" },
-      { label: "GitHub", href: githubUrl, external: true },
-    ],
-    previewStatus: [
-      { label: "Hangar", value: "Mission control", tone: "cyan" },
-      { label: "Bot Bay", value: "Score attack", tone: "magenta" },
-      { label: "Score", value: "Honest history", tone: "green" },
-    ],
+      "Built for a tighter path. Superior records public books, surfaces scanner output in plain language, and keeps the bot feed and paper score honest while live stays locked.",
+    tertiaryCta: { label: "GitHub", href: githubUrl, external: true },
     ...shared,
   },
 };

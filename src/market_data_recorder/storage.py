@@ -185,6 +185,73 @@ class DuckDBStorage:
               expected_hash TEXT,
               event_timestamp TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS benchmark_instruments (
+              symbol TEXT,
+              name TEXT,
+              instrument_type TEXT,
+              exchange TEXT,
+              currency TEXT,
+              source_provider TEXT,
+              updated_at TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS benchmark_bars (
+              symbol TEXT,
+              instrument_type TEXT,
+              interval TEXT,
+              recorded_at TIMESTAMP,
+              open DOUBLE,
+              high DOUBLE,
+              low DOUBLE,
+              close DOUBLE,
+              volume DOUBLE,
+              source_provider TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS benchmark_quotes (
+              symbol TEXT,
+              instrument_type TEXT,
+              quoted_at TIMESTAMP,
+              price DOUBLE,
+              bid DOUBLE,
+              ask DOUBLE,
+              source_provider TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS market_benchmark_links (
+              link_id TEXT,
+              profile_id TEXT,
+              market_slug TEXT,
+              market_id TEXT,
+              symbol TEXT,
+              instrument_type TEXT,
+              interval_preference TEXT,
+              mapping_confidence INTEGER,
+              notes TEXT,
+              created_at TIMESTAMP,
+              updated_at TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS benchmark_audits (
+              audit_id TEXT,
+              profile_id TEXT,
+              market_slug TEXT,
+              run_id TEXT,
+              session_id TEXT,
+              symbol TEXT,
+              instrument_type TEXT,
+              interval_used TEXT,
+              verdict TEXT,
+              coverage_state TEXT,
+              underlying_move_bps INTEGER,
+              session_edge_bps INTEGER,
+              edge_vs_benchmark_bps INTEGER,
+              stale BOOLEAN,
+              alignment_seconds INTEGER,
+              note TEXT,
+              observed_at TIMESTAMP
+            );
             """
         )
 

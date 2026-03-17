@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer
-from PySide6.QtGui import QColor, QFont, QPaintEvent, QPainter, QPen, QRadialGradient
+from PySide6.QtGui import QColor, QFont, QPaintEvent, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
 
@@ -49,7 +49,7 @@ class ArcadeScannerWidget(QWidget):
 
     def paintEvent(self, _event: QPaintEvent) -> None:
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         rect = QRectF(self.rect()).adjusted(10, 10, -10, -10)
         palette = self._palette_for_state()
 
@@ -57,9 +57,11 @@ class ArcadeScannerWidget(QWidget):
         painter.fillRect(rect, QColor("#081630"))
         painter.setPen(QPen(palette["border"], 2))
         painter.drawRect(rect)
+        painter.setPen(QPen(QColor(255, 255, 255, 24), 1))
+        painter.drawRect(rect.adjusted(6, 6, -6, -6))
 
         inner_rect = rect.adjusted(18, 18, -18, -18)
-        center = QPointF(inner_rect.center().x(), inner_rect.top() + inner_rect.height() * 0.47)
+        center = QPointF(round(inner_rect.center().x()), round(inner_rect.top() + inner_rect.height() * 0.47))
         radius = min(inner_rect.width(), inner_rect.height()) * 0.34
 
         for angle in range(0, 360, 6):
@@ -95,13 +97,6 @@ class ArcadeScannerWidget(QWidget):
             painter.drawEllipse(center, radius * ring_factor, radius * ring_factor)
 
         pulse = 1.0 + 0.06 * math.sin(self._phase / 8.0)
-        core_gradient = QRadialGradient(center, radius * 0.18 * pulse)
-        core_gradient.setColorAt(0.0, QColor("#ffffff"))
-        core_gradient.setColorAt(0.35, palette["accent"])
-        core_gradient.setColorAt(1.0, QColor(0, 0, 0, 0))
-        painter.setBrush(core_gradient)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawEllipse(center, radius * 0.18 * pulse, radius * 0.18 * pulse)
 
         dot_angles = (22, 88, 148, 214, 276, 332)
         for index, angle in enumerate(dot_angles):
@@ -115,9 +110,29 @@ class ArcadeScannerWidget(QWidget):
             dot_alpha = 230 if index < self._signals_found else 110
             color = QColor(dot_color)
             color.setAlpha(dot_alpha)
-            painter.setBrush(color)
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawEllipse(dot_center, 4.5, 4.5)
+            painter.fillRect(
+                int(dot_center.x()) - 3,
+                int(dot_center.y()) - 3,
+                6,
+                6,
+                color,
+            )
+
+        core_size = max(16, int(radius * 0.24 * pulse))
+        painter.fillRect(
+            int(center.x()) - core_size // 2,
+            int(center.y()) - core_size // 2,
+            core_size,
+            core_size,
+            palette["accent"],
+        )
+        painter.fillRect(
+            int(center.x()) - max(6, core_size // 4),
+            int(center.y()) - max(6, core_size // 4),
+            max(12, core_size // 2),
+            max(12, core_size // 2),
+            QColor("#ffffff"),
+        )
 
         control_bar = QRectF(inner_rect.left() + 28, inner_rect.bottom() - 36, inner_rect.width() - 56, 14)
         stripe_colors = (QColor("#00f0ff"), QColor("#7cffb2"), QColor("#ff3ed2"), QColor("#ffd700"))

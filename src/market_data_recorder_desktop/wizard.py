@@ -448,14 +448,14 @@ class SetupWizard(QWizard):
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Superior setup")
-        self.setWizardStyle(QWizard.WizardStyle.ModernStyle)
+        self.setWindowTitle("SUPERIOR // SETUP")
+        self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
         self.resize(920, 680)
         self.setOption(QWizard.WizardOption.HaveHelpButton, False)
         self.setButtonText(QWizard.WizardButton.NextButton, "Next")
         self.setButtonText(QWizard.WizardButton.BackButton, "Back")
         self.setButtonText(QWizard.WizardButton.CancelButton, "Cancel")
-        self.setButtonText(QWizard.WizardButton.FinishButton, "Launch Hangar")
+        self.setButtonText(QWizard.WizardButton.FinishButton, "Boot Hangar")
 
         self._profile_store = profile_store
         self._credential_vault = credential_vault

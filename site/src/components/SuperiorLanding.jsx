@@ -8,8 +8,6 @@ export default function SuperiorLanding({ variant }) {
   return (
     <div className="landing-shell">
       <div className="landing-starfield" aria-hidden="true" />
-      <div className="landing-radial-glow landing-radial-left" aria-hidden="true" />
-      <div className="landing-radial-glow landing-radial-right" aria-hidden="true" />
 
       <div className="landing-container">
         <SuperiorHeader variant={variant} />

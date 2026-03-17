@@ -20,6 +20,7 @@ That script now does all of the following:
 
 - runs `pytest -q`
 - runs `python -m mypy src tests`
+- runs the headless `market-data-recorder-qa` client and writes `.tmp\qa-release\report.json`
 - builds the PyInstaller bundle
 - builds a packaged smoke companion with the console bootloader
 - smoke-tests the packaged build through that frozen smoke companion
@@ -36,6 +37,26 @@ python -m PyInstaller --noconfirm --distpath .tmp\smoke-companion\dist --workpat
 python scripts\smoke-test-windows-release.py --bundle-exe .tmp\smoke-companion\dist\market-data-recorder-smoke.exe
 powershell -ExecutionPolicy Bypass -File scripts\smoke-test-installer.ps1
 ```
+
+## One-command validation lane
+
+Use this when you want one repeatable developer command instead of remembering every check manually:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\validate-superior.ps1 -IncludeSite
+```
+
+Full local gate including site and packaging:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\validate-superior.ps1 -IncludeSite -IncludePackaging
+```
+
+That script writes:
+
+- `.tmp\validate-superior.log`
+- `.tmp\validate-superior-summary.json`
+- a headless QA report under `.tmp\qa-release\report.json` unless you override the workspace/output paths
 
 ## Why the smoke companion exists
 
@@ -66,7 +87,7 @@ The QA client runs deterministic local scenarios for:
 
 Each scenario writes reviewable artifacts into an isolated workspace so QA can inspect evidence instead of treating success as a black box.
 
-In CI, the headless QA client also exports a report artifact so the release lane has reviewable evidence instead of only pass/fail status.
+In CI, the headless QA client exports a report artifact named `superior-qa-report`, and the Windows packaging lane also carries the QA report into failure artifacts when the release wrapper fails.
 
 ## 3. Frontend variant lane
 
@@ -104,6 +125,7 @@ These tests confirm:
 GitHub Actions now covers:
 
 - Python tests and mypy
+- headless QA client with an uploaded JSON/artifact trail
 - Windows package build + smoke tests
 - QA client coverage through the normal Python test suite
 - site build + browser smoke tests

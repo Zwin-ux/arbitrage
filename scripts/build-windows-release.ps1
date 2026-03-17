@@ -152,6 +152,12 @@ try {
     Invoke-NativeStep -StageName "Run mypy" -Command {
         python -m mypy src tests
     }
+    $qaWorkspace = "$repoRoot\.tmp\qa-release"
+    $qaReportPath = "$qaWorkspace\report.json"
+    Invoke-NativeStep -StageName "Run QA client" -Command {
+        python -m market_data_recorder_desktop.qa_client --headless --workspace $qaWorkspace --output $qaReportPath
+    }
+    Write-ReleaseLog "QA report ready at $qaReportPath"
 
     $stageRoot = "$repoRoot\.tmp\release-stage"
     $stageDist = "$stageRoot\dist"

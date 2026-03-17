@@ -8,7 +8,7 @@ import sys
 import time
 import traceback
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable, Literal, Sequence
 
@@ -41,7 +41,8 @@ from market_data_recorder.models import (
 from market_data_recorder.storage import DuckDBStorage
 
 from . import __version__
-from .app_types import AppProfile, EngineStatus, OpportunityCandidate, PortfolioSummary
+from .app_types import AppProfile, BenchmarkBar, EngineStatus, OpportunityCandidate, PortfolioSummary
+from .benchmark_lab import BenchmarkAuditService, BenchmarkLinkService, BenchmarkStore
 from .bot_services import (
     AssistantService,
     CapabilityService,
@@ -543,6 +544,93 @@ def _starter_bot_session_banks_score(sandbox: QASandbox) -> QAScenarioOutcome:
     )
 
 
+def _benchmark_audit_marks_session_with_external_reference(sandbox: QASandbox) -> QAScenarioOutcome:
+    profile = sandbox.create_profile(display_name="QA Benchmark Audit", lab_enabled=True)
+    sandbox.credential_vault.save(
+        profile.id,
+        "financial_benchmark",
+        {"provider_name": "Financial Datasets", "api_key": "qa-benchmark-key"},
+    )
+    sandbox.seed_internal_binary_fixture(
+        profile,
+        question="Will SPY close above the benchmark line?",
+        slug="spy-close-benchmark",
+        market_id="spy-market-1",
+    )
+    benchmark_store = BenchmarkStore(profile.data_dir / "market_data.duckdb")
+    BenchmarkLinkService(benchmark_store).save_manual_link(
+        profile_id=profile.id,
+        market_slug="spy-close-benchmark",
+        symbol="SPY",
+        instrument_type="etf",
+        interval_preference="1m",
+        notes="QA benchmark link",
+    )
+    now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+    benchmark_store.upsert_bars(
+        [
+            BenchmarkBar(
+                symbol="SPY",
+                instrument_type="etf",
+                interval="1m",
+                recorded_at=now - timedelta(minutes=2),
+                open=500.0,
+                high=501.0,
+                low=499.0,
+                close=500.5,
+            ),
+            BenchmarkBar(
+                symbol="SPY",
+                instrument_type="etf",
+                interval="1m",
+                recorded_at=now - timedelta(minutes=1),
+                open=500.5,
+                high=502.0,
+                low=500.0,
+                close=501.5,
+            ),
+            BenchmarkBar(
+                symbol="SPY",
+                instrument_type="etf",
+                interval="1m",
+                recorded_at=now,
+                open=501.5,
+                high=503.0,
+                low=501.2,
+                close=502.4,
+            ),
+        ]
+    )
+    candidates = sandbox.opportunity_engine.scan(profile)
+    session = sandbox.paper_simulation_engine.run_session(
+        profile,
+        candidates,
+        score_snapshot=sandbox.score_service.snapshot(profile),
+    )
+    runs = sandbox.paper_store.list_runs(profile)
+    audits = BenchmarkAuditService(benchmark_store).audit_session(
+        profile.id,
+        session,
+        [run for run in runs if run.run_id in session.run_ids],
+    )
+    if not audits or audits[0].verdict not in {"Aligned", "Weak coverage"}:
+        raise AssertionError("Expected a usable benchmark audit for the benchmark-linked session.")
+    artifact = sandbox.write_json_artifact(
+        "benchmark-audit.json",
+        [audit.model_dump(mode="json") for audit in audits],
+    )
+    return QAScenarioOutcome(
+        summary="A Lab-only benchmark link can audit a paper session against external reference bars without altering execution.",
+        evidence=[
+            f"Audit verdict: {audits[0].verdict}",
+            f"Benchmark symbol: {audits[0].symbol}",
+            f"Underlying move: {audits[0].underlying_move_bps} bps",
+            f"Edge delta: {audits[0].edge_vs_benchmark_bps} bps",
+        ],
+        artifacts=[artifact, profile.data_dir / "market_data.duckdb"],
+    )
+
+
 def _unlock_track_progression(sandbox: QASandbox) -> QAScenarioOutcome:
     profile = sandbox.create_profile(display_name="QA Unlock Track")
     sandbox.seed_internal_binary_fixture(profile)
@@ -859,6 +947,17 @@ SCENARIOS: tuple[QAScenarioDefinition, ...] = (
             "The portfolio snapshot must reflect the new score and active slot state.",
         ),
         runner=_starter_bot_session_banks_score,
+    ),
+    QAScenarioDefinition(
+        id="benchmark-audit-session",
+        title="Benchmark Audit Session",
+        category="lab",
+        acceptance_criteria=(
+            "A Lab-enabled profile can save a manual benchmark link for a market slug.",
+            "A paper session can be audited against locally stored external reference bars.",
+            "The benchmark verdict stays audit-only and does not alter execution or score banking.",
+        ),
+        runner=_benchmark_audit_marks_session_with_external_reference,
     ),
     QAScenarioDefinition(
         id="unlock-track-progression",

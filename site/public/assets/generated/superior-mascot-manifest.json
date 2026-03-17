@@ -1,0 +1,24 @@
+{
+  "generator": "DiceBear bottts",
+  "createdAt": "2026-03-17T02:26:19.153Z",
+  "mascots": [
+    {
+      "title": "Core mascot",
+      "seed": "Superior Core",
+      "svg": "/assets/generated/superior-mascot-core.svg",
+      "png": "/assets/generated/superior-mascot-core.png"
+    },
+    {
+      "title": "Scout mascot",
+      "seed": "Superior Scout",
+      "svg": "/assets/generated/superior-mascot-scout.svg",
+      "png": "/assets/generated/superior-mascot-scout.png"
+    },
+    {
+      "title": "Pilot mascot",
+      "seed": "Superior Pilot",
+      "svg": "/assets/generated/superior-mascot-pilot.svg",
+      "png": "/assets/generated/superior-mascot-pilot.png"
+    }
+  ]
+}

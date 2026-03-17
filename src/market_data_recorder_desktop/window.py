@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import (
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -41,6 +43,9 @@ from . import __version__
 from .app_types import (
     AppProfile,
     AssistantSession,
+    BenchmarkAudit,
+    BenchmarkInterval,
+    BenchmarkInstrumentType,
     BotConfig,
     BotRegistryEntry,
     BotSlot,
@@ -62,6 +67,7 @@ from .app_types import (
     UnlockState,
     VenueConnection,
 )
+from .benchmark_lab import BenchmarkAuditService, BenchmarkLinkService, BenchmarkStore, resolve_benchmark_api_key
 from .bot_services import (
     ArbitrageService,
     AssistantService,
@@ -1364,6 +1370,7 @@ class PaperBotsTab(QWidget):
         session: PaperBotSession | None = None,
         *,
         decision_trace: str = "",
+        benchmark_audits: list[BenchmarkAudit] | None = None,
     ) -> None:
         self.runs_list.clear()
         for run in reversed(runs[-20:]):
@@ -1372,7 +1379,12 @@ class PaperBotsTab(QWidget):
             )
         if not runs:
             self.runs_list.addItem("No paper runs yet. Record -> scan -> start session.")
-        self.set_last_run(runs[-1] if runs else None, session=session, decision_trace=decision_trace)
+        self.set_last_run(
+            runs[-1] if runs else None,
+            session=session,
+            decision_trace=decision_trace,
+            benchmark_audits=benchmark_audits or [],
+        )
 
     def set_last_run(
         self,
@@ -1380,7 +1392,9 @@ class PaperBotsTab(QWidget):
         *,
         session: PaperBotSession | None = None,
         decision_trace: str = "",
+        benchmark_audits: list[BenchmarkAudit] | None = None,
     ) -> None:
+        audits = benchmark_audits or []
         if session is None:
             self.bot_slots_text.setPlainText(
                 "BOT SLOTS\n\n"
@@ -1449,6 +1463,23 @@ class PaperBotsTab(QWidget):
                 ]
             )
         )
+        if audits:
+            self.session_summary_text.appendPlainText(
+                "\n".join(
+                    [
+                        "",
+                        "BENCHMARK AUDIT",
+                        *[
+                            (
+                                f"{audit.market_slug} | {audit.verdict} | "
+                                f"{audit.symbol or 'unlinked'} | move {audit.underlying_move_bps} bps | "
+                                f"edge delta {audit.edge_vs_benchmark_bps} bps"
+                            )
+                            for audit in audits
+                        ],
+                    ]
+                )
+            )
 
 
 class ScoreTab(QWidget):
@@ -1482,7 +1513,11 @@ class ScoreTab(QWidget):
         runs: list[PaperRunResult],
         portfolio_snapshot: PortfolioSnapshot,
         sessions: list[PaperBotSession],
+        benchmark_audits: list[BenchmarkAudit] | None = None,
+        *,
+        lab_enabled: bool = False,
     ) -> None:
+        audits = benchmark_audits or []
         if not runs:
             self.summary_label.setText("Paper Score waiting for first route | Live Score locked")
             self.portfolio_text.setPlainText(
@@ -1501,6 +1536,10 @@ class ScoreTab(QWidget):
                 "No ledger entries yet.\n\n"
                 "Your first paper session will create stake, realized-PnL, and session-grade history here."
             )
+            if lab_enabled:
+                self.ledger_text.appendPlainText(
+                    "\n\nBENCHMARK AUDIT\n\nNo benchmark coverage yet. Save a Lab mapping if you want external reference checks."
+                )
             return
         self.summary_label.setText(
             f"Paper Score ${snapshot.paper_realized_pnl_cents / 100:.2f} | "
@@ -1545,6 +1584,16 @@ class ScoreTab(QWidget):
             f"- {'ONLINE' if unlock.unlocked else 'LOCKED'} | {unlock.label} | {unlock.detail}"
             for unlock in portfolio_snapshot.unlocks
         )
+        if lab_enabled:
+            lines.extend(["", "Benchmark audit:"])
+            if audits:
+                lines.extend(
+                    f"- {audit.verdict} | {audit.market_slug} | {audit.symbol or 'unlinked'} | "
+                    f"move {audit.underlying_move_bps} bps | delta {audit.edge_vs_benchmark_bps} bps"
+                    for audit in audits[:5]
+                )
+            else:
+                lines.append("- No benchmark-linked sessions yet.")
         self.detail_text.setPlainText("\n".join(lines))
         self.ledger_text.setPlainText(
             "\n".join(
@@ -1664,21 +1713,80 @@ class LabTab(QWidget):
         self.status_label.setObjectName("heroTitle")
         self.enable_checkbox = QCheckBox("Enable Lab for this profile")
         self.save_button = QPushButton("Save Lab setting")
+        self.benchmark_status_label = QLabel("Benchmark audit is offline.")
+        self.benchmark_status_label.setWordWrap(True)
+        benchmark_actions = QHBoxLayout()
+        self.save_benchmark_key_button = QPushButton("Save benchmark key")
+        self.save_benchmark_key_button.setProperty("buttonRole", "secondary")
+        self.refresh_benchmark_button = QPushButton("Refresh benchmark")
+        self.refresh_benchmark_button.setProperty("buttonRole", "secondary")
+        benchmark_actions.addWidget(self.save_benchmark_key_button)
+        benchmark_actions.addWidget(self.refresh_benchmark_button)
+        mapping_group = QGroupBox("Benchmark mapping")
+        mapping_form = QFormLayout(mapping_group)
+        self.market_slug_combo = QComboBox()
+        self.market_slug_combo.setEditable(True)
+        self.symbol_edit = QLineEdit()
+        self.symbol_edit.setPlaceholderText("SPY, BTC-USD, QQQ")
+        self.instrument_type_combo = QComboBox()
+        for item in ("stock", "etf", "crypto", "index", "macro", "unknown"):
+            self.instrument_type_combo.addItem(item.title(), item)
+        self.interval_combo = QComboBox()
+        self.interval_combo.addItem("1m", "1m")
+        self.interval_combo.addItem("1d", "1d")
+        self.notes_edit = QLineEdit()
+        self.notes_edit.setPlaceholderText("Optional note about why this mapping is safe.")
+        mapping_form.addRow("Market slug", self.market_slug_combo)
+        mapping_form.addRow("Symbol", self.symbol_edit)
+        mapping_form.addRow("Instrument", self.instrument_type_combo)
+        mapping_form.addRow("Interval", self.interval_combo)
+        mapping_form.addRow("Notes", self.notes_edit)
+        self.save_mapping_button = QPushButton("Save mapping")
+        self.save_mapping_button.setProperty("buttonRole", "secondary")
+        mapping_form.addRow("", self.save_mapping_button)
         self.modules_text = QPlainTextEdit()
         self.modules_text.setReadOnly(True)
+        self.benchmark_text = QPlainTextEdit()
+        self.benchmark_text.setReadOnly(True)
         layout.addWidget(self.status_label)
         layout.addWidget(self.enable_checkbox)
         layout.addWidget(self.save_button)
+        layout.addWidget(self.benchmark_status_label)
+        layout.addLayout(benchmark_actions)
+        layout.addWidget(mapping_group)
         layout.addWidget(self.modules_text)
+        layout.addWidget(self.benchmark_text)
         layout.addStretch(1)
 
-    def update_view(self, profile: AppProfile | None, modules: list[StrategyModule]) -> None:
+    def update_view(
+        self,
+        profile: AppProfile | None,
+        modules: list[StrategyModule],
+        *,
+        benchmark_ready: bool = False,
+        benchmark_links: list[str] | None = None,
+        suggested_market_slugs: list[str] | None = None,
+        benchmark_audits: list[BenchmarkAudit] | None = None,
+    ) -> None:
+        links = benchmark_links or []
+        audits = benchmark_audits or []
+        suggestions = suggested_market_slugs or []
         if profile is None:
             self.status_label.setText("Lab is off.")
             self.modules_text.setPlainText("Choose a profile to inspect Lab modules.")
+            self.benchmark_status_label.setText("Choose a profile to manage benchmark audit.")
+            self.benchmark_text.setPlainText("No benchmark profile loaded.")
             return
         self.enable_checkbox.setChecked(profile.lab_enabled)
         self.status_label.setText("Lab is on." if profile.lab_enabled else "Lab is off.")
+        self.market_slug_combo.clear()
+        for slug in suggestions:
+            self.market_slug_combo.addItem(slug, slug)
+        self.benchmark_status_label.setText(
+            "Benchmark audit ready. External data stays audit-only."
+            if benchmark_ready
+            else "Benchmark audit offline. Save a rotated key or use env override for sync."
+        )
         lines = [
             "High-risk and experimental strategies stay paper-only in v1.",
             "",
@@ -1688,6 +1796,21 @@ class LabTab(QWidget):
                 continue
             lines.append(f"{module.label}: {module.description}")
         self.modules_text.setPlainText("\n".join(lines))
+        benchmark_lines = ["BENCHMARK LAB", ""]
+        if not links:
+            benchmark_lines.append("No benchmark links saved yet.")
+        else:
+            benchmark_lines.extend(links)
+        benchmark_lines.extend(["", "Recent audits:"])
+        if audits:
+            benchmark_lines.extend(
+                f"- {audit.verdict} | {audit.market_slug} | {audit.symbol or 'unlinked'} | "
+                f"move {audit.underlying_move_bps} bps | delta {audit.edge_vs_benchmark_bps} bps"
+                for audit in audits[:6]
+            )
+        else:
+            benchmark_lines.append("- No benchmark audits yet.")
+        self.benchmark_text.setPlainText("\n".join(benchmark_lines))
 
 
 class DiagnosticsTab(QWidget):
@@ -1814,6 +1937,7 @@ class DesktopMainWindow(QMainWindow):
         self._unlock_service = unlock_service
         self._assistant_service = assistant_service
         self._arb_service = arbitrage_service or ArbitrageService()
+        self._benchmark_api_key_env_override = resolve_benchmark_api_key()
         self._profiles: list[AppProfile] = []
         self._latest_candidates: list[OpportunityCandidate] = []
         self._latest_arb_opportunities: list[ArbitrageOpportunity] = []
@@ -1939,6 +2063,9 @@ class DesktopMainWindow(QMainWindow):
         self.live_unlock_tab.reset_button.clicked.connect(lambda: self._set_live_mode("locked"))
 
         self.lab_tab.save_button.clicked.connect(self._save_lab_setting)
+        self.lab_tab.save_benchmark_key_button.clicked.connect(self._save_benchmark_key)
+        self.lab_tab.refresh_benchmark_button.clicked.connect(self._refresh_all_views)
+        self.lab_tab.save_mapping_button.clicked.connect(self._save_benchmark_mapping)
 
         self.diagnostics_tab.refresh_button.clicked.connect(self._refresh_all_views)
         self.diagnostics_tab.export_button.clicked.connect(self._export_diagnostics)
@@ -2120,7 +2247,23 @@ class DesktopMainWindow(QMainWindow):
         self._refresh_arbitrage()
         self._refresh_portfolio_views()
         profile = self._current_profile()
-        self.lab_tab.update_view(profile, self._opportunity_engine.strategy_modules())
+        benchmark_links: list[str] = []
+        benchmark_audits: list[BenchmarkAudit] = []
+        if profile is not None:
+            benchmark_store = self._benchmark_store(profile)
+            benchmark_links = [
+                f"- {link.market_slug} -> {link.symbol} [{link.interval_preference}]"
+                for link in benchmark_store.list_links(profile.id)
+            ]
+            benchmark_audits = self._benchmark_audit_service(profile).recent_audits(profile.id, limit=6)
+        self.lab_tab.update_view(
+            profile,
+            self._opportunity_engine.strategy_modules(),
+            benchmark_ready=self._benchmark_ready(profile),
+            benchmark_links=benchmark_links,
+            suggested_market_slugs=self._suggested_market_slugs(profile),
+            benchmark_audits=benchmark_audits,
+        )
         self._sync_lab_tab_visibility(profile)
 
     def _refresh_scanner(self) -> None:
@@ -2163,7 +2306,7 @@ class DesktopMainWindow(QMainWindow):
         profile = self._current_profile()
         if profile is None:
             self.paper_bots_tab.update_runs([], None)
-            self.score_tab.update_summary(ScoreSnapshot(), [], [], PortfolioSnapshot(), [])
+            self.score_tab.update_summary(ScoreSnapshot(), [], [], PortfolioSnapshot(), [], [], lab_enabled=False)
             return
         runs = self._paper_store.list_runs(profile)
         sessions = self._session_store.list_sessions(profile)
@@ -2171,12 +2314,31 @@ class DesktopMainWindow(QMainWindow):
         portfolio_snapshot = self._portfolio_engine.snapshot(profile)
         ledger_entries = self._score_service.ledger(profile, limit=10)
         last_session = self._last_session or (sessions[-1] if sessions else None)
+        benchmark_audits = (
+            self._benchmark_audit_service(profile).recent_audits(profile.id, limit=10)
+            if profile.lab_enabled
+            else []
+        )
+        session_audits = (
+            self._benchmark_audit_service(profile).audits_for_session(profile.id, last_session.session_id)
+            if profile.lab_enabled and last_session is not None
+            else []
+        )
         self.paper_bots_tab.update_runs(
             runs,
             last_session,
             decision_trace=self._decision_trace_formatter.render(last_session),
+            benchmark_audits=session_audits,
         )
-        self.score_tab.update_summary(score_snapshot, ledger_entries, runs, portfolio_snapshot, sessions)
+        self.score_tab.update_summary(
+            score_snapshot,
+            ledger_entries,
+            runs,
+            portfolio_snapshot,
+            sessions,
+            benchmark_audits,
+            lab_enabled=profile.lab_enabled,
+        )
 
     def _venue_connections(self, profile: AppProfile | None) -> list[VenueConnection]:
         if profile is None:
@@ -2187,6 +2349,28 @@ class DesktopMainWindow(QMainWindow):
         if profile is None:
             return []
         return self._credential_vault.statuses_for_profile(profile.id)
+
+    def _benchmark_store(self, profile: AppProfile) -> BenchmarkStore:
+        return BenchmarkStore(profile.data_dir / "market_data.duckdb")
+
+    def _benchmark_link_service(self, profile: AppProfile) -> BenchmarkLinkService:
+        return BenchmarkLinkService(self._benchmark_store(profile))
+
+    def _benchmark_audit_service(self, profile: AppProfile) -> BenchmarkAuditService:
+        return BenchmarkAuditService(self._benchmark_store(profile))
+
+    def _benchmark_ready(self, profile: AppProfile | None) -> bool:
+        if profile is None:
+            return False
+        return resolve_benchmark_api_key(vault=self._credential_vault, profile_id=profile.id) is not None
+
+    def _suggested_market_slugs(self, profile: AppProfile | None) -> list[str]:
+        if profile is None:
+            return []
+        slugs = {candidate.market_slug for candidate in self._latest_candidates}
+        for run in self._paper_store.list_runs(profile)[-12:]:
+            slugs.update(position.market_slug for position in run.positions)
+        return sorted(slug for slug in slugs if slug)
 
     def _experimental_live_status(self, profile: AppProfile) -> ExperimentalLiveStatus:
         status = self._controller.status(profile)
@@ -2438,6 +2622,9 @@ class DesktopMainWindow(QMainWindow):
         session = self._paper_simulation_engine.run_session(profile, candidates, score_snapshot=score_snapshot)
         self._last_session = session
         runs = self._paper_store.list_runs(profile)
+        if profile.lab_enabled:
+            session_runs = [run for run in runs if run.run_id in session.run_ids]
+            self._benchmark_audit_service(profile).audit_session(profile.id, session, session_runs)
         if runs:
             self._last_paper_run = runs[-1]
         active_profile = profile
@@ -2470,6 +2657,8 @@ class DesktopMainWindow(QMainWindow):
 
     def _execute_paper_candidate(self, profile: AppProfile, candidate: OpportunityCandidate) -> None:
         self._last_paper_run = self._paper_execution_engine.paper_trade(profile, candidate)
+        if profile.lab_enabled and self._last_paper_run is not None:
+            self._benchmark_audit_service(profile).audit_latest_run(profile.id, self._last_paper_run)
         active_profile = profile
         if not profile.first_run_completed:
             active_profile = profile.model_copy(
@@ -2607,6 +2796,51 @@ class DesktopMainWindow(QMainWindow):
         self._refresh_all_views()
         self.statusBar().showMessage("Lab setting saved.", 4000)
 
+    def _save_benchmark_key(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            return
+        current_value = self._credential_vault.load(profile.id, "financial_benchmark").get("api_key", "")
+        api_key, accepted = QInputDialog.getText(
+            self,
+            "Benchmark key",
+            "Paste the rotated financial benchmark API key.",
+            QLineEdit.EchoMode.Password,
+            current_value,
+        )
+        if not accepted:
+            return
+        result = self._credential_vault.save(
+            profile.id,
+            "financial_benchmark",
+            {"provider_name": "Financial Datasets", "api_key": api_key},
+        )
+        if not result.ok:
+            QMessageBox.warning(self, "Benchmark key", result.message)
+            return
+        self._refresh_all_views()
+        self.statusBar().showMessage("Benchmark key stored locally in the OS keychain.", 5000)
+
+    def _save_benchmark_mapping(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            return
+        market_slug = self.lab_tab.market_slug_combo.currentText().strip()
+        symbol = self.lab_tab.symbol_edit.text().strip().upper()
+        if not market_slug or not symbol:
+            QMessageBox.information(self, "Benchmark mapping", "Choose a market slug and a benchmark symbol first.")
+            return
+        self._benchmark_link_service(profile).save_manual_link(
+            profile_id=profile.id,
+            market_slug=market_slug,
+            symbol=symbol,
+            instrument_type=cast(BenchmarkInstrumentType, self.lab_tab.instrument_type_combo.currentData()),
+            interval_preference=cast(BenchmarkInterval, self.lab_tab.interval_combo.currentData()),
+            notes=self.lab_tab.notes_edit.text(),
+        )
+        self._refresh_all_views()
+        self.statusBar().showMessage(f"Saved benchmark link {market_slug} -> {symbol}.", 5000)
+
     def _export_diagnostics(self) -> None:
         profile = self._current_profile()
         filename, _ = QFileDialog.getSaveFileName(
@@ -2643,12 +2877,54 @@ class DesktopMainWindow(QMainWindow):
 
     def _sync_shell_state(self, profile: AppProfile | None, status: EngineStatus, candidate_count: int) -> None:
         if profile is None:
+            self.shell.header.set_machine_state(
+                cart_value="No cart",
+                cart_tone="warning",
+                data_value="Idle",
+                data_tone="idle",
+                safe_value="Paper",
+                safe_tone="active",
+                lab_value="Off",
+                lab_tone="idle",
+                hint="Create a profile, then boot recorder.",
+            )
             self.shell.overlay_host.show_state(
                 "First launch",
                 "Create a guided profile, then boot recorder to begin the paper-first loop.",
                 "warning",
             )
             return
+        has_data = status.summary is not None and (status.summary.raw_messages > 0 or status.summary.book_snapshots > 0)
+        data_value = "Sync"
+        data_tone = "warning"
+        hint = "Boot recorder, scan routes, keep paper first."
+        if status.state == "failed":
+            data_value = "Fault"
+            data_tone = "error"
+            hint = "Review diagnostics before retrying recorder boot."
+        elif status.state == "running":
+            data_value = "Live"
+            data_tone = "active"
+            hint = "Recorder is capturing local books now."
+        elif candidate_count > 0:
+            data_value = "Route"
+            data_tone = "success"
+            hint = "A route is staged. Start a paper session."
+        elif has_data:
+            data_value = "Buffered"
+            data_tone = "success"
+            hint = "Local sample ready. Refresh scanner and stage a route."
+        self.shell.header.set_machine_state(
+            cart_value=profile.display_name[:16],
+            cart_tone="active",
+            data_value=data_value,
+            data_tone=data_tone,
+            safe_value="Locked" if profile.live_mode == "locked" else profile.live_mode,
+            safe_tone="locked" if profile.live_mode == "locked" else "warning",
+            lab_value="On" if profile.lab_enabled else "Off",
+            lab_tone="warning" if profile.lab_enabled else "idle",
+            hint=hint,
+        )
         if status.state == "failed":
             self.shell.overlay_host.show_state(
                 "Recorder error",
@@ -2663,7 +2939,6 @@ class DesktopMainWindow(QMainWindow):
                 "active",
             )
             return
-        has_data = status.summary is not None and (status.summary.raw_messages > 0 or status.summary.book_snapshots > 0)
         if candidate_count > 0:
             self.shell.overlay_host.show_state(
                 "Session ready",

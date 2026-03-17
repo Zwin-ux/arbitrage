@@ -81,6 +81,16 @@ def _parse_price(value: float | str | None) -> float | None:
         return None
 
 
+def _to_utc_datetime(value: datetime) -> datetime:
+    return value.astimezone(timezone.utc) if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+def _naive_utc_datetime(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    return _to_utc_datetime(value).replace(tzinfo=None)
+
+
 class VenueAdapter(ABC):
     venue_id: str
     venue_label: str
@@ -163,7 +173,7 @@ class PolymarketVenueAdapter(VenueAdapter):
                     fees_enabled=bool(row[6]),
                     best_bid=_parse_price(row[7]),
                     best_ask=_parse_price(row[8]),
-                    recorded_at=row[9],
+                    recorded_at=_to_utc_datetime(row[9]) if row[9] is not None else None,
                 )
             )
         return quotes
@@ -577,8 +587,19 @@ class OpportunityEngine:
 
 
 class PaperRunStore:
+    def __init__(self, *, state_db_path: Path | None = None) -> None:
+        self._state_db_path = state_db_path
+
     def list_runs(self, profile: AppProfile) -> list[PaperRunResult]:
-        connection = self._connect(profile)
+        return self.list_runs_for_profile_id(profile.id, state_db_path=self._state_path_for_profile(profile))
+
+    def list_runs_for_profile_id(
+        self,
+        profile_id: str,
+        *,
+        state_db_path: Path | None = None,
+    ) -> list[PaperRunResult]:
+        connection = self._connect_for_path(state_db_path or self._state_db_path)
         try:
             rows = connection.execute(
                 """
@@ -601,7 +622,7 @@ class PaperRunStore:
                 WHERE profile_id = ?
                 ORDER BY executed_at
                 """,
-                [profile.id],
+                [profile_id],
             ).fetchall()
         finally:
             connection.close()
@@ -611,7 +632,7 @@ class PaperRunStore:
                 PaperRunResult(
                     run_id=row[0],
                     profile_id=row[1],
-                    executed_at=row[2],
+                    executed_at=_to_utc_datetime(row[2]),
                     strategy_ids=list(json.loads(row[3])),
                     candidate_ids=list(json.loads(row[4])),
                     status=row[5],
@@ -637,7 +658,7 @@ class PaperRunStore:
                 [
                     run.run_id,
                     profile.id,
-                    run.executed_at,
+                    _naive_utc_datetime(run.executed_at),
                     json.dumps(run.strategy_ids),
                     json.dumps(run.candidate_ids),
                     run.status,
@@ -717,8 +738,8 @@ class PaperRunStore:
                 PaperBotSession(
                     session_id=row[0],
                     profile_id=row[1],
-                    started_at=row[2],
-                    ended_at=row[3],
+                    started_at=_to_utc_datetime(row[2]),
+                    ended_at=_to_utc_datetime(row[3]) if row[3] is not None else None,
                     state=row[4],
                     bot_slots=[BotSlot.model_validate(item) for item in json.loads(row[5])],
                     decisions=[PaperBotDecision.model_validate(item) for item in json.loads(row[6])],
@@ -742,8 +763,8 @@ class PaperRunStore:
                 [
                     session.session_id,
                     profile.id,
-                    session.started_at,
-                    session.ended_at,
+                    _naive_utc_datetime(session.started_at),
+                    _naive_utc_datetime(session.ended_at),
                     session.state,
                     json.dumps([item.model_dump(mode="json") for item in session.bot_slots]),
                     json.dumps([item.model_dump(mode="json") for item in session.decisions]),
@@ -779,7 +800,7 @@ class PaperRunStore:
                 entry_id=row[0],
                 profile_id=row[1],
                 run_id=row[2],
-                recorded_at=row[3],
+                recorded_at=_to_utc_datetime(row[3]),
                 ledger_type=row[4],
                 amount_cents=int(row[5]),
                 label=row[6],
@@ -858,7 +879,15 @@ class PaperRunStore:
         )
 
     def _connect(self, profile: AppProfile) -> duckdb.DuckDBPyConnection:
-        path = profile.data_dir / "superior_state.duckdb"
+        return self._connect_for_path(self._state_path_for_profile(profile))
+
+    @staticmethod
+    def _state_path_for_profile(profile: AppProfile) -> Path:
+        return profile.data_dir / "superior_state.duckdb"
+
+    def _connect_for_path(self, path: Path | None) -> duckdb.DuckDBPyConnection:
+        if path is None:
+            raise ValueError("State DB path is required.")
         path.parent.mkdir(parents=True, exist_ok=True)
         connection = duckdb.connect(str(path))
         connection.execute(
@@ -920,7 +949,7 @@ class PaperRunStore:
                 entry.entry_id,
                 entry.profile_id,
                 entry.run_id,
-                entry.recorded_at,
+                _naive_utc_datetime(entry.recorded_at),
                 entry.ledger_type,
                 entry.amount_cents,
                 entry.label,

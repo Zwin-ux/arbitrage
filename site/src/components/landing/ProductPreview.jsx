@@ -1,74 +1,66 @@
-function toneClass(tone) {
-  if (tone === "green") {
-    return "text-[var(--accent-green)]";
-  }
-  if (tone === "magenta") {
-    return "text-[var(--accent-magenta)]";
-  }
-  return "text-[var(--accent-cyan)]";
-}
-
 export default function ProductPreview({ variant }) {
   return (
-    <section className="preview-grid" id="preview">
-      <div className="product-frame">
-        <div className="product-frame-top">
-          <span>SUPERIOR.EXE</span>
-          <span>HANGAR / BOT BAY / SCORE</span>
-        </div>
-
-        <div className="product-frame-body">
-          <div className="product-preview-left">
-            <div className="product-preview-title">
-              <p className="section-label">Session control</p>
-              <h3>Record books. Stage routes. Start the run.</h3>
-            </div>
-
-            <div className="product-preview-checklist">
-              <span>[x] Equip Polymarket</span>
-              <span>[ ] Boot recorder</span>
-              <span>[ ] Arm starter bot</span>
-              <span>[ ] Land first paper score</span>
-            </div>
+    <section className="product-section" id="product">
+      <div className="product-grid-top">
+        <article className="panel-card panel-card-wide">
+          <div className="panel-card-head">
+            <p className="section-label">{variant.setupFlow.eyebrow}</p>
+            <span className="panel-version">v1</span>
           </div>
+          <h2 className="panel-card-title">{variant.setupFlow.title}</h2>
+          <p className="panel-card-copy">{variant.setupFlow.body}</p>
 
-          <div className="product-preview-right">
-            <div className="preview-status-grid">
-              {variant.previewStatus.map((item) => (
-                <div key={item.label} className="preview-status-card">
-                  <p>{item.label}</p>
-                  <strong className={toneClass(item.tone)}>{item.value}</strong>
-                </div>
-              ))}
-            </div>
-
-            <div className="preview-terminal">
-              <p>[REC] Local sample ready</p>
-              <p>[SCAN] One route staged for bot bay</p>
-              <p>[SCORE] Portfolio will update after session bank</p>
-            </div>
+          <div className="setup-step-grid">
+            {variant.setupFlow.steps.map((step) => (
+              <article key={step.id} className="setup-step-card">
+                <span>{step.id}</span>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </article>
+            ))}
           </div>
-        </div>
+        </article>
+
+        <aside className="panel-card panel-card-narrow">
+          <div className="panel-card-head">
+            <p className="section-label">{variant.firstLaunch.eyebrow}</p>
+            <span className="panel-version">v1</span>
+          </div>
+          <h2 className="panel-card-title">{variant.firstLaunch.title}</h2>
+          <p className="panel-card-copy">{variant.firstLaunch.body}</p>
+
+          <div className="menu-panel">
+            <span className="menu-panel-label">Menu</span>
+            {variant.firstLaunch.menu.map((item, index) => (
+              <div key={item} className={`menu-row ${index === 0 ? "menu-row-active" : ""}`}>
+                {item}
+              </div>
+            ))}
+          </div>
+        </aside>
       </div>
 
-      <div className="space-y-5">
-        <p className="section-label">Product preview</p>
-        <h2 className="section-title">{variant.previewHeading}</h2>
-        <p className="hero-copy">{variant.previewBody}</p>
+      <div className="product-grid-bottom">
+        <article className="panel-card panel-card-story">
+          <div className="panel-card-head">
+            <p className="section-label">{variant.productStory.eyebrow}</p>
+            <span className="panel-version">v1</span>
+          </div>
+          <h2 className="panel-card-title">{variant.productStory.title}</h2>
+          <p className="panel-card-copy">{variant.productStory.body}</p>
+        </article>
 
-        <ul className="preview-bullets">
-          {variant.previewBullets.map((item) => (
-            <li key={item}>{item}</li>
+        <div className="info-card-stack">
+          {variant.infoCards.map((card) => (
+            <article key={card.title} className="info-card">
+              <div className="panel-card-head">
+                <p className="section-label">{card.eyebrow}</p>
+                <span className="panel-version">v1</span>
+              </div>
+              <h3>{card.title}</h3>
+              <p>{card.body}</p>
+            </article>
           ))}
-        </ul>
-
-        <div className="hero-actions">
-          <a className="cta-secondary" href={variant.previewCtaHref}>
-            {variant.previewCtaLabel}
-          </a>
-          <a className="cta-secondary" href={variant.portableUrl}>
-            Portable build
-          </a>
         </div>
       </div>
     </section>

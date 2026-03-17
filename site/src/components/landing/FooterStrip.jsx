@@ -1,18 +1,34 @@
 export default function FooterStrip({ variant }) {
   return (
-    <footer className="footer-strip">
-      <div>
-        <p className="section-label">Open source Windows build</p>
-        <p className="footer-copy">Local-first. Paper-first. Score attack on real local books.</p>
+    <footer className="download-strip">
+      <div className="download-strip-main">
+        <div className="panel-card-head">
+          <p className="section-label">Download menu</p>
+          <span className="panel-version">v1</span>
+        </div>
+        <h2 className="panel-card-title">{variant.footerTitle}</h2>
+        <p className="panel-card-copy">{variant.footerBody}</p>
+
+        <div className="hero-actions">
+          <a className="cta-primary" href={variant.windowsInstallerUrl}>
+            {variant.primaryCtaLabel}
+          </a>
+          <a className="cta-secondary" href={variant.secondaryCtaHref}>
+            Open full menu
+          </a>
+        </div>
       </div>
 
-      <nav aria-label="Footer" className="footer-links">
-        {variant.footerLinks.map((link) => (
-          <a key={link.label} href={link.href} target={link.href.startsWith("http") ? "_blank" : undefined} rel={link.href.startsWith("http") ? "noreferrer" : undefined}>
-            {link.label}
-          </a>
-        ))}
-      </nav>
+      <div className="download-strip-side">
+        <p className="section-label">Source + checklist</p>
+        <div className="download-checks">
+          {variant.footerChecks.map((item) => (
+            <div key={item} className="download-check-row">
+              {item}
+            </div>
+          ))}
+        </div>
+      </div>
     </footer>
   );
 }

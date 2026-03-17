@@ -183,6 +183,43 @@ class CoachCredentialProvider(CredentialProvider):
         )
 
 
+class FinancialBenchmarkCredentialProvider(CredentialProvider):
+    provider_id = "financial_benchmark"
+    provider_label = "Financial benchmark"
+    docs_url = "https://docs.financialdatasets.ai"
+
+    def fields(self) -> list[CredentialField]:
+        return [
+            CredentialField(
+                key="provider_name",
+                label="Provider name",
+                help_text="Optional label for the external benchmark data provider.",
+                placeholder="Financial Datasets",
+            ),
+            CredentialField(
+                key="api_key",
+                label="API key",
+                help_text="Stored locally only. Used for Lab-only benchmark sync and audit.",
+                secret=True,
+                required=True,
+            ),
+        ]
+
+    def validate_payload(self, payload: dict[str, str]) -> CredentialValidationResult:
+        api_key = payload.get("api_key", "").strip()
+        if not api_key:
+            return CredentialValidationResult(
+                ok=False,
+                status="missing",
+                message="No financial benchmark API key stored yet.",
+            )
+        return CredentialValidationResult(
+            ok=True,
+            status="validated",
+            message="Financial benchmark key looks complete. Benchmark data stays audit-only in v1.",
+        )
+
+
 class CredentialVault:
     def __init__(
         self,
@@ -197,7 +234,12 @@ class CredentialVault:
             backend = keyring
         self._backend = backend
         self._service_name = service_name
-        provider_items = providers or [PolymarketCredentialProvider(), KalshiCredentialProvider(), CoachCredentialProvider()]
+        provider_items = providers or [
+            PolymarketCredentialProvider(),
+            KalshiCredentialProvider(),
+            CoachCredentialProvider(),
+            FinancialBenchmarkCredentialProvider(),
+        ]
         self._providers = {provider.provider_id: provider for provider in provider_items}
 
     def providers(self) -> list[CredentialProvider]:

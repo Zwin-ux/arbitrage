@@ -11,10 +11,14 @@
     "build": "astro build",
     "preview": "astro preview",
     "serve": "serve dist -l 4321",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "generate:mascots": "node scripts/generate-mascots.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^4.3.0",
+    "@dicebear/collection": "^9.4.0",
+    "@dicebear/converter": "^9.4.0",
+    "@dicebear/core": "^9.4.0",
     "@tailwindcss/vite": "^4.1.12",
     "astro": "^5.14.0",
     "react": "^19.1.1",

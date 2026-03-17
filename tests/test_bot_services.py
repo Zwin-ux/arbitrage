@@ -15,6 +15,7 @@ from market_data_recorder_desktop.app_types import (
     EngineStatus,
     LiveUnlockChecklist,
     OpportunityCandidate,
+    PaperBotSession,
     PaperRunResult,
     ScoreSnapshot,
 )
@@ -183,6 +184,58 @@ def test_paper_score_snapshot_uses_duckdb_ledger(app_paths: Any, fake_keyring: A
     assert snapshot.completed_runs == 1
     assert snapshot.hit_rate == 100.0
     assert len(ledger) == 2
+
+
+def test_paper_run_store_round_trips_utc_timestamps(app_paths: Any, fake_keyring: Any) -> None:
+    del fake_keyring
+    profile = AppProfile(
+        id="profile-3b",
+        display_name="UTC",
+        data_dir=app_paths.data_dir / "profile-3b",
+        enabled_venues=["Polymarket"],
+    )
+    executed_at = datetime(2026, 3, 16, 12, 30, tzinfo=timezone.utc)
+    session_started_at = datetime(2026, 3, 16, 12, 25, tzinfo=timezone.utc)
+    session_ended_at = datetime(2026, 3, 16, 12, 31, tzinfo=timezone.utc)
+    paper_store = PaperRunStore()
+    paper_store.append_run(
+        profile,
+        PaperRunResult(
+            run_id="run-utc-1",
+            profile_id=profile.id,
+            executed_at=executed_at,
+            strategy_ids=["internal-binary"],
+            candidate_ids=["cand-utc-1"],
+            status="completed",
+            deployed_capital_cents=1200,
+            expected_edge_bps=90,
+            realized_pnl_cents=11,
+            realized_edge_bps=70,
+            notes="utc test",
+        ),
+    )
+    paper_store.append_session(
+        profile,
+        PaperBotSession(
+            session_id="session-utc-1",
+            profile_id=profile.id,
+            started_at=session_started_at,
+            ended_at=session_ended_at,
+            state="complete",
+        ),
+    )
+
+    run = paper_store.list_runs(profile)[0]
+    session = paper_store.list_sessions(profile)[0]
+    ledger = paper_store.recent_ledger(profile, limit=2)
+
+    assert run.executed_at == executed_at
+    assert run.executed_at.tzinfo == timezone.utc
+    assert session.started_at == session_started_at
+    assert session.started_at.tzinfo == timezone.utc
+    assert session.ended_at == session_ended_at
+    assert session.ended_at.tzinfo == timezone.utc
+    assert all(entry.recorded_at.tzinfo == timezone.utc for entry in ledger)
 
 
 def test_loadout_and_capability_services_surface_equipped_states(app_paths: Any, fake_keyring: Any) -> None:

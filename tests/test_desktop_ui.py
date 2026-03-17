@@ -322,6 +322,9 @@ def test_main_window_empty_state_surfaces_guided_setup(
     label_text = " ".join(label.text() for label in window.findChildren(QLabel))
     assert "CONTROL  Hangar | Loadout" not in label_text
     assert "OPERATIONS  Scanner | Paper" not in label_text
+    assert window.shell.header.runtime_deck.cart_lamp.value_label.text() == "NO CART"
+    assert window.shell.header.runtime_deck.data_lamp.value_label.text() == "IDLE"
+    assert "CREATE A PROFILE" in window.shell.header.runtime_deck.hint_label.text()
     controller.shutdown()
 
 

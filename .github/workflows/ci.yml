@@ -65,6 +65,20 @@ jobs:
       - name: Run mypy
         run: python -m mypy src tests
 
+      - name: Run QA client
+        run: python -m market_data_recorder_desktop.qa_client --headless --workspace .tmp\qa-ci --output .tmp\qa-ci\report.json
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Upload QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: superior-qa-report
+          path: |
+            .tmp/qa-ci/report.json
+            .tmp/qa-ci/**
+
   windows-package:
     name: Windows Package Smoke
     needs: changes
@@ -93,6 +107,7 @@ jobs:
           name: superior-windows-package-logs
           path: |
             .tmp/build-windows-release.log
+            .tmp/qa-release/report.json
             .tmp/release-stage/**
 
   site:

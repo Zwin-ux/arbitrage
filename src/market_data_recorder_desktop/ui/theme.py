@@ -16,40 +16,41 @@ class ThemeTokens:
 
 SUPERIOR_THEME = ThemeTokens(
     colors={
-        "bg_main": "#08132a",
-        "bg_panel": "#0e2248",
-        "bg_panel_2": "#102958",
-        "bg_inset": "#050b18",
-        "accent_cyan": "#00eaff",
-        "accent_magenta": "#ff3ed2",
+        "bg_main": "#0a1230",
+        "bg_panel": "#121d52",
+        "bg_panel_2": "#18245e",
+        "bg_inset": "#09102a",
+        "accent_cyan": "#19dcff",
+        "accent_magenta": "#ff33cc",
         "accent_yellow": "#ffd84a",
         "accent_red": "#ff5c7a",
         "accent_green": "#5cffb2",
-        "text_primary": "#e6f1ff",
-        "text_secondary": "#9fb3d1",
-        "text_muted": "#6f86a8",
-        "stroke_soft": "#294a80",
-        "stroke_active": "#19d5ff",
-        "stroke_subtle": "#22365d",
+        "text_primary": "#f4f7ff",
+        "text_secondary": "#c5d3f2",
+        "text_muted": "#8194c9",
+        "stroke_soft": "#2c4692",
+        "stroke_active": "#19dcff",
+        "stroke_subtle": "#24376f",
+        "lamp_off": "#31436e",
     },
     type_ramp={
         "label": 10,
         "body": 12,
         "title": 15,
-        "display": 26,
+        "display": 24,
         "console": 11,
     },
     surface_tones={
-        "shell": "#08132a",
-        "primary": "#102958",
-        "secondary": "#0e2248",
-        "inset": "#050b18",
+        "shell": "#0a1230",
+        "primary": "#18245e",
+        "secondary": "#121d52",
+        "inset": "#09102a",
     },
     semantic_colors={
-        "active": "#00eaff",
+        "active": "#19dcff",
         "warning": "#ffd84a",
         "locked": "#ff5c7a",
-        "idle": "#6f86a8",
+        "idle": "#8194c9",
         "error": "#ff5c7a",
         "success": "#5cffb2",
     },
@@ -64,6 +65,7 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
       color: {c["text_primary"]};
       font-family: "Segoe UI Variable Text", "Segoe UI", "IBM Plex Sans";
       font-size: {type_ramp["body"]}px;
+      outline: none;
     }}
     QMainWindow {{
       background: {c["bg_main"]};
@@ -72,42 +74,98 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QWidget#DesktopShell,
     QWidget#ContentFrame,
     QWidget#PageFrame,
-    QWidget#ShellPanel,
     QWizard,
     QWizardPage {{
       background: {c["bg_main"]};
     }}
-    QTabWidget::pane {{
-      border: 1px solid {c["stroke_soft"]};
-      border-radius: 4px;
+    QWidget#DesktopShell {{
+      background: {c["bg_main"]};
+    }}
+    QFrame#ShellHeader,
+    QFrame#ProfileBar,
+    QFrame#RuntimeDeck,
+    QFrame#ShellMarquee,
+    QFrame#ContentFrame,
+    QFrame#NavFrame,
+    QWidget#ShellPanel {{
       background: {c["bg_panel"]};
-      top: -1px;
+      border: 3px solid {c["accent_cyan"]};
+    }}
+    QFrame#ContentFrame {{
+      background: #0c173d;
+      border-color: {c["stroke_soft"]};
+    }}
+    QFrame#NavFrame {{
+      background: #0d1842;
+      border-color: {c["accent_cyan"]};
+    }}
+    QTabWidget#PrimaryNav::pane {{
+      border: 3px solid {c["accent_cyan"]};
+      background: {c["bg_panel"]};
+      top: -3px;
     }}
     QTabBar::tab {{
-      background: {c["bg_panel"]};
+      background: #101948;
       color: {c["text_secondary"]};
-      padding: 7px 12px;
-      min-height: 18px;
-      border-top-left-radius: 3px;
-      border-top-right-radius: 3px;
-      margin-right: 4px;
-      border: 1px solid {c["stroke_subtle"]};
+      padding: 5px 12px;
+      min-height: 14px;
+      margin-right: 6px;
+      border: 3px solid {c["stroke_subtle"]};
       font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
       font-size: {type_ramp["label"]}px;
       font-weight: 700;
+      text-transform: uppercase;
     }}
     QTabBar::tab:selected {{
-      background: {c["bg_panel_2"]};
+      background: #18245e;
       color: {c["text_primary"]};
-      border-color: {c["stroke_active"]};
+      border-color: {c["accent_cyan"]};
     }}
     QTabBar::tab:hover:!selected {{
       background: {c["bg_panel_2"]};
+      border-color: {c["stroke_soft"]};
+    }}
+    QLabel#MarqueeEyebrow {{
+      color: {c["text_secondary"]};
+      font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
+      font-size: {type_ramp["label"]}px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }}
+    QLabel#MarqueeTitle {{
+      color: {c["accent_cyan"]};
+      font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
+      font-size: {type_ramp["display"]}px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }}
+    QLabel#MarqueeTitle[flickerPhase="dim"] {{
+      color: {c["text_secondary"]};
+    }}
+    QLabel#MarqueeSubtitle {{
+      color: {c["accent_yellow"]};
+      font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
+      font-size: {type_ramp["label"]}px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }}
+    QLabel#MachineHint {{
+      color: {c["text_muted"]};
+      font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
+      font-size: {type_ramp["label"]}px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }}
     QLabel#heroTitle {{
+      font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
       font-size: {type_ramp["display"]}px;
-      font-weight: 700;
+      font-weight: 800;
       color: {c["text_primary"]};
+      letter-spacing: 2px;
     }}
     QLabel#heroText {{
       font-size: {type_ramp["body"]}px;
@@ -125,59 +183,62 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
       color: {c["text_muted"]};
     }}
     QPushButton {{
-      background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 {c["accent_cyan"]}, stop:1 #73b5ff);
+      background: {c["accent_cyan"]};
       color: {c["bg_inset"]};
-      border: 1px solid rgba(230, 241, 255, 0.85);
-      padding: 9px 14px;
-      border-radius: 4px;
-      font-weight: 700;
+      border: 3px solid {c["accent_cyan"]};
+      padding: 8px 14px 7px 14px;
+      font-weight: 800;
       min-height: 18px;
       font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
+      text-transform: uppercase;
     }}
     QPushButton:hover {{
-      background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #61f2ff, stop:1 #9accff);
+      background: #57e7ff;
+      border-color: #57e7ff;
     }}
     QPushButton[buttonRole="secondary"] {{
       background: {c["bg_panel"]};
       color: {c["text_primary"]};
-      border: 1px solid {c["stroke_soft"]};
+      border: 3px solid {c["accent_magenta"]};
     }}
     QPushButton[buttonRole="ghost"] {{
       background: transparent;
       color: {c["text_secondary"]};
-      border: 1px solid {c["stroke_subtle"]};
+      border: 3px solid {c["stroke_subtle"]};
     }}
     QPushButton[buttonRole="secondary"]:hover,
     QPushButton[buttonRole="ghost"]:hover {{
       background: {c["bg_panel_2"]};
-      border-color: {c["accent_magenta"]};
       color: {c["text_primary"]};
     }}
     QPushButton:disabled {{
       background: {c["bg_inset"]};
       color: {c["text_muted"]};
-      border: 1px dashed {c["stroke_subtle"]};
+      border: 3px solid {c["stroke_subtle"]};
+    }}
+    QPushButton:focus {{
+      border-color: {c["accent_yellow"]};
     }}
     QGroupBox {{
-      border: 1px solid {c["stroke_soft"]};
-      border-radius: 4px;
-      margin-top: 14px;
-      padding: 10px 10px 12px 10px;
-      background: {c["bg_panel"]};
+      border: 3px solid {c["stroke_soft"]};
+      margin-top: 16px;
+      padding: 12px 12px 14px 12px;
+      background: #121b4a;
       font-weight: 600;
     }}
     QGroupBox::title {{
       subcontrol-origin: margin;
       left: 10px;
-      padding: 0 4px;
+      padding: 0 6px;
       color: {c["accent_yellow"]};
       font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
       font-size: {type_ramp["label"]}px;
       font-weight: 700;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
     }}
     QGroupBox[panelTone="primary"] {{
-      border-color: {c["stroke_active"]};
+      border-color: {c["accent_cyan"]};
       background: {c["bg_panel_2"]};
     }}
     QGroupBox[panelTone="normal"] {{
@@ -186,19 +247,22 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     }}
     QGroupBox[panelTone="subtle"] {{
       border-color: {c["stroke_subtle"]};
-      background: #0b1b3a;
+      background: #0f173f;
     }}
     QGroupBox[panelTone="ghost"] {{
-      border-color: #1a2844;
-      background: #09152d;
+      border-color: #20325e;
+      background: #0b1434;
     }}
     QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QListWidget {{
-      border: 1px solid {c["stroke_subtle"]};
-      border-radius: 3px;
+      border: 3px solid {c["stroke_subtle"]};
       padding: 8px;
       background: {c["bg_inset"]};
       color: {c["text_primary"]};
       selection-background-color: {c["accent_magenta"]};
+    }}
+    QComboBox::drop-down {{
+      border: 0;
+      width: 24px;
     }}
     QPlainTextEdit[consoleRole="system"],
     QListWidget[consoleRole="system"] {{
@@ -210,7 +274,7 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     }}
     QListWidget::item {{
       padding: 6px 4px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }}
     QListWidget::item:selected {{
       background: {c["bg_panel_2"]};
@@ -219,33 +283,44 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QFrame[signalBadge="true"],
     QFrame[statusTile="true"],
     QFrame[stateCard="true"],
-    QFrame[statCell="true"] {{
-      border: 1px solid {c["stroke_soft"]};
-      border-radius: 3px;
-      background: {c["bg_panel"]};
+    QFrame[statCell="true"],
+    QFrame[signalLamp="true"] {{
+      border: 3px solid {c["stroke_soft"]};
+      background: #111a47;
     }}
     QFrame[signalBadge="true"][tone="active"],
     QFrame[statusTile="true"][tone="active"],
     QFrame[stateCard="true"][tone="active"],
-    QFrame[statCell="true"][tone="active"] {{
+    QFrame[statCell="true"][tone="active"],
+    QFrame[signalLamp="true"][tone="active"] {{
       border-color: {c["accent_cyan"]};
     }}
     QFrame[signalBadge="true"][tone="warning"],
     QFrame[statusTile="true"][tone="warning"],
     QFrame[stateCard="true"][tone="warning"],
-    QFrame[statCell="true"][tone="warning"] {{
+    QFrame[statCell="true"][tone="warning"],
+    QFrame[signalLamp="true"][tone="warning"] {{
       border-color: {c["accent_yellow"]};
     }}
     QFrame[signalBadge="true"][tone="locked"],
     QFrame[statusTile="true"][tone="locked"],
     QFrame[stateCard="true"][tone="locked"],
-    QFrame[statCell="true"][tone="locked"] {{
+    QFrame[statCell="true"][tone="locked"],
+    QFrame[signalLamp="true"][tone="locked"] {{
       border-color: {c["accent_red"]};
+    }}
+    QFrame[signalBadge="true"][tone="success"],
+    QFrame[statusTile="true"][tone="success"],
+    QFrame[stateCard="true"][tone="success"],
+    QFrame[statCell="true"][tone="success"],
+    QFrame[signalLamp="true"][tone="success"] {{
+      border-color: {c["accent_green"]};
     }}
     QLabel[signalTitle="true"],
     QLabel[statusTitle="true"],
     QLabel[stateCardTitle="true"],
-    QLabel[statCellTitle="true"] {{
+    QLabel[statCellTitle="true"],
+    QLabel[signalLampTitle="true"] {{
       font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
       font-size: {type_ramp["label"]}px;
       font-weight: 700;
@@ -256,28 +331,57 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QLabel[signalValue="true"],
     QLabel[statusValue="true"],
     QLabel[stateCardValue="true"],
-    QLabel[statCellValue="true"] {{
+    QLabel[statCellValue="true"],
+    QLabel[signalLampValue="true"] {{
       font-size: {type_ramp["title"]}px;
-      font-weight: 700;
+      font-weight: 800;
       color: {c["text_primary"]};
     }}
     QLabel[signalValue="true"][tone="active"],
     QLabel[statusValue="true"][tone="active"],
     QLabel[stateCardValue="true"][tone="active"],
-    QLabel[statCellValue="true"][tone="active"] {{
+    QLabel[statCellValue="true"][tone="active"],
+    QLabel[signalLampValue="true"][tone="active"] {{
       color: {c["accent_cyan"]};
     }}
     QLabel[signalValue="true"][tone="warning"],
     QLabel[statusValue="true"][tone="warning"],
     QLabel[stateCardValue="true"][tone="warning"],
-    QLabel[statCellValue="true"][tone="warning"] {{
+    QLabel[statCellValue="true"][tone="warning"],
+    QLabel[signalLampValue="true"][tone="warning"] {{
       color: {c["accent_yellow"]};
     }}
     QLabel[signalValue="true"][tone="locked"],
     QLabel[statusValue="true"][tone="locked"],
     QLabel[stateCardValue="true"][tone="locked"],
-    QLabel[statCellValue="true"][tone="locked"] {{
+    QLabel[statCellValue="true"][tone="locked"],
+    QLabel[signalLampValue="true"][tone="locked"] {{
       color: {c["accent_red"]};
+    }}
+    QLabel[signalValue="true"][tone="success"],
+    QLabel[statusValue="true"][tone="success"],
+    QLabel[stateCardValue="true"][tone="success"],
+    QLabel[statCellValue="true"][tone="success"],
+    QLabel[signalLampValue="true"][tone="success"] {{
+      color: {c["accent_green"]};
+    }}
+    QLabel[signalLampDot="true"] {{
+      color: {c["lamp_off"]};
+      font-size: 14px;
+      min-width: 12px;
+      max-width: 12px;
+    }}
+    QLabel[signalLampDot="true"][tone="active"] {{
+      color: {c["accent_cyan"]};
+    }}
+    QLabel[signalLampDot="true"][tone="warning"] {{
+      color: {c["accent_yellow"]};
+    }}
+    QLabel[signalLampDot="true"][tone="locked"] {{
+      color: {c["accent_red"]};
+    }}
+    QLabel[signalLampDot="true"][tone="success"] {{
+      color: {c["accent_green"]};
     }}
     QLabel[statusDetail="true"],
     QLabel[stateCardDetail="true"],
@@ -288,14 +392,23 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
       background: transparent;
     }}
     QFrame[stateOverlay="true"] {{
-      border: 1px solid {c["stroke_soft"]};
-      border-radius: 4px;
-      background: rgba(5, 11, 24, 0.9);
+      border: 3px solid {c["stroke_soft"]};
+      background: rgba(9, 16, 42, 0.97);
+    }}
+    QProgressBar {{
+      border: 3px solid {c["stroke_soft"]};
+      background: {c["bg_inset"]};
+      min-height: 12px;
+    }}
+    QProgressBar::chunk {{
+      background: {c["accent_cyan"]};
+      margin: 1px;
     }}
     QStatusBar {{
       background: {c["bg_inset"]};
       color: {c["text_secondary"]};
-      border-top: 1px solid {c["stroke_subtle"]};
+      border-top: 3px solid {c["stroke_subtle"]};
+      font-family: "Cascadia Mono", "IBM Plex Mono", monospace;
     }}
     QCheckBox {{
       spacing: 8px;
@@ -304,11 +417,21 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QCheckBox::indicator {{
       width: 15px;
       height: 15px;
-      border: 1px solid {c["stroke_soft"]};
+      border: 3px solid {c["stroke_soft"]};
       background: {c["bg_inset"]};
     }}
     QCheckBox::indicator:checked {{
       background: {c["accent_cyan"]};
       border-color: {c["accent_cyan"]};
+    }}
+    QWizard {{
+      border: 3px solid {c["accent_cyan"]};
+      background: {c["bg_main"]};
+    }}
+    QWizardPage {{
+      background: {c["bg_main"]};
+    }}
+    QWizard QLabel {{
+      color: {c["text_primary"]};
     }}
     """

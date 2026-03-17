@@ -3,12 +3,12 @@ import { expect, test } from "@playwright/test";
 test("homepage keeps the primary download path visible", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: /bank score first\./i })).toBeVisible();
-  await expect(page.getByText(/windows prediction-market score cabinet/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /learn the market\./i })).toBeVisible();
+  await expect(page.getByText(/open-source prediction-market bot/i)).toBeVisible();
   await expect(
-    page.getByText(/local-first desktop machine for testing arbitrage bots on prediction markets/i)
+    page.getByText(/local-first desktop bot os for recording public market books/i)
   ).toBeVisible();
-  const downloadLink = page.getByRole("link", { name: /download superior/i }).first();
+  const downloadLink = page.getByRole("link", { name: /download/i }).first();
   await expect(downloadLink).toBeVisible();
   await expect(downloadLink).toHaveAttribute(
     "href",
@@ -19,9 +19,9 @@ test("homepage keeps the primary download path visible", async ({ page }) => {
 test("download page explains the guided setup path", async ({ page }) => {
   await page.goto("/download/");
 
-  await expect(page.getByRole("heading", { name: /three-minute windows setup for a paper-first score machine\./i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /install the windows build and start in paper mode\./i })).toBeVisible();
   await expect(page.getByText(/keep the guided template/i)).toBeVisible();
-  await expect(page.getByText(/record, stage routes, start a session, bank score/i)).toBeVisible();
+  await expect(page.getByText(/record books, inspect routes, paper them/i)).toBeVisible();
   await expect(page.getByRole("link", { name: /download sha256sums/i })).toHaveAttribute(
     "href",
     "https://github.com/Zwin-ux/arbitrage/releases/latest/download/SHA256SUMS.txt"
@@ -39,12 +39,12 @@ test("variant lab exposes both control and focus routes", async ({ page }) => {
 
 test("control and focus variants stay intentionally different", async ({ page }) => {
   await page.goto("/lab/control/");
-  await expect(page.getByRole("heading", { name: /bank score first\./i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /learn the market\./i })).toBeVisible();
   await expect(
-    page.getByText(/local-first desktop machine for testing arbitrage bots on prediction markets/i)
+    page.getByText(/local-first desktop bot os for recording public market books/i)
   ).toBeVisible();
 
   await page.goto("/lab/focus/");
-  await expect(page.getByRole("heading", { name: /keep live gated\./i })).toBeVisible();
-  await expect(page.getByText(/built for a tighter loop/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /track the books\./i })).toBeVisible();
+  await expect(page.getByText(/keeps the bot feed and paper score honest/i)).toBeVisible();
 });

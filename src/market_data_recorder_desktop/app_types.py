@@ -26,6 +26,10 @@ SessionState = Literal["idle", "running", "banked", "blocked", "complete"]
 BotRoutePreference = Literal["highest_edge", "best_quality", "balanced"]
 BotDecisionType = Literal["skip", "stage", "enter", "bank", "blocked"]
 BotRecipeSource = Literal["starter", "forked", "custom"]
+BenchmarkInstrumentType = Literal["stock", "etf", "crypto", "index", "macro", "unknown"]
+BenchmarkInterval = Literal["1m", "1d"]
+BenchmarkCoverageState = Literal["covered", "no_coverage", "not_applicable"]
+BenchmarkAuditVerdict = Literal["Aligned", "Weak coverage", "Stale benchmark", "Not comparable"]
 BotEventType = Literal[
     "session_start",
     "bot_armed",
@@ -263,6 +267,83 @@ class OpportunityCandidate(BaseModel):
     explanation: OpportunityExplanation
     evidence: OpportunityEvidence = Field(default_factory=OpportunityEvidence)
     opportunity_quality_score: int = 0
+
+
+class ReferenceInstrument(BaseModel):
+    symbol: str
+    name: str
+    instrument_type: BenchmarkInstrumentType = "unknown"
+    exchange: str | None = None
+    currency: str | None = "USD"
+    source_provider: str = "financial_datasets"
+
+
+class BenchmarkBar(BaseModel):
+    symbol: str
+    instrument_type: BenchmarkInstrumentType = "unknown"
+    interval: BenchmarkInterval
+    recorded_at: datetime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float | None = None
+    source_provider: str = "financial_datasets"
+
+
+class BenchmarkQuote(BaseModel):
+    symbol: str
+    instrument_type: BenchmarkInstrumentType = "unknown"
+    quoted_at: datetime
+    price: float
+    bid: float | None = None
+    ask: float | None = None
+    source_provider: str = "financial_datasets"
+
+
+class MarketBenchmarkLink(BaseModel):
+    link_id: str
+    profile_id: str
+    market_slug: str
+    market_id: str | None = None
+    symbol: str
+    instrument_type: BenchmarkInstrumentType = "unknown"
+    interval_preference: BenchmarkInterval = "1m"
+    mapping_confidence: int = 100
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class BenchmarkCoverage(BaseModel):
+    profile_id: str
+    market_slug: str
+    state: BenchmarkCoverageState = "no_coverage"
+    symbol: str | None = None
+    instrument_type: BenchmarkInstrumentType | None = None
+    interval_used: BenchmarkInterval | None = None
+    message: str = ""
+    mapping_confidence: int = 0
+
+
+class BenchmarkAudit(BaseModel):
+    audit_id: str
+    profile_id: str
+    market_slug: str
+    run_id: str | None = None
+    session_id: str | None = None
+    symbol: str | None = None
+    instrument_type: BenchmarkInstrumentType = "unknown"
+    interval_used: BenchmarkInterval | None = None
+    verdict: BenchmarkAuditVerdict = "Not comparable"
+    coverage_state: BenchmarkCoverageState = "no_coverage"
+    underlying_move_bps: int = 0
+    session_edge_bps: int = 0
+    edge_vs_benchmark_bps: int = 0
+    stale: bool = False
+    alignment_seconds: int | None = None
+    note: str = ""
+    observed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class BotBlueprint(BaseModel):
