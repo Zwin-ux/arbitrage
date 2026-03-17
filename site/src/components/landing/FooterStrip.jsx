@@ -14,13 +14,13 @@ export default function FooterStrip({ variant }) {
             {variant.primaryCtaLabel}
           </a>
           <a className="cta-secondary" href={variant.secondaryCtaHref}>
-            Open full menu
+            OPEN DOWNLOAD DECK
           </a>
         </div>
       </div>
 
       <div className="download-strip-side">
-        <p className="section-label">Source + checklist</p>
+        <p className="section-label">SOURCE + CHECK</p>
         <div className="download-checks">
           {variant.footerChecks.map((item) => (
             <div key={item} className="download-check-row">

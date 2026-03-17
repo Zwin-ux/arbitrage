@@ -12,10 +12,6 @@ function TertiaryLink({ action }) {
 export default function HeroSection({ variant }) {
   return (
     <section className="hero-section">
-      <div className="hero-visual">
-        <ScannerVisual animated className="w-full" />
-      </div>
-
       <div className="hero-copy-block">
         <p className="section-label">{variant.eyebrow}</p>
 
@@ -28,6 +24,8 @@ export default function HeroSection({ variant }) {
         </h1>
 
         <p className="hero-copy">{variant.subhead}</p>
+
+        <p className="hero-system-note">{variant.systemNote}</p>
 
         <div className="hero-actions hero-actions-centered">
           <a className="cta-primary" href={variant.windowsInstallerUrl}>
@@ -55,6 +53,10 @@ export default function HeroSection({ variant }) {
             </article>
           ))}
         </div>
+      </div>
+
+      <div className="hero-visual">
+        <ScannerVisual animated className="w-full" />
       </div>
     </section>
   );

@@ -4,7 +4,7 @@ test("homepage keeps the primary download path visible", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: /learn the market\./i })).toBeVisible();
-  await expect(page.getByText(/open-source prediction-market bot/i)).toBeVisible();
+  await expect(page.getByText(/windows prediction-market scanner/i)).toBeVisible();
   await expect(
     page.getByText(/local-first desktop bot os for recording public market books/i)
   ).toBeVisible();

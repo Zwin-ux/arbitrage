@@ -22,13 +22,13 @@ export default function SuperiorHeader({ variant }) {
 
       <div className="landing-header-actions">
         <nav aria-label="Primary" className="landing-nav">
-          <HeaderLink href="#features">Features</HeaderLink>
-          <HeaderLink href="#product">Product</HeaderLink>
+          <HeaderLink href="#features">Modules</HeaderLink>
+          <HeaderLink href="#product">Console</HeaderLink>
           <HeaderLink href="/docs">Docs</HeaderLink>
         </nav>
 
         <a className="cta-primary" href={variant.windowsInstallerUrl}>
-          Download
+          Download Win
         </a>
       </div>
     </header>

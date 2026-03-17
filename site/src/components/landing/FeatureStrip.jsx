@@ -11,6 +11,10 @@ function toneClass(tone) {
 export default function FeatureStrip({ variant }) {
   return (
     <section className="feature-strip" id="features">
+      <div className="feature-strip-head">
+        <p className="section-label">SYSTEM MODULES</p>
+        <h2 className="strip-title">Three clean loops. No fake dashboard noise.</h2>
+      </div>
       <div className="feature-grid">
         {variant.featureCards.map((card) => (
           <article key={card.title} className="feature-card">
