@@ -3,7 +3,7 @@ import ScannerVisual from "./ScannerVisual.jsx";
 function TertiaryLink({ action }) {
   const props = action.external ? { target: "_blank", rel: "noreferrer" } : {};
   return (
-    <a className="cta-tertiary" href={action.href} {...props}>
+    <a className="hero-link" href={action.href} {...props}>
       {action.label}
     </a>
   );
@@ -11,52 +11,38 @@ function TertiaryLink({ action }) {
 
 export default function HeroSection({ variant }) {
   return (
-    <section className="hero-section">
-      <div className="hero-copy-block">
-        <p className="section-label">{variant.eyebrow}</p>
+    <section className="hero-frame">
+      <div className="hero-copy">
+        <p className="panel-label">{variant.eyebrow}</p>
 
         <h1 className="hero-title">
-          {variant.titleLines.map((line, index) => (
-            <span key={line} className={index === 0 ? "" : "hero-title-accent"}>
-              {line}
-            </span>
+          {variant.titleLines.map((line) => (
+            <span key={line}>{line}</span>
           ))}
         </h1>
 
-        <p className="hero-copy">{variant.subhead}</p>
+        <p className="hero-lead">{variant.subhead}</p>
+        <p className="hero-note">{variant.systemNote}</p>
 
-        <p className="hero-system-note">{variant.systemNote}</p>
-
-        <div className="hero-actions hero-actions-centered">
-          <a className="cta-primary" href={variant.windowsInstallerUrl}>
+        <div className="hero-actions">
+          <a className="button-primary" href={variant.windowsInstallerUrl}>
             {variant.primaryCtaLabel}
           </a>
-          <a className="cta-secondary" href={variant.secondaryCtaHref}>
+          <a className="button-secondary" href={variant.secondaryCtaHref}>
             {variant.secondaryCtaLabel}
           </a>
-        </div>
-
-        <div className="hero-actions hero-actions-centered hero-actions-tertiary">
           <TertiaryLink action={variant.tertiaryCta} />
-          {variant.trustItems.map((item) => (
-            <span key={item} className="trust-chip">
-              {item}
-            </span>
-          ))}
         </div>
 
-        <div className="hero-status-grid" aria-label="Current product status">
-          {variant.statusTiles.map((item) => (
-            <article key={item.label} className="status-tile">
-              <p>{item.label}</p>
-              <strong>{item.value}</strong>
-            </article>
+        <div className="trust-strip" aria-label="Core product identity">
+          {variant.trustStrip.map((item) => (
+            <span key={item}>{item}</span>
           ))}
         </div>
       </div>
 
       <div className="hero-visual">
-        <ScannerVisual animated className="w-full" />
+        <ScannerVisual animated />
       </div>
     </section>
   );

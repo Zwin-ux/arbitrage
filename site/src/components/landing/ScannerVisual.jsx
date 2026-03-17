@@ -3,72 +3,57 @@ export default function ScannerVisual({
   animated = true,
   className = "",
 }) {
-  const rays = Array.from({ length: 24 }, (_, index) => index);
-  const dots = [
-    "scanner-spark-left",
-    "scanner-spark-top",
-    "scanner-spark-right",
-    "scanner-spark-bottom",
-  ];
-  const commands = ["BOOT", "SCAN", "RUN", "BANK"];
-  const readouts = [
-    ["MODE", "PAPER"],
-    ["FEED", "LOCAL"],
-    ["GATE", "LOCKED"],
+  const rays = Array.from({ length: 18 }, (_, index) => index);
+  const routeNodes = [
+    { label: "OBS", className: "scanner-node-observe" },
+    { label: "PRC", className: "scanner-node-price" },
+    { label: "PPR", className: "scanner-node-paper" },
   ];
 
   return (
-    <div className={`scanner-stage ${compact ? "scanner-stage-compact" : ""} ${className}`.trim()}>
-      <div className="scanner-stage-header">
+    <div className={`scanner-console ${compact ? "scanner-console-compact" : ""} ${className}`.trim()}>
+      <div className="scanner-console-header">
         <span>SIGNAL CORE</span>
         <span>SECTOR A1</span>
       </div>
 
-      {dots.map((dot, index) => (
-        <span
-          key={dot}
-          aria-hidden="true"
-          className={`scanner-spark ${dot} ${animated ? "scanner-spark-animated" : ""}`}
-          style={{ animationDelay: `${index * 0.35}s` }}
-        />
-      ))}
+      <div className="scanner-console-stage">
+        <div className="scanner-console-radial" aria-hidden="true">
+          {rays.map((ray) => (
+            <span
+              key={ray}
+              className="scanner-console-ray"
+              style={{ transform: `translate(-50%, -100%) rotate(${ray * 20}deg)` }}
+            />
+          ))}
+        </div>
 
-      <div className="scanner-stage-radial" aria-hidden="true">
-        {rays.map((ray) => (
-          <span
-            key={ray}
-            className="scanner-stage-ray"
-            style={{ transform: `translate(-50%, -100%) rotate(${ray * 18}deg)` }}
-          />
-        ))}
-      </div>
+        <div className="scanner-console-grid" aria-hidden="true" />
+        <div className={`scanner-console-sweep ${animated ? "scanner-console-sweep-animated" : ""}`} aria-hidden="true" />
 
-      <div className="scanner-stage-core">
-        <div className="scanner-stage-target" aria-hidden="true" />
-        <div className={`scanner-stage-screen ${animated ? "scanner-stage-screen-animated" : ""}`}>
+        <div className="scanner-console-target">
           <img
             alt="Superior emblem"
-            className={`scanner-emblem ${animated ? "scanner-emblem-flicker" : ""}`}
+            className={`scanner-console-emblem ${animated ? "scanner-console-emblem-animated" : ""}`}
             src="/assets/superior-emblem.png"
           />
         </div>
-      </div>
 
-      <div className="scanner-readout-grid" aria-label="Machine state">
-        {readouts.map(([label, value]) => (
-          <div key={label} className="scanner-readout-card">
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </div>
-        ))}
-      </div>
-
-      <div className="scanner-command-strip" aria-label="Session loop">
-        {commands.map((command, index) => (
-          <span key={command} className={index === 0 ? "scanner-command-active" : ""}>
-            {command}
+        {routeNodes.map((node, index) => (
+          <span
+            key={node.label}
+            className={`scanner-console-node ${node.className} ${animated ? "scanner-console-node-animated" : ""}`}
+            style={{ animationDelay: `${index * 0.4}s` }}
+          >
+            {node.label}
           </span>
         ))}
+      </div>
+
+      <div className="scanner-console-footer">
+        <span>MODE / PAPER</span>
+        <span>LIVE / LOCKED</span>
+        <span>DATA / LOCAL</span>
       </div>
     </div>
   );
