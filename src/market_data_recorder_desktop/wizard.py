@@ -3,23 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QCheckBox,
-    QComboBox,
-    QFileDialog,
-    QFormLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMessageBox,
-    QPushButton,
-    QPlainTextEdit,
-    QVBoxLayout,
-    QWidget,
-    QWizard,
-    QWizardPage,
-)
+from PySide6.QtWidgets import QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QPlainTextEdit, QVBoxLayout, QWidget, QWizard, QWizardPage
 
 from .app_types import SetupCompletionRoute, SetupStepState, default_risk_policies
 from .credentials import CredentialProvider, CredentialVault
@@ -29,169 +13,108 @@ from .ui.setup import SetupCompletionState, SetupStepper
 
 
 GOAL_GUIDANCE = {
-    "learn_and_scan": (
-        "Start with public Polymarket recording, learn the scanner, and keep live mode out of view until you need it.",
-        "Best for first-time users. You can leave credentials blank and still build local market data.",
-    ),
-    "paper_arbitrage": (
-        "Optimize the profile for scanner refreshes, explainable candidates, and paper execution history.",
-        "Recommended once you already understand the core recorder flow and want to test ideas repeatedly.",
-    ),
-    "live_prepare": (
-        "Keep the product in a paper-first posture while you work through credentials, diagnostics, and acknowledgements.",
-        "Good if you want a disciplined path toward live readiness without unlocking anything early.",
-    ),
-    "lab_experiment": (
-        "Expose the Lab and keep experiments contained behind paper-only controls.",
-        "Use this only if you explicitly want higher-risk research surfaces on day one.",
-    ),
+    "learn_and_scan": ("ARM POLYMARKET. LEARN THE RADAR. KEEP THE GATE DARK.", "BEST FOR FIRST-TIME OPERATORS. LEAVE KEY SLOTS BLANK."),
+    "paper_arbitrage": ("RUN FAST SCANS, EXPLAINABLE ROUTES, AND REPEAT PAPER RUNS.", "BEST ONCE YOU ALREADY KNOW THE SAMPLE -> SCAN -> RUN LOOP."),
+    "live_prepare": ("KEEP THE MACHINE PAPER-FIRST WHILE YOU CLEAR KEYS, DIAG, AND ACKS.", "BEST IF YOU WANT A DISCIPLINED PATH TOWARD THE GATE."),
+    "lab_experiment": ("EXPOSE LAB SURFACES WHILE KEEPING RISK INSIDE PAPER-ONLY CONTROLS.", "USE THIS ONLY IF YOU WANT RESEARCH SURFACES ON DAY ONE."),
 }
-
 EXPERIENCE_GUIDANCE = {
-    "beginner": "Beginner mode keeps the setup conservative and assumes you want the shortest path to a safe first recording.",
-    "intermediate": "Intermediate mode still favors guidance, but expects that recorder, scanner, and paper concepts are familiar.",
-    "advanced": "Advanced mode assumes you want faster access to recorder controls and more freedom to customize the profile.",
+    "beginner": "BEGINNER POSTURE KEEPS THE BOOT PATH SHORT, SAFE, AND HIGH SIGNAL.",
+    "intermediate": "INTERMEDIATE POSTURE KEEPS GUIDANCE ON BUT ASSUMES YOU KNOW SAMPLE, SCAN, AND PAPER BASICS.",
+    "advanced": "ADVANCED POSTURE EXPECTS YOU WANT FASTER ACCESS TO CONTROL SURFACES.",
 }
-
-TEMPLATE_RECOMMENDATIONS = {
-    "learn_and_scan": "Guided",
-    "paper_arbitrage": "Recorder",
-    "live_prepare": "Research",
-    "lab_experiment": "Custom",
-}
-
-RISK_RECOMMENDATIONS = {
-    "learn_and_scan": "Starter",
-    "paper_arbitrage": "Starter",
-    "live_prepare": "Balanced",
-    "lab_experiment": "Lab",
-}
-
-PRESET_RECOMMENDATIONS = {
-    "learn_and_scan": "continuous-record",
-    "paper_arbitrage": "continuous-record",
-    "live_prepare": "continuous-record",
-    "lab_experiment": "fast-smoke-run",
-}
+TEMPLATE_RECOMMENDATIONS = {"learn_and_scan": "Guided", "paper_arbitrage": "Recorder", "live_prepare": "Research", "lab_experiment": "Custom"}
+RISK_RECOMMENDATIONS = {"learn_and_scan": "Starter", "paper_arbitrage": "Starter", "live_prepare": "Balanced", "lab_experiment": "Lab"}
+PRESET_RECOMMENDATIONS = {"learn_and_scan": "continuous-record", "paper_arbitrage": "continuous-record", "live_prepare": "continuous-record", "lab_experiment": "fast-smoke-run"}
+PHASE_LABELS = ["PHASE 01 // WAKE", "PHASE 02 // MISSION", "PHASE 03 // MODE", "PHASE 04 // LOADOUT", "PHASE 05 // CHECK", "PHASE 06 // IGNITION"]
 
 
 class WelcomePage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
-        self.setTitle("Welcome to Superior")
-        self.setSubTitle("A paper-first desktop product with a guided setup path for everyday users.")
+        self.setTitle("BOOT SEQUENCE")
+        self.setSubTitle("PAPER-FIRST SIGNAL MACHINE. LOCAL-FIRST PROFILE CART.")
         layout = QVBoxLayout(self)
-        intro = QLabel(
-            "Superior walks you through a local-first profile, safe defaults, optional credentials, "
-            "and a first-run plan. Most users can finish this setup in a few minutes and reach the first paper run without entering keys."
-        )
+        intro = QLabel("LOAD A PROFILE CART, LOCK SAFE DEFAULTS, AND IGNITE THE FIRST SAMPLE LOOP. MOST OPERATORS REACH THE FIRST PAPER RUN WITHOUT KEYS.")
         intro.setWordWrap(True)
         intro.setObjectName("heroText")
         layout.addWidget(intro)
-
-        flow_card = QGroupBox("What setup covers")
-        flow_layout = QVBoxLayout(flow_card)
-        for line in (
-            "Choose a goal, experience level, and starter profile template",
-            "Keep Polymarket on by default and add Kalshi only when you need it",
-            "Skip credentials for recorder and paper mode, or add them now and keep them in the OS keychain",
-        ):
+        boot_map = QGroupBox("BOOT MAP")
+        boot_layout = QVBoxLayout(boot_map)
+        for line in ("SELECT MISSION, POSTURE, AND CART MODE", "ARM POLYMARKET BY DEFAULT", "SKIP KEY SLOTS FOR SAMPLE + PAPER OR STORE THEM IN THE OS KEYCHAIN"):
             label = QLabel(f"- {line}")
             label.setWordWrap(True)
-            flow_layout.addWidget(label)
-        layout.addWidget(flow_card)
-
-        card = QGroupBox("Default product posture")
-        card_layout = QVBoxLayout(card)
-        for line in (
-            "Guided beginner flow by default",
-            "Paper-first strategies and deterministic execution",
-            "Live mode hidden until the checklist passes",
-            "Arcade-style loadout that equips connectors and modules deliberately",
-        ):
-            label = QLabel(f"- {line}")
-            label.setWordWrap(True)
-            card_layout.addWidget(label)
-        layout.addWidget(card)
+            boot_layout.addWidget(label)
+        layout.addWidget(boot_map)
         layout.addStretch(1)
 
 
 class IntentPage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
-        self.setTitle("What do you want to do?")
-        self.setSubTitle("Pick the first-launch posture. You can change it later without reinstalling.")
+        self.setTitle("MISSION SELECT")
+        self.setSubTitle("PICK THE FIRST CART POSTURE.")
         layout = QVBoxLayout(self)
         form = QFormLayout()
         self.goal_combo = QComboBox()
-        self.goal_combo.addItem("Learn Polymarket and scan safely", "learn_and_scan")
-        self.goal_combo.addItem("Paper-trade arbitrage ideas", "paper_arbitrage")
-        self.goal_combo.addItem("Prepare for future live trading", "live_prepare")
-        self.goal_combo.addItem("Experiment in the Lab", "lab_experiment")
-
+        self.goal_combo.addItem("LEARN POLYMARKET + SCAN SAFE", "learn_and_scan")
+        self.goal_combo.addItem("RUN PAPER ARB IDEAS", "paper_arbitrage")
+        self.goal_combo.addItem("PREP FOR GATE WORK", "live_prepare")
+        self.goal_combo.addItem("OPEN LAB EXPERIMENTS", "lab_experiment")
         self.experience_combo = QComboBox()
-        self.experience_combo.addItem("Beginner", "beginner")
-        self.experience_combo.addItem("Intermediate", "intermediate")
-        self.experience_combo.addItem("Advanced", "advanced")
-
-        self.guided_mode_checkbox = QCheckBox("Keep Guided mode on")
+        self.experience_combo.addItem("BEGINNER", "beginner")
+        self.experience_combo.addItem("INTERMEDIATE", "intermediate")
+        self.experience_combo.addItem("ADVANCED", "advanced")
+        self.guided_mode_checkbox = QCheckBox("KEEP GUIDED BOOT ON")
         self.guided_mode_checkbox.setChecked(True)
-        self.lab_checkbox = QCheckBox("Expose the Lab after setup")
-
-        form.addRow("Primary goal", self.goal_combo)
-        form.addRow("Experience level", self.experience_combo)
+        self.lab_checkbox = QCheckBox("EXPOSE LAB AFTER IGNITION")
+        form.addRow("MISSION", self.goal_combo)
+        form.addRow("POSTURE", self.experience_combo)
         form.addRow("", self.guided_mode_checkbox)
         form.addRow("", self.lab_checkbox)
         layout.addLayout(form)
-
-        recommendation_group = QGroupBox("Recommended first-launch plan")
-        recommendation_layout = QVBoxLayout(recommendation_group)
+        group = QGroupBox("MISSION READOUT")
+        group_layout = QVBoxLayout(group)
         self.plan_label = QLabel()
         self.plan_label.setWordWrap(True)
         self.plan_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        recommendation_layout.addWidget(self.plan_label)
-        layout.addWidget(recommendation_group)
+        group_layout.addWidget(self.plan_label)
+        layout.addWidget(group)
         layout.addStretch(1)
 
 
 class ProfilePage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
-        self.setTitle("Profile")
-        self.setSubTitle("Create a profile with the recommended storage path, or import an older JSON export.")
+        self.setTitle("MODE SELECT")
+        self.setSubTitle("CUT A NEW PROFILE CART OR LOAD AN OLDER EXPORT.")
         layout = QVBoxLayout(self)
-        intro = QLabel(
-            "Leave the data directory blank unless you need a custom location. Superior will use a per-user app folder automatically."
-        )
+        intro = QLabel("LEAVE DATA SLOT BLANK UNLESS YOU NEED A CUSTOM PATH. SUPERIOR USES A PER-USER STORAGE BAY BY DEFAULT.")
         intro.setWordWrap(True)
         layout.addWidget(intro)
-
         form = QFormLayout()
-        self.name_edit = QLineEdit("My Superior Profile")
+        self.name_edit = QLineEdit("MY SUPERIOR CART")
         self.template_combo = QComboBox()
         self.template_combo.addItems(["Guided", "Recorder", "Research", "Custom"])
         self.data_dir_edit = QLineEdit()
-        self.data_dir_edit.setPlaceholderText("Recommended per-user app storage")
-        browse_button = QPushButton("Browse")
+        self.data_dir_edit.setPlaceholderText("RECOMMENDED PER-USER STORAGE BAY")
+        browse_button = QPushButton("BROWSE")
         browse_button.clicked.connect(self._browse_data_dir)
         data_dir_row = QHBoxLayout()
         data_dir_row.addWidget(self.data_dir_edit, stretch=1)
         data_dir_row.addWidget(browse_button)
-        form.addRow("Display name", self.name_edit)
-        form.addRow("Template", self.template_combo)
-        form.addRow("Data directory", self._wrap_layout(data_dir_row))
+        form.addRow("CART NAME", self.name_edit)
+        form.addRow("MODE", self.template_combo)
+        form.addRow("DATA SLOT", self._wrap_layout(data_dir_row))
         layout.addLayout(form)
-
         import_row = QHBoxLayout()
         self.import_path_edit = QLineEdit()
-        self.import_path_edit.setPlaceholderText("Optional profile JSON export")
-        import_button = QPushButton("Import JSON")
+        self.import_path_edit.setPlaceholderText("OPTIONAL PROFILE JSON EXPORT")
+        import_button = QPushButton("LOAD JSON")
         import_button.clicked.connect(self._browse_import_path)
         import_row.addWidget(self.import_path_edit, stretch=1)
         import_row.addWidget(import_button)
-        import_label = QLabel(
-            "Import instead of creating a new profile if you already have an exported setup. Secrets still stay outside the JSON file."
-        )
+        import_label = QLabel("LOAD A PRIOR CART IF YOU ALREADY EXPORTED ONE. SECRETS STAY OUTSIDE THE JSON FILE.")
         import_label.setWordWrap(True)
         layout.addWidget(import_label)
         layout.addLayout(import_row)
@@ -217,27 +140,19 @@ class ProfilePage(QWizardPage):
 class VenuePage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
-        self.setTitle("Equip connectors")
-        self.setSubTitle("Start simple. Equipping Polymarket is enough for recorder, scanner, and paper score.")
+        self.setTitle("LOADOUT")
+        self.setSubTitle("ARM THE CONNECTORS YOU WANT IN THIS CART.")
         layout = QVBoxLayout(self)
-        self.polymarket_checkbox = QCheckBox("Polymarket")
+        self.polymarket_checkbox = QCheckBox("POLYMARKET")
         self.polymarket_checkbox.setChecked(True)
-        self.kalshi_checkbox = QCheckBox("Kalshi")
+        self.kalshi_checkbox = QCheckBox("KALSHI")
         layout.addWidget(self.polymarket_checkbox)
-        polymarket_hint = QLabel(
-            "Recommended first launch. You can record public Polymarket data without adding any credentials."
-        )
-        polymarket_hint.setWordWrap(True)
-        layout.addWidget(polymarket_hint)
+        for text in ("DEFAULT SIGNAL FEED. PUBLIC SAMPLE DATA WORKS WITHOUT KEYS.", "OPTIONAL SECOND FEED. ARM IT LATER FOR CROSS-VENUE CHECKS."):
+            label = QLabel(text)
+            label.setWordWrap(True)
+            layout.addWidget(label)
         layout.addWidget(self.kalshi_checkbox)
-        kalshi_hint = QLabel(
-            "Optional for cross-venue research. Add it later if you want exact-match comparisons or bring your own API key."
-        )
-        kalshi_hint.setWordWrap(True)
-        layout.addWidget(kalshi_hint)
-        hint = QLabel(
-            "You can keep this page minimal: one connector is enough to finish setup cleanly. The live gate still requires key setup."
-        )
+        hint = QLabel("ONE CONNECTOR IS ENOUGH TO IGNITE CLEANLY. THE GATE STILL REQUIRES KEY SETUP.")
         hint.setWordWrap(True)
         layout.addWidget(hint)
         layout.addStretch(1)
@@ -254,25 +169,19 @@ class VenuePage(QWizardPage):
 class CredentialsPage(QWizardPage):
     def __init__(self, providers: list[CredentialProvider]) -> None:
         super().__init__()
-        self.setTitle("Connector credentials")
-        self.setSubTitle("Optional for recorder and paper mode. Skip this if you only want the safe starter path.")
+        self.setTitle("KEY SLOT")
+        self.setSubTitle("OPTIONAL FOR SAMPLE + PAPER MODE. SKIP FOR THE SAFE STARTER PATH.")
         self._providers = [provider for provider in providers if provider.provider_id in {"polymarket", "kalshi"}]
         self._field_widgets: dict[str, dict[str, QLineEdit | QPlainTextEdit]] = {}
         self._groups: dict[str, QGroupBox] = {}
-
         layout = QVBoxLayout(self)
-        hint = QLabel(
-            "Leave this blank if you only want scanner and paper flows first. Stored secrets never go into JSON, DuckDB, or logs."
-        )
+        hint = QLabel("LEAVE THIS BLANK IF YOU ONLY WANT SAMPLE + PAPER FIRST. STORED KEYS NEVER GO INTO JSON, DUCKDB, OR LOGS.")
         hint.setWordWrap(True)
         layout.addWidget(hint)
-
         for provider in self._providers:
-            group = QGroupBox(f"{provider.provider_label} credentials")
+            group = QGroupBox(f"{provider.provider_label} KEY SLOT")
             group_layout = QFormLayout(group)
-            docs_label = QLabel(
-                f'<a href="{provider.docs_url}">Open {provider.provider_label} authentication docs</a>'
-            )
+            docs_label = QLabel(f'<a href="{provider.docs_url}">OPEN {provider.provider_label} AUTH DOCS</a>')
             docs_label.setOpenExternalLinks(True)
             group_layout.addRow("", docs_label)
             widgets: dict[str, QLineEdit | QPlainTextEdit] = {}
@@ -286,7 +195,7 @@ class CredentialsPage(QWizardPage):
                     if field.secret:
                         widget.setEchoMode(QLineEdit.EchoMode.Password)
                 widget.setToolTip(field.help_text)
-                group_layout.addRow(field.label, widget)
+                group_layout.addRow(field.label.upper(), widget)
                 widgets[field.key] = widget
             self._field_widgets[provider.provider_id] = widgets
             self._groups[provider.provider_id] = group
@@ -302,10 +211,7 @@ class CredentialsPage(QWizardPage):
         for provider_id, widgets in self._field_widgets.items():
             provider_payload: dict[str, str] = {}
             for key, widget in widgets.items():
-                if isinstance(widget, QPlainTextEdit):
-                    provider_payload[key] = widget.toPlainText()
-                else:
-                    provider_payload[key] = widget.text()
+                provider_payload[key] = widget.toPlainText() if isinstance(widget, QPlainTextEdit) else widget.text()
             payloads[provider_id] = provider_payload
         return payloads
 
@@ -313,63 +219,54 @@ class CredentialsPage(QWizardPage):
 class RiskPage(QWizardPage):
     def __init__(self, preset_labels: list[tuple[str, str]]) -> None:
         super().__init__()
-        self.setTitle("Risk and bot defaults")
-        self.setSubTitle("Choose conservative day-one defaults. You can raise complexity later, not now.")
+        self.setTitle("POSTURE")
+        self.setSubTitle("LOCK SAFE DEFAULTS NOW. RAISE COMPLEXITY LATER.")
         layout = QVBoxLayout(self)
-        intro = QLabel(
-            "These settings decide how the product behaves on first launch: which preset starts, how cautious paper sizing stays, and whether the app should appear at login."
-        )
+        intro = QLabel("LOCK THE FIRST BOOT: WHICH PRESET STARTS, HOW TIGHT PAPER SIZING STAYS, AND WHETHER THE CART WAKES AT LOGIN.")
         intro.setWordWrap(True)
         layout.addWidget(intro)
-
         form = QFormLayout()
         self.default_preset_combo = QComboBox()
         for preset_id, label in preset_labels:
             self.default_preset_combo.addItem(label, preset_id)
-        self.default_preset_combo.setCurrentIndex(0)
         self.market_filters_edit = QLineEdit()
-        self.market_filters_edit.setPlaceholderText("elections, sports, crypto")
+        self.market_filters_edit.setPlaceholderText("ELECTIONS, SPORTS, CRYPTO")
         self.risk_policy_combo = QComboBox()
         for policy in default_risk_policies():
             self.risk_policy_combo.addItem(f"{policy.label} - {policy.description}", policy.id)
-        self.auto_start_checkbox = QCheckBox("Run app at login with this profile")
-        self.start_minimized_checkbox = QCheckBox("Start minimized to tray")
-        form.addRow("Default preset", self.default_preset_combo)
-        form.addRow("Market filters", self.market_filters_edit)
-        form.addRow("Risk policy", self.risk_policy_combo)
+        self.auto_start_checkbox = QCheckBox("WAKE CART AT LOGIN")
+        self.start_minimized_checkbox = QCheckBox("START MINIMIZED TO TRAY")
+        form.addRow("BOOT PRESET", self.default_preset_combo)
+        form.addRow("MARKET FILTERS", self.market_filters_edit)
+        form.addRow("RISK POSTURE", self.risk_policy_combo)
         layout.addLayout(form)
         layout.addWidget(self.auto_start_checkbox)
         layout.addWidget(self.start_minimized_checkbox)
-        recommendation_group = QGroupBox("Day-one guidance")
-        recommendation_layout = QVBoxLayout(recommendation_group)
+        group = QGroupBox("POSTURE READOUT")
+        group_layout = QVBoxLayout(group)
         self.recommendation_label = QLabel()
         self.recommendation_label.setWordWrap(True)
         self.recommendation_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        recommendation_layout.addWidget(self.recommendation_label)
-        layout.addWidget(recommendation_group)
+        group_layout.addWidget(self.recommendation_label)
+        layout.addWidget(group)
         layout.addStretch(1)
 
 
 class CoachPage(QWizardPage):
     def __init__(self, provider: CredentialProvider) -> None:
         super().__init__()
-        self.setTitle("Optional AI coach")
-        self.setSubTitle("The coach explains opportunities and logs. It never places or tunes live trades.")
-        self._provider = provider
+        self.setTitle("COACH LINK")
+        self.setSubTitle("OPTIONAL READ-ONLY HELP LINK. NEVER ARMS EXECUTION.")
         self._field_widgets: dict[str, QLineEdit | QPlainTextEdit] = {}
-
         layout = QVBoxLayout(self)
-        intro = QLabel(
-            "The coach link is optional. Leave it off if you want the cleanest setup; you can still use local docs and profile state later."
-        )
+        intro = QLabel("LEAVE THIS OFF FOR THE CLEANEST CART. LOCAL DOCS AND PROFILE STATE STILL HANDLE THE FIRST LOOP.")
         intro.setWordWrap(True)
         layout.addWidget(intro)
-        self.enable_checkbox = QCheckBox("Enable AI coach for this profile")
+        self.enable_checkbox = QCheckBox("ARM COACH LINK FOR THIS CART")
         layout.addWidget(self.enable_checkbox)
-
-        group = QGroupBox(provider.provider_label)
+        group = QGroupBox(provider.provider_label.upper())
         form = QFormLayout(group)
-        docs_label = QLabel(f'<a href="{provider.docs_url}">Open coach docs</a>')
+        docs_label = QLabel(f'<a href="{provider.docs_url}">OPEN COACH DOCS</a>')
         docs_label.setOpenExternalLinks(True)
         form.addRow("", docs_label)
         for field in provider.fields():
@@ -382,32 +279,23 @@ class CoachPage(QWizardPage):
                 if field.secret:
                     widget.setEchoMode(QLineEdit.EchoMode.Password)
             widget.setToolTip(field.help_text)
-            form.addRow(field.label, widget)
+            form.addRow(field.label.upper(), widget)
             self._field_widgets[field.key] = widget
         layout.addWidget(group)
-
-        hint = QLabel(
-            "BYO model keys are optional in v1. Superior can still answer coaching prompts from local docs and profile state."
-        )
+        hint = QLabel("BYO MODEL KEYS ARE OPTIONAL. THE MACHINE CAN STILL ANSWER FROM LOCAL DOCS + PROFILE STATE.")
         hint.setWordWrap(True)
         layout.addWidget(hint)
         layout.addStretch(1)
 
     def payload(self) -> dict[str, str]:
-        payload: dict[str, str] = {}
-        for key, widget in self._field_widgets.items():
-            if isinstance(widget, QPlainTextEdit):
-                payload[key] = widget.toPlainText()
-            else:
-                payload[key] = widget.text()
-        return payload
+        return {key: widget.toPlainText() if isinstance(widget, QPlainTextEdit) else widget.text() for key, widget in self._field_widgets.items()}
 
 
 class FinishPage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
-        self.setTitle("Review")
-        self.setSubTitle("Confirm the setup summary before Superior opens Hangar.")
+        self.setTitle("FINAL CHECK")
+        self.setSubTitle("LOCK THE CART SUMMARY BEFORE HANGAR IGNITION.")
         layout = QVBoxLayout(self)
         self.summary_label = QLabel()
         self.summary_label.setWordWrap(True)
@@ -419,12 +307,10 @@ class FinishPage(QWizardPage):
 class CompletionPage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
-        self.setTitle("Completion handoff")
-        self.setSubTitle("Finish setup and launch into Hangar with the recorder-first mission highlighted.")
+        self.setTitle("IGNITION")
+        self.setSubTitle("BOOT INTO HANGAR WITH THE SAMPLE LOOP ALREADY FRAMED.")
         layout = QVBoxLayout(self)
-        intro = QLabel(
-            "Superior will open your Hangar mission control with the first paper-safe action framed clearly."
-        )
+        intro = QLabel("SUPERIOR WILL OPEN HANGAR WITH THE FIRST SAFE COMMAND FRAMED CLEARLY.")
         intro.setWordWrap(True)
         intro.setObjectName("heroText")
         layout.addWidget(intro)
@@ -438,30 +324,20 @@ class CompletionPage(QWizardPage):
 
 
 class SetupWizard(QWizard):
-    def __init__(
-        self,
-        *,
-        profile_store: ProfileStore,
-        credential_vault: CredentialVault,
-        startup_manager: StartupManager,
-        preset_labels: list[tuple[str, str]],
-        parent: QWidget | None = None,
-    ) -> None:
+    def __init__(self, *, profile_store: ProfileStore, credential_vault: CredentialVault, startup_manager: StartupManager, preset_labels: list[tuple[str, str]], parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("SUPERIOR // SETUP")
+        self.setWindowTitle("SUPERIOR // BOOT")
         self.setWizardStyle(QWizard.WizardStyle.ClassicStyle)
         self.resize(920, 680)
         self.setOption(QWizard.WizardOption.HaveHelpButton, False)
-        self.setButtonText(QWizard.WizardButton.NextButton, "Next")
-        self.setButtonText(QWizard.WizardButton.BackButton, "Back")
-        self.setButtonText(QWizard.WizardButton.CancelButton, "Cancel")
-        self.setButtonText(QWizard.WizardButton.FinishButton, "Boot Hangar")
-
+        self.setButtonText(QWizard.WizardButton.NextButton, "A NEXT")
+        self.setButtonText(QWizard.WizardButton.BackButton, "B BACK")
+        self.setButtonText(QWizard.WizardButton.CancelButton, "SELECT EXIT")
+        self.setButtonText(QWizard.WizardButton.FinishButton, "START IGNITION")
         self._profile_store = profile_store
         self._credential_vault = credential_vault
         self._startup_manager = startup_manager
         self.created_profile_id: str | None = None
-
         providers = credential_vault.providers()
         self._provider_labels = {provider.provider_id: provider.provider_label for provider in providers}
         self._preset_labels = {preset_id: label for preset_id, label in preset_labels}
@@ -475,19 +351,8 @@ class SetupWizard(QWizard):
         self.coach_page = CoachPage(coach_provider)
         self.finish_page = FinishPage()
         self.completion_page = CompletionPage()
-
-        self._stepper = SetupStepper(
-            [
-                "Welcome",
-                "Goal selection",
-                "Starter posture",
-                "Connector defaults",
-                "Review",
-                "Completion",
-            ]
-        )
+        self._stepper = SetupStepper(PHASE_LABELS)
         self.setSideWidget(self._stepper)
-
         self._welcome_id = self.addPage(self.welcome_page)
         self._intent_id = self.addPage(self.intent_page)
         self._profile_id = self.addPage(self.profile_page)
@@ -497,39 +362,33 @@ class SetupWizard(QWizard):
         self._coach_id = self.addPage(self.coach_page)
         self._finish_id = self.addPage(self.finish_page)
         self._completion_id = self.addPage(self.completion_page)
-
         self.currentIdChanged.connect(self._refresh_dynamic_content)
-        self.intent_page.goal_combo.currentIndexChanged.connect(self._refresh_dynamic_content)
-        self.intent_page.experience_combo.currentIndexChanged.connect(self._refresh_dynamic_content)
-        self.intent_page.guided_mode_checkbox.toggled.connect(self._refresh_dynamic_content)
-        self.intent_page.lab_checkbox.toggled.connect(self._refresh_dynamic_content)
-        self.profile_page.name_edit.textChanged.connect(self._refresh_dynamic_content)
-        self.profile_page.template_combo.currentIndexChanged.connect(self._refresh_dynamic_content)
-        self.profile_page.import_path_edit.textChanged.connect(self._refresh_dynamic_content)
-        self.venue_page.polymarket_checkbox.toggled.connect(self._refresh_dynamic_content)
-        self.venue_page.kalshi_checkbox.toggled.connect(self._refresh_dynamic_content)
-        self.risk_page.default_preset_combo.currentIndexChanged.connect(self._refresh_dynamic_content)
-        self.risk_page.risk_policy_combo.currentIndexChanged.connect(self._refresh_dynamic_content)
-        self.risk_page.auto_start_checkbox.toggled.connect(self._refresh_dynamic_content)
-        self.risk_page.start_minimized_checkbox.toggled.connect(self._refresh_dynamic_content)
-        self.coach_page.enable_checkbox.toggled.connect(self._refresh_dynamic_content)
+        for signal in (
+            self.intent_page.goal_combo.currentIndexChanged,
+            self.intent_page.experience_combo.currentIndexChanged,
+            self.intent_page.guided_mode_checkbox.toggled,
+            self.intent_page.lab_checkbox.toggled,
+            self.profile_page.name_edit.textChanged,
+            self.profile_page.template_combo.currentIndexChanged,
+            self.profile_page.import_path_edit.textChanged,
+            self.venue_page.polymarket_checkbox.toggled,
+            self.venue_page.kalshi_checkbox.toggled,
+            self.risk_page.default_preset_combo.currentIndexChanged,
+            self.risk_page.risk_policy_combo.currentIndexChanged,
+            self.risk_page.auto_start_checkbox.toggled,
+            self.risk_page.start_minimized_checkbox.toggled,
+            self.coach_page.enable_checkbox.toggled,
+        ):
+            signal.connect(self._refresh_dynamic_content)
         for widgets in self.credentials_page._field_widgets.values():
             for widget in widgets.values():
-                if isinstance(widget, QPlainTextEdit):
-                    widget.textChanged.connect(self._refresh_dynamic_content)
-                else:
-                    widget.textChanged.connect(self._refresh_dynamic_content)
+                (widget.textChanged if isinstance(widget, QPlainTextEdit) else widget.textChanged).connect(self._refresh_dynamic_content)
         for widget in self.coach_page._field_widgets.values():
-            if isinstance(widget, QPlainTextEdit):
-                widget.textChanged.connect(self._refresh_dynamic_content)
-            else:
-                widget.textChanged.connect(self._refresh_dynamic_content)
+            (widget.textChanged if isinstance(widget, QPlainTextEdit) else widget.textChanged).connect(self._refresh_dynamic_content)
         self._refresh_dynamic_content()
 
     def _refresh_dynamic_content(self) -> None:
-        self.credentials_page.set_enabled_providers(
-            [venue.lower() for venue in self.venue_page.selected_venues()]
-        )
+        self.credentials_page.set_enabled_providers([venue.lower() for venue in self.venue_page.selected_venues()])
         self.intent_page.plan_label.setText(self._intent_plan_text())
         self.risk_page.recommendation_label.setText(self._risk_guidance_text())
         self.finish_page.summary_label.setText(self._summary_text())
@@ -544,12 +403,11 @@ class SetupWizard(QWizard):
         else:
             selected_venues = self.venue_page.selected_venues()
             if not selected_venues:
-                QMessageBox.warning(self, "Choose a venue", "Select at least one venue for this profile.")
+                QMessageBox.warning(self, "ARM A FEED", "SELECT AT LEAST ONE CONNECTOR BEFORE IGNITION.")
                 return
-            data_dir_text = self.profile_page.data_dir_edit.text().strip()
-            data_dir = Path(data_dir_text) if data_dir_text else None
+            data_dir = Path(self.profile_page.data_dir_edit.text().strip()) if self.profile_page.data_dir_edit.text().strip() else None
             profile = self._profile_store.create_profile(
-                display_name=self.profile_page.name_edit.text().strip() or "My Superior Profile",
+                display_name=self.profile_page.name_edit.text().strip() or "MY SUPERIOR CART",
                 brand_name="Superior",
                 template=self.profile_page.template_combo.currentText(),
                 enabled_venues=selected_venues,
@@ -566,27 +424,18 @@ class SetupWizard(QWizard):
                 risk_policy_id=self.risk_page.risk_policy_combo.currentData(),
                 primary_goal=self.intent_page.goal_combo.currentData(),
             )
+            selected_provider_ids = [venue.lower() for venue in selected_venues]
             for provider_id, payload in self.credentials_page.payloads().items():
-                if provider_id not in [venue.lower() for venue in selected_venues]:
-                    continue
-                if not any(value.strip() for value in payload.values()):
+                if provider_id not in selected_provider_ids or not any(value.strip() for value in payload.values()):
                     continue
                 result = self._credential_vault.save(profile.id, provider_id, payload)
                 if result.status == "invalid":
-                    QMessageBox.warning(
-                        self,
-                        "Fix credentials",
-                        f"{provider_id.title()} credentials are incomplete: {result.message}",
-                    )
+                    QMessageBox.warning(self, "FIX KEY SLOT", f"{provider_id.title()} KEY SLOT IS INCOMPLETE: {result.message.upper()}")
                     return
             if self.coach_page.enable_checkbox.isChecked():
                 result = self._credential_vault.save(profile.id, "coach", self.coach_page.payload())
                 if result.status == "invalid":
-                    QMessageBox.warning(
-                        self,
-                        "Fix AI coach credentials",
-                        result.message,
-                    )
+                    QMessageBox.warning(self, "FIX COACH LINK", result.message.upper())
                     return
         if profile.auto_start:
             self._startup_manager.set_enabled(True)
@@ -594,173 +443,57 @@ class SetupWizard(QWizard):
         super().accept()
 
     def _market_filters(self) -> list[str]:
-        raw_filters = self.risk_page.market_filters_edit.text()
-        return [item.strip() for item in raw_filters.split(",") if item.strip()]
+        return [item.strip() for item in self.risk_page.market_filters_edit.text().split(",") if item.strip()]
 
     def _intent_plan_text(self) -> str:
         goal_id = self.intent_page.goal_combo.currentData()
         experience_id = self.intent_page.experience_combo.currentData()
-        goal_summary, goal_detail = GOAL_GUIDANCE.get(
-            goal_id,
-            GOAL_GUIDANCE["learn_and_scan"],
-        )
-        experience_detail = EXPERIENCE_GUIDANCE.get(
-            experience_id,
-            EXPERIENCE_GUIDANCE["beginner"],
-        )
+        goal_summary, goal_detail = GOAL_GUIDANCE.get(goal_id, GOAL_GUIDANCE["learn_and_scan"])
+        experience_detail = EXPERIENCE_GUIDANCE.get(experience_id, EXPERIENCE_GUIDANCE["beginner"])
         template = TEMPLATE_RECOMMENDATIONS.get(goal_id, "Guided")
-        preset_label = self._preset_labels.get(
-            PRESET_RECOMMENDATIONS.get(goal_id, "continuous-record"),
-            "Continuous recorder",
-        )
+        preset_label = self._preset_labels.get(PRESET_RECOMMENDATIONS.get(goal_id, "continuous-record"), "Continuous recorder")
         risk_label = RISK_RECOMMENDATIONS.get(goal_id, "Starter")
-        lab_line = (
-            "Lab stays visible after setup."
-            if self.intent_page.lab_checkbox.isChecked()
-            else "Lab stays hidden until you explicitly enable it."
-        )
-        guided_line = (
-            "Guided mode stays on, which is the recommended consumer setup path."
-            if self.intent_page.guided_mode_checkbox.isChecked()
-            else "Guided mode is off, so Home will expose a less opinionated starting state."
-        )
-        return (
-            f"{goal_summary}\n\n"
-            f"{goal_detail}\n"
-            f"{experience_detail}\n\n"
-            f"Recommended template: {template}\n"
-            f"Recommended first preset: {preset_label}\n"
-            f"Recommended risk policy: {risk_label}\n"
-            f"{guided_line}\n"
-            f"{lab_line}"
-        )
+        guided_line = "GUIDED BOOT STAYS ON." if self.intent_page.guided_mode_checkbox.isChecked() else "GUIDED BOOT IS OFF."
+        lab_line = "LAB STAYS VISIBLE AFTER IGNITION." if self.intent_page.lab_checkbox.isChecked() else "LAB STAYS HIDDEN UNTIL LATER."
+        return f"{goal_summary}\n\n{goal_detail}\n{experience_detail}\n\nRECOMMENDED MODE: {template}\nRECOMMENDED BOOT PRESET: {preset_label}\nRECOMMENDED RISK POSTURE: {risk_label}\n{guided_line}\n{lab_line}"
 
     def _risk_guidance_text(self) -> str:
         goal_id = self.intent_page.goal_combo.currentData()
         recommended_risk = RISK_RECOMMENDATIONS.get(goal_id, "Starter")
-        recommended_preset = self._preset_labels.get(
-            PRESET_RECOMMENDATIONS.get(goal_id, "continuous-record"),
-            "Continuous recorder",
-        )
-        startup_line = (
-            "The app will auto-launch with this profile."
-            if self.risk_page.auto_start_checkbox.isChecked()
-            else "The app will only open when you launch it manually."
-        )
-        tray_line = (
-            "Start minimized is on, so the recorder can stay out of the way after login."
-            if self.risk_page.start_minimized_checkbox.isChecked()
-            else "Start minimized is off, which is easier while you are still learning the workflow."
-        )
-        market_filters = ", ".join(self._market_filters()) or "none yet"
-        return (
-            f"Recommended for this goal: {recommended_risk} risk policy and the {recommended_preset} preset.\n\n"
-            f"Current preset: {self.risk_page.default_preset_combo.currentText()}\n"
-            f"Current risk policy: {self.risk_page.risk_policy_combo.currentText()}\n"
-            f"Market filters: {market_filters}\n"
-            f"{startup_line}\n"
-            f"{tray_line}"
-        )
+        recommended_preset = self._preset_labels.get(PRESET_RECOMMENDATIONS.get(goal_id, "continuous-record"), "Continuous recorder")
+        startup_line = "THE CART WILL AUTO-WAKE WITH THIS PROFILE." if self.risk_page.auto_start_checkbox.isChecked() else "THE CART WAKES MANUALLY."
+        tray_line = "START MINIMIZED IS ON." if self.risk_page.start_minimized_checkbox.isChecked() else "START MINIMIZED IS OFF."
+        market_filters = ", ".join(self._market_filters()) or "NONE"
+        return f"RECOMMENDED FOR THIS MISSION: {recommended_risk} RISK + {recommended_preset} BOOT PRESET.\n\nCURRENT PRESET: {self.risk_page.default_preset_combo.currentText()}\nCURRENT RISK POSTURE: {self.risk_page.risk_policy_combo.currentText()}\nMARKET FILTERS: {market_filters}\n{startup_line}\n{tray_line}"
 
     def _summary_text(self) -> str:
         if self.profile_page.import_path_edit.text().strip():
-            return (
-                "Import mode\n"
-                f"Source JSON: {self.profile_page.import_path_edit.text().strip()}\n"
-                "Secrets remain outside the JSON file and stay in the OS keychain.\n"
-                "Superior will open Hangar after the import finishes."
-            )
-        venues = ", ".join(self.venue_page.selected_venues()) or "No venues selected yet"
+            return f"IMPORT MODE\nSOURCE JSON: {self.profile_page.import_path_edit.text().strip()}\nSECRETS STAY OUTSIDE THE JSON FILE.\nSUPERIOR WILL OPEN HANGAR AFTER IMPORT."
+        venues = ", ".join(self.venue_page.selected_venues()) or "NONE"
         default_preset = self.risk_page.default_preset_combo.currentText() or "Continuous recorder"
-        credential_labels = []
-        for provider_id, payload in self.credentials_page.payloads().items():
-            if provider_id not in [venue.lower() for venue in self.venue_page.selected_venues()]:
-                continue
-            if any(value.strip() for value in payload.values()):
-                credential_labels.append(self._provider_labels.get(provider_id, provider_id.title()))
-        data_dir = self.profile_page.data_dir_edit.text().strip() or "Recommended per-user app storage"
+        selected_provider_ids = [venue.lower() for venue in self.venue_page.selected_venues()]
+        credential_labels = [self._provider_labels.get(provider_id, provider_id.title()) for provider_id, payload in self.credentials_page.payloads().items() if provider_id in selected_provider_ids and any(value.strip() for value in payload.values())]
+        data_dir = self.profile_page.data_dir_edit.text().strip() or "RECOMMENDED PER-USER STORAGE BAY"
         return (
-            "New profile summary\n"
-            f"Profile: {self.profile_page.name_edit.text().strip() or 'My Superior Profile'}\n"
-            f"Template: {self.profile_page.template_combo.currentText()}\n"
-            f"Goal: {self.intent_page.goal_combo.currentText()}\n"
-            f"Experience: {self.intent_page.experience_combo.currentText()}\n"
-            f"Equipped connectors: {venues}\n"
-            f"Data directory: {data_dir}\n"
-            f"Default preset: {default_preset}\n"
-            f"Risk policy: {self.risk_page.risk_policy_combo.currentText()}\n"
-            f"Guided mode: {'On' if self.intent_page.guided_mode_checkbox.isChecked() else 'Off'}\n"
-            f"Lab enabled: {'Yes' if self.intent_page.lab_checkbox.isChecked() else 'No'}\n"
-            f"Connector credentials entered now: {', '.join(credential_labels) if credential_labels else 'None'}\n"
-            f"Coach link: {'Equipped' if self.coach_page.enable_checkbox.isChecked() else 'Not equipped'}\n"
-            "First launch plan:\n"
-            "- Open Hangar and boot the recorder to build local market data.\n"
-            "- Scan edge after the first recording sample completes.\n"
-            "- Run one paper route and use Score as the main progression surface.\n"
-            "- Keep live-gate work optional until you intentionally want it."
+            f"NEW CART SUMMARY\nCART: {self.profile_page.name_edit.text().strip() or 'MY SUPERIOR CART'}\nMODE: {self.profile_page.template_combo.currentText()}\nMISSION: {self.intent_page.goal_combo.currentText()}\nPOSTURE: {self.intent_page.experience_combo.currentText()}\nLOADOUT: {venues}\nDATA SLOT: {data_dir}\nBOOT PRESET: {default_preset}\nRISK POSTURE: {self.risk_page.risk_policy_combo.currentText()}\nGUIDED BOOT: {'ON' if self.intent_page.guided_mode_checkbox.isChecked() else 'OFF'}\nLAB: {'ON' if self.intent_page.lab_checkbox.isChecked() else 'OFF'}\nCONNECTOR KEYS ENTERED NOW: {', '.join(credential_labels) if credential_labels else 'NONE'}\nCOACH LINK: {'ARMED' if self.coach_page.enable_checkbox.isChecked() else 'OFFLINE'}\nIGNITION PLAN:\n- OPEN HANGAR AND BOOT THE RECORDER.\n- RUN SCAN AFTER THE FIRST SAMPLE LANDS.\n- START ONE PAPER RUN AND USE SCORE AS THE MAIN PROGRESSION SURFACE."
         )
 
     def _completion_summary_text(self) -> str:
         if self.profile_page.import_path_edit.text().strip():
-            return (
-                "Imported profiles still land in Hangar with the same safe default: boot recorder first, "
-                "then inspect one scanner route before worrying about anything live."
-            )
-        selected_venues = ", ".join(self.venue_page.selected_venues()) or "Polymarket"
-        risk_policy = self.risk_page.risk_policy_combo.currentText()
-        return (
-            f"Loadout ready: {selected_venues}. "
-            f"Risk posture: {risk_policy}. "
-            "The Hangar opens with the recorder-first checklist visible so the first paper-safe loop is obvious."
-        )
+            return "IMPORTED CARTS STILL LAND IN HANGAR WITH THE SAME SAFE DEFAULT: BOOT FIRST, THEN STAGE ONE ROUTE."
+        selected_venues = ", ".join(self.venue_page.selected_venues()) or "POLYMARKET"
+        return f"LOADOUT READY: {selected_venues}. RISK POSTURE: {self.risk_page.risk_policy_combo.currentText()}. HANGAR OPENS WITH THE BOOT LIST VISIBLE."
 
     def _completion_route(self) -> SetupCompletionRoute:
         if self.profile_page.import_path_edit.text().strip():
-            return SetupCompletionRoute(
-                title="Imported profile routes to Hangar",
-                detail=(
-                    "Superior will open Hangar, preserve the imported loadout, and keep Boot recorder framed "
-                    "as the next useful action."
-                ),
-            )
+            return SetupCompletionRoute(title="IMPORTED CART ROUTES TO HANGAR", detail="SUPERIOR OPENS HANGAR, PRESERVES THE IMPORTED LOADOUT, AND KEEPS BOOT RECORDER FRAMED.")
         if self.venue_page.kalshi_checkbox.isChecked():
-            return SetupCompletionRoute(
-                title="Hangar opens with recorder-first guidance",
-                detail=(
-                    "Polymarket stays the first pass. Kalshi remains equipped, but Hangar still highlights Boot "
-                    "recorder before any cross-venue work."
-                ),
-            )
-        return SetupCompletionRoute(
-            title="Hangar highlights Boot recorder",
-            detail=(
-                "Superior will open Hangar mission control, show the first-pass checklist, and keep Boot recorder "
-                "visibly dominant until the first local sample lands."
-            ),
-        )
+            return SetupCompletionRoute(title="HANGAR OPENS WITH BOOT PRIORITY", detail="POLYMARKET STAYS THE FIRST PASS. KALSHI REMAINS ARMED, BUT BOOT RECORDER STILL GETS TOP PRIORITY.")
+        return SetupCompletionRoute(title="HANGAR HIGHLIGHTS BOOT RECORDER", detail="SUPERIOR OPENS HANGAR, SHOWS THE BOOT LIST, AND KEEPS BOOT RECORDER DOMINANT UNTIL THE FIRST SAMPLE LANDS.")
 
     def _step_states(self) -> list[SetupStepState]:
         current_step = self._current_step_index()
-        labels = [
-            "Welcome",
-            "Goal selection",
-            "Starter posture",
-            "Connector defaults",
-            "Review",
-            "Completion",
-        ]
-        states: list[SetupStepState] = []
-        for index, label in enumerate(labels):
-            states.append(
-                SetupStepState(
-                    id=f"step-{index}",
-                    label=label,
-                    index=index,
-                    active=index == current_step,
-                    complete=index < current_step,
-                )
-            )
-        return states
+        return [SetupStepState(id=f"step-{index}", label=label, index=index, active=index == current_step, complete=index < current_step) for index, label in enumerate(PHASE_LABELS)]
 
     def _current_step_index(self) -> int:
         current_page_id = self.currentId()

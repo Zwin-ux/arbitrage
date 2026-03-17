@@ -144,7 +144,7 @@ def test_setup_wizard_creates_profile_and_keeps_secrets_out_of_json(
     assert created.primary_goal == "learn_and_scan"
     assert created.risk_policy_id == "starter"
     assert created.brand_name == "Superior"
-    assert "Connector credentials entered now: Polymarket" in wizard.finish_page.summary_label.text()
+    assert "CONNECTOR KEYS ENTERED NOW: Polymarket" in wizard.finish_page.summary_label.text()
     profiles_json = store.profiles_path.read_text(encoding="utf-8")
     assert "secret-value" not in profiles_json
     assert fake_keyring.store
@@ -175,7 +175,7 @@ def test_setup_wizard_allows_first_run_without_credentials(
     created = store.get_profile(wizard.created_profile_id or "")
     assert created is not None
     assert created.enabled_venues == ["Polymarket"]
-    assert "Run one paper route and use Score as the main progression surface." in wizard.finish_page.summary_label.text()
+    assert "START ONE PAPER RUN AND USE SCORE AS THE MAIN PROGRESSION SURFACE." in wizard.finish_page.summary_label.text()
     assert fake_keyring.store == {}
 
 
@@ -199,9 +199,9 @@ def test_setup_wizard_surfaces_recommended_plan(
     wizard.intent_page.goal_combo.setCurrentIndex(wizard.intent_page.goal_combo.findData("live_prepare"))
     wizard.intent_page.experience_combo.setCurrentIndex(wizard.intent_page.experience_combo.findData("advanced"))
 
-    assert "Recommended template: Research" in wizard.intent_page.plan_label.text()
-    assert "Recommended risk policy: Balanced" in wizard.intent_page.plan_label.text()
-    assert "Current preset: Continuous recorder" in wizard.risk_page.recommendation_label.text()
+    assert "RECOMMENDED MODE: Research" in wizard.intent_page.plan_label.text()
+    assert "RECOMMENDED RISK POSTURE: Balanced" in wizard.intent_page.plan_label.text()
+    assert "CURRENT PRESET: Continuous recorder" in wizard.risk_page.recommendation_label.text()
 
 
 def test_main_window_runs_default_preset(
@@ -252,7 +252,7 @@ def test_main_window_runs_default_preset(
         controller.stop()
     qtbot.waitUntil(lambda: controller.status(profile).state == "completed", timeout=3000)
     window._refresh_status_only()  # noqa: SLF001
-    assert "Completed" in window.home_tab.engine_label.text()
+    assert "COMPLETED" in window.home_tab.engine_label.text()
     assert window.home_tab.secondary_actions_widget.isVisible() is True
     assert window.home_tab.replay_button.isEnabled() is True
     assert window.home_tab.scan_button.isEnabled() is True
@@ -313,9 +313,9 @@ def test_main_window_empty_state_surfaces_guided_setup(
     qtbot.addWidget(window)
     window.show()
 
-    assert window.home_tab.setup_progress_label.text() == "Setup checklist"
-    assert "[>] Create first profile." in window.home_tab.setup_steps_label.text()
-    assert window.home_tab.open_setup_button.text() == "Create first profile"
+    assert window.home_tab.setup_progress_label.text() == "BOOT LIST"
+    assert "[>] CREATE PROFILE CART." in window.home_tab.setup_steps_label.text()
+    assert window.home_tab.open_setup_button.text() == "LOAD CART"
     assert window.home_tab.start_button.isEnabled() is False
     assert window.home_tab.secondary_actions_widget.isVisible() is False
     assert window.home_tab.view_docs_button.isEnabled() is True

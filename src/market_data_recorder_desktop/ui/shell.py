@@ -112,7 +112,7 @@ class SignalLamp(QFrame):
         layout.setContentsMargins(8, 6, 8, 6)
         layout.setSpacing(8)
 
-        self.dot_label = QLabel("●")
+        self.dot_label = QLabel("[]")
         self.dot_label.setProperty("signalLampDot", True)
         self.text_block = QWidget()
         text_layout = QVBoxLayout(self.text_block)
@@ -146,7 +146,7 @@ class RuntimeDeck(TexturedFrame):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(8)
 
-        top_label = QLabel("Machine telemetry")
+        top_label = QLabel("SYSTEM BUS")
         top_label.setProperty("sectionLabel", True)
         layout.addWidget(top_label)
 
@@ -161,7 +161,7 @@ class RuntimeDeck(TexturedFrame):
             lamp_row.addWidget(lamp)
         layout.addLayout(lamp_row)
 
-        self.hint_label = QLabel("LOAD PROFILE  |  BOOT RECORDER  |  PAPER FIRST")
+        self.hint_label = QLabel("LOAD CART  |  BOOT REC  |  PAPER FIRST")
         self.hint_label.setObjectName("MachineHint")
         layout.addWidget(self.hint_label)
 
@@ -192,11 +192,11 @@ class ProfileBar(TexturedFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(10)
-        label = QLabel("Loaded profile")
+        label = QLabel("PROFILE SLOT")
         label.setProperty("sectionLabel", True)
         self.profile_selector = QComboBox()
         self.profile_selector.setObjectName("ProfileSelector")
-        self.setup_button = QPushButton("Open setup")
+        self.setup_button = QPushButton("BOOT PHASES")
         self.setup_button.setProperty("buttonRole", "secondary")
         layout.addWidget(label)
         layout.addWidget(self.profile_selector, stretch=1)
@@ -220,10 +220,10 @@ class AppHeader(QFrame):
         marquee_layout = QVBoxLayout(marquee)
         marquee_layout.setContentsMargins(12, 10, 12, 10)
         marquee_layout.setSpacing(2)
-        self.eyebrow_label = QLabel("Prediction cartridge loaded")
+        self.eyebrow_label = QLabel("CARTRIDGE SIGNAL OS")
         self.eyebrow_label.setObjectName("MarqueeEyebrow")
         self.title_label = FlickerLabel("SUPERIOR")
-        self.subtitle_label = QLabel("Paper bot OS")
+        self.subtitle_label = QLabel("PAPER ARB FIRMWARE")
         self.subtitle_label.setObjectName("MarqueeSubtitle")
         marquee_layout.addWidget(self.eyebrow_label)
         marquee_layout.addWidget(self.title_label)
@@ -306,32 +306,32 @@ class ShellStateCard(QFrame):
 
 class EmptyState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("Insert profile", "Create a profile to boot the recorder and start the paper-first loop.", "warning")
+        super().__init__("INSERT CART", "LOAD A PROFILE CART TO ARM THE REC BUS AND START THE PAPER LOOP.", "warning")
 
 
 class WaitingState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("Waiting on recorder", "Boot recorder to build the first local market sample.", "warning")
+        super().__init__("REC WAIT", "BOOT RECORDER TO TAKE THE FIRST LOCAL SAMPLE.", "warning")
 
 
 class RouteReadyState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("Route ready", "A scanner route is staged. Paper it before thinking about live mode.", "active")
+        super().__init__("ROUTE STAGED", "A CLEAN ROUTE IS READY. START A PAPER RUN BEFORE TOUCHING THE GATE.", "active")
 
 
 class BlockedState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("Blocked", "One or more dependencies still need attention before the next action unlocks.", "locked")
+        super().__init__("BLOCKED", "ONE OR MORE DEPENDENCIES STILL HOLD THE NEXT COMMAND.", "locked")
 
 
 class ErrorState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("Error", "Superior hit an error. Review diagnostics and local logs before retrying.", "error")
+        super().__init__("FAULT", "REVIEW DIAG AND LOCAL LOGS BEFORE RETRYING THE MACHINE.", "error")
 
 
 class SplashScreen(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("Booting Superior", "Loading local profile state, recorder services, and scanner surfaces.", "active")
+        super().__init__("BOOTING SUPERIOR", "LOADING CART STATE, REC BUS, AND SCAN SURFACES.", "active")
 
 
 class StateOverlayHost(QFrame):
