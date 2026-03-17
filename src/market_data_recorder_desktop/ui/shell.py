@@ -108,12 +108,14 @@ class SignalLamp(QFrame):
     def __init__(self, label: str) -> None:
         super().__init__()
         self.setProperty("signalLamp", True)
+        self.setProperty("pulsePhase", "steady")
         layout = QHBoxLayout(self)
         layout.setContentsMargins(8, 6, 8, 6)
         layout.setSpacing(8)
 
         self.dot_label = QLabel("[]")
         self.dot_label.setProperty("signalLampDot", True)
+        self.dot_label.setProperty("pulsePhase", "steady")
         self.text_block = QWidget()
         text_layout = QVBoxLayout(self.text_block)
         text_layout.setContentsMargins(0, 0, 0, 0)
@@ -122,10 +124,15 @@ class SignalLamp(QFrame):
         self.title_label.setProperty("signalLampTitle", True)
         self.value_label = QLabel("OFF")
         self.value_label.setProperty("signalLampValue", True)
+        self.value_label.setProperty("pulsePhase", "steady")
         text_layout.addWidget(self.title_label)
         text_layout.addWidget(self.value_label)
         layout.addWidget(self.dot_label)
         layout.addWidget(self.text_block)
+        self._pulse_phase = False
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._advance_pulse)
+        self._timer.setInterval(320)
         self.set_state("OFF", "idle")
 
     def set_state(self, value: str, tone: str) -> None:
@@ -133,6 +140,23 @@ class SignalLamp(QFrame):
         self.setProperty("tone", tone)
         self.dot_label.setProperty("tone", tone)
         self.value_label.setProperty("tone", tone)
+        self._apply_pulse("steady" if tone == "idle" else "on")
+        if tone == "idle":
+            self._timer.stop()
+        else:
+            self._timer.start()
+        _repolish(self)
+        _repolish(self.dot_label)
+        _repolish(self.value_label)
+
+    def _advance_pulse(self) -> None:
+        self._pulse_phase = not self._pulse_phase
+        self._apply_pulse("off" if self._pulse_phase else "on")
+
+    def _apply_pulse(self, phase: str) -> None:
+        self.setProperty("pulsePhase", phase)
+        self.dot_label.setProperty("pulsePhase", phase)
+        self.value_label.setProperty("pulsePhase", phase)
         _repolish(self)
         _repolish(self.dot_label)
         _repolish(self.value_label)

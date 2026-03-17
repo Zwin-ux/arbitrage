@@ -23,6 +23,7 @@ from market_data_recorder_desktop.app_types import (
     VenueConnection,
 )
 from .primitives import (
+    BootTicker,
     CommandFooter,
     InsetConsolePanel,
     MeterBar,
@@ -213,6 +214,7 @@ class TelemetryPanelGroup(PixelPanel):
 class ConsoleFooter(PixelPanel):
     def __init__(self) -> None:
         super().__init__("CONSOLE", "SYSTEM FEED", tone="active")
+        self.boot_ticker = BootTicker()
         self.system_log = InsetConsolePanel()
         self.system_log.setMaximumHeight(136)
         self.command_footer = CommandFooter(
@@ -224,6 +226,7 @@ class ConsoleFooter(PixelPanel):
                 ("SELECT", "DIAG"),
             ]
         )
+        self.body_layout.addWidget(self.boot_ticker)
         self.body_layout.addWidget(self.system_log)
         self.body_layout.addWidget(self.command_footer)
 
@@ -267,6 +270,7 @@ class HomeTab(QWidget):
         self.scanner_tile = self.status_panel.scanner_tile
         self.route_tile = self.status_panel.route_tile
         self.system_log = self.console_footer.system_log
+        self.boot_ticker = self.console_footer.boot_ticker
 
         self.loop_label = self.progress_panel.loop_label
         self.loop_steps_label = self.progress_panel.loop_steps_label
@@ -343,6 +347,7 @@ class HomeTab(QWidget):
             tone=model.machine_statuses[2].tone,
         )
         self.system_log.setPlainText("\n".join(model.system_log))
+        self.boot_ticker.set_messages(model.system_log)
         telemetry_rows = [(item.label, item.value, item.detail, item.tone) for item in model.telemetry_stats]
         self.telemetry_panel.set_telemetry(telemetry_rows)
         self.capability_text.setPlainText(self._render_status_rows(model.capability_rows))

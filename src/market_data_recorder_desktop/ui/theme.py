@@ -182,6 +182,25 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
       text-transform: uppercase;
       letter-spacing: 1px;
     }}
+    QLabel#BootTickerText {{
+      background: transparent;
+      color: {c.text_primary};
+      font-family: {t.mono_font};
+      font-size: {r["console"]}px;
+      font-weight: 700;
+    }}
+    QLabel#PromptCaret {{
+      background: transparent;
+      color: {c.border_warn};
+      font-family: {t.display_font};
+      font-size: {r["title"]}px;
+      font-weight: 900;
+      min-width: 12px;
+      max-width: 12px;
+    }}
+    QLabel#PromptCaret[caretPhase="off"] {{
+      color: {c.bg_console};
+    }}
     QLabel#MarqueeTitle,
     QLabel#heroTitle,
     QLabel[panelTitle="true"],
@@ -318,7 +337,8 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QFrame[signalLamp="true"],
     QFrame[statusModule="true"],
     QFrame[statCell="true"],
-    QFrame[commandFooter="true"] {{
+    QFrame[commandFooter="true"],
+    QFrame[bootTicker="true"] {{
       background: {c.bg_panel};
       border: {b.inset_frame}px solid {c.border_idle};
     }}
@@ -329,12 +349,22 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QFrame[statCell="true"][tone="active"] {{
       border-color: {c.state_active};
     }}
+    QFrame[telemetryLamp="true"][tone="active"][pulsePhase="off"],
+    QFrame[signalLamp="true"][tone="active"][pulsePhase="off"],
+    QFrame[statusModule="true"][tone="active"][pulsePhase="off"] {{
+      border-color: {c.border_idle};
+    }}
     QFrame[pixelPanel="true"][tone="warning"],
     QFrame[telemetryLamp="true"][tone="warning"],
     QFrame[signalLamp="true"][tone="warning"],
     QFrame[statusModule="true"][tone="warning"],
     QFrame[statCell="true"][tone="warning"] {{
       border-color: {c.state_warn};
+    }}
+    QFrame[telemetryLamp="true"][tone="warning"][pulsePhase="off"],
+    QFrame[signalLamp="true"][tone="warning"][pulsePhase="off"],
+    QFrame[statusModule="true"][tone="warning"][pulsePhase="off"] {{
+      border-color: {c.border_idle};
     }}
     QFrame[pixelPanel="true"][tone="locked"],
     QFrame[telemetryLamp="true"][tone="locked"],
@@ -373,6 +403,13 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QLabel[riskBadge="true"][tone="active"] {{
       color: {c.state_active};
     }}
+    QLabel[telemetryLampDot="true"][tone="active"][pulsePhase="off"],
+    QLabel[signalLampDot="true"][tone="active"][pulsePhase="off"],
+    QLabel[telemetryLampValue="true"][tone="active"][pulsePhase="off"],
+    QLabel[signalLampValue="true"][tone="active"][pulsePhase="off"],
+    QLabel[statusModuleValue="true"][tone="active"][pulsePhase="off"] {{
+      color: {c.text_dim};
+    }}
     QLabel[telemetryLampDot="true"][tone="warning"],
     QLabel[signalLampDot="true"][tone="warning"],
     QLabel[telemetryLampValue="true"][tone="warning"],
@@ -382,6 +419,13 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QLabel[stateChip="true"][tone="warning"],
     QLabel[riskBadge="true"][tone="warning"] {{
       color: {c.state_warn};
+    }}
+    QLabel[telemetryLampDot="true"][tone="warning"][pulsePhase="off"],
+    QLabel[signalLampDot="true"][tone="warning"][pulsePhase="off"],
+    QLabel[telemetryLampValue="true"][tone="warning"][pulsePhase="off"],
+    QLabel[signalLampValue="true"][tone="warning"][pulsePhase="off"],
+    QLabel[statusModuleValue="true"][tone="warning"][pulsePhase="off"] {{
+      color: {c.text_dim};
     }}
     QLabel[telemetryLampDot="true"][tone="locked"],
     QLabel[signalLampDot="true"][tone="locked"],
@@ -403,6 +447,13 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
     QLabel[riskBadge="true"][tone="success"] {{
       color: {c.state_success};
     }}
+    QLabel[telemetryLampDot="true"][tone="success"][pulsePhase="off"],
+    QLabel[signalLampDot="true"][tone="success"][pulsePhase="off"],
+    QLabel[telemetryLampValue="true"][tone="success"][pulsePhase="off"],
+    QLabel[signalLampValue="true"][tone="success"][pulsePhase="off"],
+    QLabel[statusModuleValue="true"][tone="success"][pulsePhase="off"] {{
+      color: {c.text_dim};
+    }}
     QLabel[stateChip="true"],
     QLabel[riskBadge="true"] {{
       background: {c.bg_console};
@@ -412,6 +463,9 @@ def build_desktop_stylesheet(tokens: ThemeTokens = SUPERIOR_THEME) -> str:
       font-size: {r["label"]}px;
       font-weight: 900;
       text-transform: uppercase;
+    }}
+    QLabel[commandKey="true"][commandKeyActive="true"] {{
+      color: {c.border_warn};
     }}
     QProgressBar[meterBar="true"] {{
       background: {c.bg_console};
