@@ -16,10 +16,17 @@ from market_data_recorder.models import ArbitrageOpportunity
 from market_data_recorder.storage import DuckDBStorage
 
 from .app_types import (
+    AgentContextPack,
+    AgentDraft,
+    AgentRequest,
+    AgentResponse,
+    AgentSkillId,
+    ApplyDraftResult,
     AppProfile,
     AssistantMessage,
     AssistantSession,
     BotSlot,
+    BotRegistryEntry,
     CapabilityState,
     CanonicalContract,
     ConnectorLoadout,
@@ -30,6 +37,7 @@ from .app_types import (
     ExperimentalLiveStatus,
     LiveUnlockCheck,
     LiveUnlockChecklist,
+    ModelProviderConfig,
     OpportunityCandidate,
     OpportunityEvidence,
     OpportunityExplanation,
@@ -42,7 +50,9 @@ from .app_types import (
     PortfolioCurvePoint,
     PortfolioSnapshot,
     PortfolioSummary,
+    ProviderHealth,
     RiskPolicy,
+    DraftAction,
     ScoreLedgerEntry,
     SessionGrade,
     ScoreSnapshot,
@@ -53,13 +63,14 @@ from .app_types import (
     default_risk_policies,
     default_strategy_modules,
 )
+from .copilot import CopilotRuntime
 from .credentials import CredentialVault
 
 
 CONNECTOR_LABELS = {
     "polymarket": "Polymarket Connector",
     "kalshi": "Kalshi Connector",
-    "coach": "Coach Link",
+    "coach": "Copilot Link",
 }
 
 
@@ -276,9 +287,9 @@ class ConnectorLoadoutService:
                 status = credential_map.get("coach")
                 ready = bool(status and status.status == "validated")
                 message = (
-                    "Coach equipped and ready to explain scanner output."
+                    "Copilot is armed and ready to explain routes or draft paper-mode changes."
                     if ready
-                    else "Equip the Coach link if you want BYO-model guidance later."
+                    else "Arm Copilot if you want bring-your-own-model help later."
                 )
             else:
                 connection = connection_map.get(connector_id)
@@ -1306,29 +1317,81 @@ class ExperimentalLiveService:
 
 
 class AssistantService:
-    def __init__(self, docs_paths: Iterable[Path] | None = None) -> None:
+    def __init__(
+        self,
+        docs_paths: Iterable[Path] | None = None,
+        *,
+        runtime: CopilotRuntime | None = None,
+    ) -> None:
         self._docs_paths = [path for path in (docs_paths or []) if path.exists()]
+        self._runtime = runtime or CopilotRuntime()
+
+    def provider_presets(self) -> list[ModelProviderConfig]:
+        return [
+            ModelProviderConfig(
+                provider_id=preset.provider_id,
+                provider_label=preset.label,
+                model_name=preset.model_name,
+                base_url=preset.base_url,
+                api_key_required=preset.api_key_required,
+                local_only=preset.provider_id in {"none", "ollama"},
+            )
+            for preset in self._runtime.presets()
+        ]
+
+    def provider_health(self, config: ModelProviderConfig, api_key: str) -> ProviderHealth:
+        return self._runtime.health(
+            provider_id=config.provider_id,
+            model_name=config.model_name,
+            base_url=config.base_url,
+            api_key=api_key,
+        )
 
     def answer(
         self,
         *,
         question: str,
+        skill_id: AgentSkillId | None = None,
         profile: AppProfile | None,
         candidates: list[OpportunityCandidate],
+        selected_candidate: OpportunityCandidate | None = None,
+        registry_entries: list[BotRegistryEntry] | None = None,
         checklist: LiveUnlockChecklist | None,
         portfolio_summary: PortfolioSummary | None,
-        remote_configured: bool,
+        diagnostics_summary: str = "",
+        provider_config: ModelProviderConfig | None = None,
+        provider_api_key: str = "",
     ) -> AssistantSession:
         lowered = question.lower()
         sources = self._collect_sources(lowered)
+        context = self._build_context(
+            profile=profile,
+            selected_candidate=selected_candidate or (candidates[0] if candidates else None),
+            portfolio_summary=portfolio_summary,
+            diagnostics_summary=diagnostics_summary,
+            sources=sources,
+        )
+        request = AgentRequest(
+            question=question.strip(),
+            skill_id=skill_id or self._detect_skill(lowered),
+            context=context,
+            provider_config=provider_config or ModelProviderConfig(),
+        )
         response = self._build_response(
-            lowered=lowered,
+            request=request,
             profile=profile,
             candidates=candidates,
+            selected_candidate=selected_candidate,
+            registry_entries=registry_entries or [],
             checklist=checklist,
             portfolio_summary=portfolio_summary,
-            remote_configured=remote_configured,
-            sources=sources,
+            diagnostics_summary=diagnostics_summary,
+        )
+        response_text, used_remote, provider_health = self._runtime.rewrite_response(
+            request=request,
+            base_text=response.response_text,
+            draft=response.draft,
+            api_key=provider_api_key,
         )
         now = datetime.now(timezone.utc)
         return AssistantSession(
@@ -1336,88 +1399,327 @@ class AssistantService:
             profile_id=profile.id if profile is not None else None,
             created_at=now,
             last_updated_at=now,
-            remote_configured=remote_configured,
+            remote_configured=used_remote or provider_health.status == "ready",
             sources=sources,
+            skill_id=request.skill_id,
+            provider_id=request.provider_config.provider_id,
+            model_name=request.provider_config.model_name,
+            response_text=response_text,
+            provider_health=provider_health,
+            draft=response.draft,
             messages=[
-                AssistantMessage(role="user", content=question.strip()),
-                AssistantMessage(role="assistant", content=response),
+                AssistantMessage(role="user", content=request.question),
+                AssistantMessage(role="assistant", content=response_text),
             ],
         )
+
+    def _build_context(
+        self,
+        *,
+        profile: AppProfile | None,
+        selected_candidate: OpportunityCandidate | None,
+        portfolio_summary: PortfolioSummary | None,
+        diagnostics_summary: str,
+        sources: list[str],
+    ) -> AgentContextPack:
+        loadout_summary = "No active profile."
+        mission = ""
+        profile_name = ""
+        if profile is not None:
+            profile_name = profile.display_name
+            mission = profile.primary_mission
+            connectors = ", ".join(profile.equipped_connectors) or "none"
+            modules = ", ".join(profile.equipped_modules) or "none"
+            loadout_summary = f"Connectors: {connectors}. Modules: {modules}. Risk: {profile.risk_policy_id}."
+        score_summary = "No paper score loaded."
+        if portfolio_summary is not None:
+            score_summary = (
+                f"Runs {portfolio_summary.completed_runs}/{portfolio_summary.total_runs}. "
+                f"Paper PnL ${portfolio_summary.total_realized_pnl_cents / 100:.2f}. "
+                f"Portfolio score {portfolio_summary.portfolio_score}."
+            )
+        route_id = selected_candidate.id if selected_candidate is not None else None
+        route_summary = selected_candidate.summary if selected_candidate is not None else ""
+        route_strategy = selected_candidate.strategy_label if selected_candidate is not None else ""
+        return AgentContextPack(
+            profile_id=profile.id if profile is not None else None,
+            profile_name=profile_name,
+            primary_mission=mission,
+            selected_route_id=route_id,
+            selected_route_summary=route_summary,
+            selected_route_strategy=route_strategy,
+            loadout_summary=loadout_summary,
+            score_summary=score_summary,
+            diagnostics_summary=diagnostics_summary.strip(),
+            active_sources=sources,
+        )
+
+    def _detect_skill(self, lowered: str) -> AgentSkillId:
+        if "draft" in lowered or "build" in lowered or "starter bot" in lowered:
+            return "draft_starter_bot"
+        if "adjust" in lowered or "tune" in lowered or "safer" in lowered:
+            return "adjust_bot_settings"
+        if "diagnostic" in lowered or "error" in lowered or "warning" in lowered:
+            return "review_diagnostics"
+        if "locked" in lowered or "live" in lowered or "unlock" in lowered:
+            return "explain_lock"
+        if "session" in lowered or "last run" in lowered or "summarize" in lowered:
+            return "summarize_last_session"
+        return "explain_route"
 
     def _build_response(
         self,
         *,
-        lowered: str,
+        request: AgentRequest,
         profile: AppProfile | None,
         candidates: list[OpportunityCandidate],
+        selected_candidate: OpportunityCandidate | None,
+        registry_entries: list[BotRegistryEntry],
         checklist: LiveUnlockChecklist | None,
         portfolio_summary: PortfolioSummary | None,
-        remote_configured: bool,
-        sources: list[str],
-    ) -> str:
-        preface = "Coach mode only. Superior keeps execution deterministic and outside the assistant."
-        if "loadout" in lowered or "equip" in lowered or "connector" in lowered:
-            if profile is None:
-                return f"{preface}\n\nNo profile is active yet. Create one, then equip Polymarket first."
-            connectors = ", ".join(profile.equipped_connectors) or "none"
-            modules = ", ".join(profile.equipped_modules) or "none"
-            return (
-                f"{preface}\n\nCurrent loadout:\n"
-                f"- Connectors: {connectors}\n"
-                f"- Modules: {modules}\n"
-                f"- Primary mission: {profile.primary_mission}"
+        diagnostics_summary: str,
+    ) -> AgentResponse:
+        if self._is_unsafe_request(request.question.lower()):
+            return AgentResponse(
+                skill_id=request.skill_id,
+                response_text=(
+                    "Copilot is in read-only mode.\n\n"
+                    "Placing trades, overriding risk limits, or unlocking live mode stays outside Copilot. "
+                    "I can explain the current route, summarize diagnostics, or draft a safer paper-only bot instead."
+                ),
             )
-        if "unlock" in lowered or "live" in lowered:
-            if checklist is None:
-                return f"{preface}\n\nNo profile is active, so there is no live-gate checklist to review yet."
-            if checklist.live_ready:
-                return (
-                    f"{preface}\n\nThis profile satisfies the current local live gate. "
-                    "The next step is shadow or micro-live under the experimental rollout, not broad consumer live trading."
-                )
-            missing = "\n".join(f"- {item.label}: {item.message}" for item in checklist.outstanding)
-            return f"{preface}\n\nLive gate is still closed. Finish these items first:\n{missing}"
-        if "reject" in lowered or "opportunity" in lowered or "scanner" in lowered:
-            if not candidates:
-                return (
-                    f"{preface}\n\nThe scanner has no current candidates. Record local books first, then refresh the scanner."
-                )
-            top = candidates[0]
-            return (
-                f"{preface}\n\nTop scanner result: {top.strategy_label}\n"
-                f"- Summary: {top.summary}\n"
-                f"- Raw edge: {top.evidence.raw_edge_bps} bps\n"
-                f"- Net edge: {top.evidence.net_edge_bps} bps\n"
-                f"- Why it qualifies: {top.explanation.summary}"
-            )
-        if "score" in lowered or "paper" in lowered or "portfolio" in lowered:
-            if portfolio_summary is None:
-                return f"{preface}\n\nNo paper-score history is loaded yet."
-            return (
-                f"{preface}\n\nPaper score summary:\n"
-                f"- Total runs: {portfolio_summary.total_runs}\n"
-                f"- Completed runs: {portfolio_summary.completed_runs}\n"
-                f"- Realized paper PnL: ${portfolio_summary.total_realized_pnl_cents / 100:.2f}"
-            )
-        if "risk" in lowered:
-            if profile is None:
-                return f"{preface}\n\nChoose a profile first so the coach can explain the active risk preset."
-            return (
-                f"{preface}\n\nActive profile: {profile.display_name}\n"
-                f"- Risk preset: {profile.risk_policy_id}\n"
-                f"- Guided mode: {'on' if profile.guided_mode else 'off'}\n"
-                f"- Lab enabled: {'yes' if profile.lab_enabled else 'no'}"
-            )
-        source_text = ", ".join(sources) if sources else "local profile state and bundled docs"
-        remote_hint = (
-            "A BYO model key is configured for richer coaching later."
-            if remote_configured
-            else "No BYO model key is configured, so this answer stays local-first."
+        route = selected_candidate or (candidates[0] if candidates else None)
+        if request.skill_id == "draft_starter_bot":
+            return self._draft_starter_bot(profile=profile, route=route)
+        if request.skill_id == "adjust_bot_settings":
+            return self._adjust_bot_settings(profile=profile, route=route, registry_entries=registry_entries)
+        if request.skill_id == "summarize_last_session":
+            return self._summarize_last_session(portfolio_summary)
+        if request.skill_id == "explain_lock":
+            return self._explain_lock(checklist)
+        if request.skill_id == "review_diagnostics":
+            return self._review_diagnostics(diagnostics_summary)
+        return self._explain_route(route)
+
+    @staticmethod
+    def _is_unsafe_request(lowered: str) -> bool:
+        blocked_terms = (
+            "place this trade",
+            "place the trade",
+            "submit the order",
+            "override the risk",
+            "override risk",
+            "unlock live",
+            "turn on live",
+            "ignore the checklist",
         )
-        return (
-            f"{preface}\n\nSuperior is built to teach, record, scan, and paper before any live path is considered.\n"
-            f"{remote_hint}\n"
-            f"Answer source: {source_text}."
+        return any(term in lowered for term in blocked_terms)
+
+    def _explain_route(self, route: OpportunityCandidate | None) -> AgentResponse:
+        if route is None:
+            return AgentResponse(
+                skill_id="explain_route",
+                response_text=(
+                    "Copilot is in read-only mode.\n\n"
+                    "There is no staged route to explain yet. Record local books, refresh Scanner, and pick one candidate."
+                ),
+            )
+        deductions = (
+            ", ".join(
+                f"{key.replace('_', ' ')} {value} bps"
+                for key, value in route.explanation.cost_adjustments_bps.items()
+            )
+            or "no extra deductions were recorded"
+        )
+        assumptions = "; ".join(route.explanation.assumptions) or "no extra assumptions were recorded"
+        return AgentResponse(
+            skill_id="explain_route",
+            response_text=(
+                "Copilot is in read-only mode.\n\n"
+                f"Route: {route.strategy_label}\n"
+                f"Summary: {route.summary}\n"
+                f"Raw edge: {route.evidence.raw_edge_bps} bps\n"
+                f"Net edge: {route.evidence.net_edge_bps} bps\n"
+                f"Why it qualifies: {route.explanation.summary}\n"
+                f"Assumptions: {assumptions}\n"
+                f"Deductions: {deductions}"
+            ),
+        )
+
+    def _draft_starter_bot(
+        self,
+        *,
+        profile: AppProfile | None,
+        route: OpportunityCandidate | None,
+    ) -> AgentResponse:
+        if profile is None:
+            return AgentResponse(
+                skill_id="draft_starter_bot",
+                response_text="Choose a profile first so Copilot can draft a bot for the active loadout.",
+            )
+        strategy_family = route.strategy_id if route is not None else (
+            profile.equipped_modules[0] if profile.equipped_modules else "internal-binary"
+        )
+        label = f"{(route.strategy_label if route is not None else 'Starter')} Copilot"
+        min_edge_bps = 25
+        target_stake_cents = 1200
+        route_preference = "highest_edge"
+        description = "Conservative copilot draft for paper-first route testing."
+        if route is not None:
+            min_edge_bps = max(25, min(route.net_edge_bps - 10 if route.net_edge_bps > 35 else route.net_edge_bps, 85))
+            target_stake_cents = max(800, min(route.recommended_stake_cents or 1200, 1800))
+            route_preference = "best_quality" if route.opportunity_quality_score >= 70 else "highest_edge"
+            description = f"Drafted from {route.strategy_label} so the first paper session stays narrow and explainable."
+        draft = AgentDraft(
+            draft_id=str(uuid.uuid4()),
+            title="Draft starter bot",
+            summary=f"Create {label} as a new local paper bot recipe.",
+            reason="This keeps the first paper session narrow, conservative, and easy to inspect before you fork anything more aggressive.",
+            affected_fields=[
+                "label",
+                "description",
+                "strategy_family",
+                "min_net_edge_bps",
+                "target_stake_cents",
+                "route_preference",
+                "max_assignments",
+            ],
+            actions=[
+                DraftAction(
+                    action_type="save_bot_recipe",
+                    title=f"Save {label}",
+                    changes={
+                        "label": label,
+                        "description": description,
+                        "strategy_family": strategy_family,
+                        "min_net_edge_bps": str(min_edge_bps),
+                        "target_stake_cents": str(target_stake_cents),
+                        "max_assignments": "1",
+                        "route_preference": route_preference,
+                        "lab_only": "false",
+                    },
+                )
+            ],
+        )
+        route_text = route.summary if route is not None else "No route is selected, so this draft uses the current loadout only."
+        return AgentResponse(
+            skill_id="draft_starter_bot",
+            response_text=(
+                "Copilot prepared a starter-bot draft.\n\n"
+                f"Focus: {route_text}\n"
+                f"Draft label: {label}\n"
+                f"Gate: {min_edge_bps}+ bps\n"
+                f"Target stake: ${target_stake_cents / 100:.2f}\n"
+                "Review the draft below and apply it only if the shape looks right."
+            ),
+            draft=draft,
+        )
+
+    def _adjust_bot_settings(
+        self,
+        *,
+        profile: AppProfile | None,
+        route: OpportunityCandidate | None,
+        registry_entries: list[BotRegistryEntry],
+    ) -> AgentResponse:
+        if profile is None:
+            return AgentResponse(
+                skill_id="adjust_bot_settings",
+                response_text="Choose a profile first so Copilot can adjust a local bot recipe safely.",
+            )
+        if not registry_entries:
+            return self._draft_starter_bot(profile=profile, route=route).model_copy(
+                update={"skill_id": "adjust_bot_settings"}
+            )
+        target = registry_entries[0]
+        safer_gate = min(target.min_net_edge_bps + 10, 95)
+        safer_stake = max(700, int(target.target_stake_cents * 0.8))
+        route_preference = "best_quality" if route is not None else target.route_preference
+        draft = AgentDraft(
+            draft_id=str(uuid.uuid4()),
+            title="Adjust bot settings",
+            summary=f"Fork {target.label} into a safer local variant.",
+            reason="This keeps the original recipe untouched and gives you a more conservative version for paper-only testing.",
+            affected_fields=["min_net_edge_bps", "target_stake_cents", "route_preference"],
+            actions=[
+                DraftAction(
+                    action_type="save_bot_recipe",
+                    title=f"Fork {target.label}",
+                    target_id=target.recipe_id or target.blueprint_id,
+                    changes={
+                        "label": f"{target.label} Copilot",
+                        "description": f"Safer local fork of {target.label}.",
+                        "strategy_family": target.strategy_family,
+                        "min_net_edge_bps": str(safer_gate),
+                        "target_stake_cents": str(safer_stake),
+                        "max_assignments": "1",
+                        "route_preference": route_preference,
+                        "lab_only": "true" if target.lab_only else "false",
+                    },
+                )
+            ],
+        )
+        return AgentResponse(
+            skill_id="adjust_bot_settings",
+            response_text=(
+                "Copilot prepared a safer bot fork.\n\n"
+                f"Source bot: {target.label}\n"
+                f"New gate: {safer_gate}+ bps\n"
+                f"New stake: ${safer_stake / 100:.2f}\n"
+                "This draft keeps the original recipe untouched and creates a stricter local version."
+            ),
+            draft=draft,
+        )
+
+    def _summarize_last_session(self, portfolio_summary: PortfolioSummary | None) -> AgentResponse:
+        if portfolio_summary is None or portfolio_summary.total_runs == 0:
+            return AgentResponse(
+                skill_id="summarize_last_session",
+                response_text="No paper session has banked score yet. Start one session first and Copilot can summarize what happened.",
+            )
+        return AgentResponse(
+            skill_id="summarize_last_session",
+            response_text=(
+                "Copilot summary of recent paper progress:\n\n"
+                f"Completed runs: {portfolio_summary.completed_runs}/{portfolio_summary.total_runs}\n"
+                f"Paper PnL: ${portfolio_summary.total_realized_pnl_cents / 100:.2f}\n"
+                f"Portfolio score: {portfolio_summary.portfolio_score}\n"
+                f"Mastery score: {portfolio_summary.mastery_score}\n"
+                f"Available bot slots: {portfolio_summary.available_bot_slots}\n"
+                f"Last grade: {portfolio_summary.last_session_grade}"
+            ),
+        )
+
+    def _explain_lock(self, checklist: LiveUnlockChecklist | None) -> AgentResponse:
+        if checklist is None:
+            return AgentResponse(
+                skill_id="explain_lock",
+                response_text="No profile is active, so there is no live gate to review yet.",
+            )
+        if checklist.live_ready:
+            return AgentResponse(
+                skill_id="explain_lock",
+                response_text=(
+                    "The local gate is clear, but Superior still treats live as a separate high-friction path. "
+                    "Keep using paper and shadow previews before you arm anything real."
+                ),
+            )
+        missing = "\n".join(f"- {item.label}: {item.message}" for item in checklist.outstanding)
+        return AgentResponse(
+            skill_id="explain_lock",
+            response_text=f"Live is still locked. Finish these items first:\n{missing}",
+        )
+
+    def _review_diagnostics(self, diagnostics_summary: str) -> AgentResponse:
+        if not diagnostics_summary.strip():
+            return AgentResponse(
+                skill_id="review_diagnostics",
+                response_text="No diagnostics bundle is loaded yet. Refresh Diagnostics and Copilot can review the current machine state.",
+            )
+        lines = [line for line in diagnostics_summary.splitlines() if line.strip()][:10]
+        return AgentResponse(
+            skill_id="review_diagnostics",
+            response_text="Copilot reviewed the current diagnostics snapshot:\n\n" + "\n".join(lines),
         )
 
     def _collect_sources(self, lowered: str) -> list[str]:

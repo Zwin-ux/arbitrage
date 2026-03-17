@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import cast
@@ -41,12 +42,16 @@ from PySide6.QtWidgets import (
 from market_data_recorder.models import ArbitrageOpportunity
 from . import __version__
 from .app_types import (
+    AgentDraft,
+    DraftAction,
+    AgentSkillId,
     AppProfile,
     AssistantSession,
     BenchmarkAudit,
     BenchmarkInterval,
     BenchmarkInstrumentType,
     BotConfig,
+    BotRecipe,
     BotRegistryEntry,
     BotSlot,
     CapabilityState,
@@ -55,12 +60,14 @@ from .app_types import (
     EngineStatus,
     ExperimentalLiveStatus,
     LiveUnlockChecklist,
+    ModelProviderConfig,
     OpportunityCandidate,
     PaperBotEvent,
     PaperBotSession,
     PaperRunResult,
     PortfolioSnapshot,
     PortfolioSummary,
+    ProviderHealth,
     ScoreLedgerEntry,
     ScoreSnapshot,
     StrategyModule,
@@ -783,7 +790,7 @@ class LoadoutTab(QWidget):
         connectors_layout = QVBoxLayout(connectors_group)
         self.polymarket_checkbox = QCheckBox("Polymarket")
         self.kalshi_checkbox = QCheckBox("Kalshi")
-        self.coach_checkbox = QCheckBox("Coach link")
+        self.coach_checkbox = QCheckBox("Copilot link")
         for checkbox in (self.polymarket_checkbox, self.kalshi_checkbox, self.coach_checkbox):
             connectors_layout.addWidget(checkbox)
         loadout_row.addWidget(connectors_group, 0, Qt.AlignmentFlag.AlignTop)
@@ -809,8 +816,11 @@ class LoadoutTab(QWidget):
         self.save_button = QPushButton("Save loadout")
         self.refresh_button = QPushButton("Refresh status")
         self.refresh_button.setProperty("buttonRole", "secondary")
+        self.copilot_button = QPushButton("Ask Copilot for a bot")
+        self.copilot_button.setProperty("buttonRole", "secondary")
         action_row.addWidget(self.save_button)
         action_row.addWidget(self.refresh_button)
+        action_row.addWidget(self.copilot_button)
         action_row.addStretch(1)
         layout.addLayout(action_row)
 
@@ -897,6 +907,7 @@ class LoadoutTab(QWidget):
                 checkbox.setEnabled(False)
             self.save_button.setEnabled(False)
             self.refresh_button.setEnabled(False)
+            self.copilot_button.setEnabled(False)
             return
         self.header_label.setText(f"{profile.display_name} bot bay")
         connector_ids = set(loadout.equipped_connectors)
@@ -917,6 +928,7 @@ class LoadoutTab(QWidget):
         self.maker_lab_checkbox.setEnabled(profile.lab_enabled)
         self.save_button.setEnabled(True)
         self.refresh_button.setEnabled(True)
+        self.copilot_button.setEnabled(True)
         lines = [f"MISSION    {profile.primary_mission}", "", "CONNECTORS"]
         lines.extend(
             f"- {state.label}: {'EQUIPPED' if state.equipped else 'IDLE'} | {'READY' if state.ready else 'BLOCKED'}"
@@ -988,39 +1000,231 @@ class LoadoutTab(QWidget):
 
 
 class LearnTab(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, provider_presets: list[ModelProviderConfig] | None = None) -> None:
         super().__init__()
+        self._provider_presets = provider_presets or [ModelProviderConfig()]
+        self._requested_skill: AgentSkillId | None = None
         layout = QVBoxLayout(self)
+        layout.setSpacing(10)
 
-        intro_group = QGroupBox("Learn first")
+        intro_group = QGroupBox("Copilot")
         intro_layout = QVBoxLayout(intro_group)
-        for line in (
-            "Superior is paper-first by default. The coach can explain what the scanner sees, but it cannot place trades.",
-            "Use the recorder to gather local Polymarket books, then scan edge to surface explainable opportunities.",
-            "Kalshi stays optional until you want to compare exact cross-venue matches.",
-        ):
-            label = QLabel(line)
-            label.setWordWrap(True)
-            intro_layout.addWidget(label)
+        self.intro_label = QLabel(
+            "Bring your own model if you want extra help. Copilot can explain routes, draft paper bots, and summarize runs, but it cannot trade."
+        )
+        self.intro_label.setWordWrap(True)
+        intro_layout.addWidget(self.intro_label)
+        self.status_label = QLabel("Status: local-first mode")
+        self.status_label.setWordWrap(True)
+        self.context_label = QLabel("Context: no active profile")
+        self.context_label.setWordWrap(True)
+        intro_layout.addWidget(self.status_label)
+        intro_layout.addWidget(self.context_label)
         layout.addWidget(intro_group)
 
-        coach_group = QGroupBox("Ask the coach")
+        provider_group = QGroupBox("Bring your own model")
+        provider_layout = QFormLayout(provider_group)
+        self.provider_combo = QComboBox()
+        for preset in self._provider_presets:
+            self.provider_combo.addItem(preset.provider_label, preset.provider_id)
+        self.model_edit = QLineEdit()
+        self.base_url_edit = QLineEdit()
+        self.api_key_edit = QLineEdit()
+        self.api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        self.model_edit.setPlaceholderText("Model name")
+        self.base_url_edit.setPlaceholderText("Provider base URL")
+        self.api_key_edit.setPlaceholderText("Stored in the OS keychain only")
+        provider_layout.addRow("Provider", self.provider_combo)
+        provider_layout.addRow("Model", self.model_edit)
+        provider_layout.addRow("Base URL", self.base_url_edit)
+        provider_layout.addRow("API key", self.api_key_edit)
+        provider_action_row = QHBoxLayout()
+        self.test_provider_button = QPushButton("Test connection")
+        self.save_provider_button = QPushButton("Save Copilot")
+        self.save_provider_button.setProperty("buttonRole", "secondary")
+        provider_action_row.addWidget(self.test_provider_button)
+        provider_action_row.addWidget(self.save_provider_button)
+        provider_action_row.addStretch(1)
+        provider_layout.addRow("", self._wrap_layout(provider_action_row))
+        self.provider_combo.currentIndexChanged.connect(self._apply_selected_preset)
+        layout.addWidget(provider_group)
+
+        quick_group = QGroupBox("Quick prompts")
+        quick_layout = QHBoxLayout(quick_group)
+        self.explain_route_button = QPushButton("Explain this route")
+        self.draft_bot_button = QPushButton("Build me a safer starter bot")
+        self.summarize_button = QPushButton("Summarize my last session")
+        self.fix_loadout_button = QPushButton("Fix my loadout")
+        self.lock_button = QPushButton("Why is live locked?")
+        for button in (
+            self.explain_route_button,
+            self.draft_bot_button,
+            self.summarize_button,
+            self.fix_loadout_button,
+            self.lock_button,
+        ):
+            button.setProperty("buttonRole", "secondary")
+            quick_layout.addWidget(button)
+        quick_layout.addStretch(1)
+        layout.addWidget(quick_group)
+
+        coach_group = QGroupBox("Ask Copilot")
         coach_layout = QVBoxLayout(coach_group)
         self.prompt_edit = QPlainTextEdit()
-        self.prompt_edit.setPlaceholderText("Why was this route rejected?\nWhat blocks the live gate?\nExplain my loadout.")
-        self.ask_button = QPushButton("Ask coach")
+        self.prompt_edit.setPlaceholderText(
+            "Explain this route.\nBuild me a safer starter bot.\nWhy is live locked?"
+        )
+        self.ask_button = QPushButton("Ask Copilot")
         self.response_text = QPlainTextEdit()
         self.response_text.setReadOnly(True)
+        self.draft_text = QPlainTextEdit()
+        self.draft_text.setReadOnly(True)
+        draft_action_row = QHBoxLayout()
+        self.apply_draft_button = QPushButton("Apply draft")
+        self.reject_draft_button = QPushButton("Reject draft")
+        self.reject_draft_button.setProperty("buttonRole", "secondary")
+        draft_action_row.addWidget(self.apply_draft_button)
+        draft_action_row.addWidget(self.reject_draft_button)
+        draft_action_row.addStretch(1)
         coach_layout.addWidget(self.prompt_edit)
         coach_layout.addWidget(self.ask_button)
         coach_layout.addWidget(self.response_text)
+        coach_layout.addWidget(self.draft_text)
+        coach_layout.addLayout(draft_action_row)
         layout.addWidget(coach_group)
         layout.addStretch(1)
 
+        self._apply_selected_preset()
+        self.clear_draft()
+
+    @staticmethod
+    def _wrap_layout(layout: QHBoxLayout) -> QWidget:
+        widget = QWidget()
+        widget.setLayout(layout)
+        return widget
+
+    def _apply_selected_preset(self) -> None:
+        preset = self._selected_preset()
+        self.model_edit.setText(preset.model_name)
+        self.base_url_edit.setText(preset.base_url)
+        api_required = preset.api_key_required
+        self.api_key_edit.setEnabled(api_required)
+        if not api_required:
+            self.api_key_edit.clear()
+            self.api_key_edit.setPlaceholderText("No API key needed for local models")
+        else:
+            self.api_key_edit.setPlaceholderText("Stored in the OS keychain only")
+
+    def queue_prompt(self, prompt: str, skill_id: AgentSkillId) -> None:
+        self.prompt_edit.setPlainText(prompt)
+        self._requested_skill = skill_id
+
+    def requested_skill(self) -> AgentSkillId | None:
+        return self._requested_skill
+
+    def clear_requested_skill(self) -> None:
+        self._requested_skill = None
+
+    def _selected_preset(self) -> ModelProviderConfig:
+        provider_id = self.provider_combo.currentData()
+        for preset in self._provider_presets:
+            if preset.provider_id == provider_id:
+                return preset
+        return self._provider_presets[0]
+
+    def provider_config(self) -> ModelProviderConfig:
+        preset = self._selected_preset()
+        return preset.model_copy(
+            update={
+                "model_name": self.model_edit.text().strip(),
+                "base_url": self.base_url_edit.text().strip(),
+            }
+        )
+
+    def provider_api_key(self) -> str:
+        return self.api_key_edit.text().strip()
+
+    def load_provider_state(
+        self,
+        profile: AppProfile | None,
+        config: ModelProviderConfig,
+        api_key: str,
+    ) -> None:
+        index = self.provider_combo.findData(config.provider_id)
+        if index >= 0:
+            self.provider_combo.blockSignals(True)
+            self.provider_combo.setCurrentIndex(index)
+            self.provider_combo.blockSignals(False)
+        self._apply_selected_preset()
+        self.model_edit.setText(config.model_name)
+        self.base_url_edit.setText(config.base_url)
+        self.api_key_edit.setText(api_key)
+        if profile is None:
+            self.context_label.setText("Context: no active profile")
+        else:
+            self.context_label.setText(f"Context: {profile.display_name} | {profile.primary_mission}")
+
+    def update_status(
+        self,
+        *,
+        profile: AppProfile | None,
+        health: ProviderHealth,
+        selected_candidate: OpportunityCandidate | None,
+        portfolio_summary: PortfolioSummary | None,
+    ) -> None:
+        if health.provider_id == "none":
+            self.status_label.setText("Status: local-first mode | no model configured")
+        else:
+            self.status_label.setText(
+                f"Status: {health.provider_label} | {health.status.replace('_', ' ')} | {health.message}"
+            )
+        route_label = selected_candidate.summary if selected_candidate is not None else "no staged route"
+        summary_label = (
+            f"{portfolio_summary.completed_runs} completed runs"
+            if portfolio_summary is not None and portfolio_summary.total_runs
+            else "no paper history yet"
+        )
+        if profile is None:
+            self.context_label.setText("Context: no active profile")
+        else:
+            self.context_label.setText(
+                f"Context: {profile.display_name} | route: {route_label} | score: {summary_label}"
+            )
+
+    def clear_draft(self) -> None:
+        self.draft_text.setPlainText("No draft yet. Ask Copilot to explain or draft something.")
+        self.apply_draft_button.setEnabled(False)
+        self.reject_draft_button.setEnabled(False)
+
     def set_response(self, session: AssistantSession) -> None:
-        last_message = session.messages[-1].content if session.messages else ""
         sources = ", ".join(session.sources) if session.sources else "local profile state"
-        self.response_text.setPlainText(f"{last_message}\n\nSources: {sources}")
+        health_note = session.provider_health.message if session.provider_health.message else "Local-first mode"
+        self.response_text.setPlainText(
+            f"{session.response_text or (session.messages[-1].content if session.messages else '')}\n\nSources: {sources}\nProvider: {health_note}"
+        )
+        if session.draft is None:
+            self.clear_draft()
+            return
+        action_lines = [f"- {action.title}" for action in session.draft.actions]
+        self.draft_text.setPlainText(
+            "\n".join(
+                [
+                    session.draft.title,
+                    "",
+                    session.draft.summary,
+                    "",
+                    f"Why: {session.draft.reason}",
+                    "",
+                    "Affected fields:",
+                    *[f"- {field}" for field in session.draft.affected_fields],
+                    "",
+                    "Actions:",
+                    *action_lines,
+                ]
+            )
+        )
+        self.apply_draft_button.setEnabled(True)
+        self.reject_draft_button.setEnabled(True)
 
 
 class ScannerTab(QWidget):
@@ -1060,9 +1264,12 @@ class ScannerTab(QWidget):
 
         actions = QHBoxLayout()
         self.refresh_button = QPushButton("Refresh scan")
+        self.explain_button = QPushButton("Explain this candidate")
+        self.explain_button.setProperty("buttonRole", "secondary")
         self.paper_button = QPushButton("Start selected session")
         self.live_preview_button = QPushButton("Preview live lock")
         actions.addWidget(self.refresh_button)
+        actions.addWidget(self.explain_button)
         actions.addWidget(self.paper_button)
         actions.addWidget(self.live_preview_button)
         actions.addStretch(1)
@@ -1493,6 +1700,11 @@ class ScoreTab(QWidget):
             "Paper score is the main progression system in Superior. Live score stays locked and empty."
         )
         self.mode_label.setWordWrap(True)
+        actions = QHBoxLayout()
+        self.summarize_button = QPushButton("Summarize with Copilot")
+        self.summarize_button.setProperty("buttonRole", "secondary")
+        actions.addWidget(self.summarize_button)
+        actions.addStretch(1)
         self.portfolio_text = QPlainTextEdit()
         self.portfolio_text.setReadOnly(True)
         self.detail_text = QPlainTextEdit()
@@ -1501,6 +1713,7 @@ class ScoreTab(QWidget):
         self.ledger_text.setReadOnly(True)
         layout.addWidget(self.summary_label)
         layout.addWidget(self.mode_label)
+        layout.addLayout(actions)
         layout.addWidget(self.portfolio_text)
         layout.addWidget(self.detail_text)
         layout.addWidget(self.ledger_text)
@@ -1936,6 +2149,7 @@ class DesktopMainWindow(QMainWindow):
         self._live_execution_engine = live_execution_engine
         self._unlock_service = unlock_service
         self._assistant_service = assistant_service
+        self._copilot_presets = self._assistant_service.provider_presets()
         self._arb_service = arbitrage_service or ArbitrageService()
         self._benchmark_api_key_env_override = resolve_benchmark_api_key()
         self._profiles: list[AppProfile] = []
@@ -1945,13 +2159,15 @@ class DesktopMainWindow(QMainWindow):
         self._last_session: PaperBotSession | None = None
         self._previous_state = "idle"
         self._home_primary_action_mode = "recorder"
+        self._pending_copilot_draft: AgentDraft | None = None
+        self._loaded_copilot_profile_id: str | None = None
 
         self.setWindowTitle("Superior")
         self.resize(1260, 880)
 
         self.home_tab = HangarHomeTab()
         self.loadout_tab = LoadoutTab()
-        self.learn_tab = LearnTab()
+        self.learn_tab = LearnTab(self._copilot_presets)
         self.scanner_tab = ScannerTab()
         self.arb_tab = ArbitrageTab()
         self.paper_bots_tab = PaperBotsTab()
@@ -1975,7 +2191,7 @@ class DesktopMainWindow(QMainWindow):
         self.tabs.addTab(self.paper_bots_tab, "Paper Runs")
         self.tabs.addTab(self.score_tab, "Score")
         self.tabs.addTab(self.diagnostics_tab, "Diagnostics")
-        self.tabs.addTab(self.learn_tab, "Learn")
+        self.tabs.addTab(self.learn_tab, "Copilot")
         self.tabs.addTab(self.live_unlock_tab, "Live Gate")
         self.tabs.addTab(self.about_tab, "About")
         self.setCentralWidget(self.shell)
@@ -2041,10 +2257,35 @@ class DesktopMainWindow(QMainWindow):
         self.loadout_tab.save_button.clicked.connect(self._save_loadout)
         self.loadout_tab.refresh_button.clicked.connect(self._refresh_all_views)
         self.loadout_tab.fork_button.clicked.connect(self._fork_selected_recipe)
+        self.loadout_tab.copilot_button.clicked.connect(
+            lambda: self._prime_copilot("Build me a safer starter bot.", "draft_starter_bot")
+        )
 
-        self.learn_tab.ask_button.clicked.connect(self._ask_coach)
+        self.learn_tab.ask_button.clicked.connect(self._ask_copilot)
+        self.learn_tab.test_provider_button.clicked.connect(self._test_copilot_connection)
+        self.learn_tab.save_provider_button.clicked.connect(self._save_copilot_settings)
+        self.learn_tab.apply_draft_button.clicked.connect(self._apply_copilot_draft)
+        self.learn_tab.reject_draft_button.clicked.connect(self._reject_copilot_draft)
+        self.learn_tab.explain_route_button.clicked.connect(
+            lambda: self._prime_copilot("Explain this route.", "explain_route")
+        )
+        self.learn_tab.draft_bot_button.clicked.connect(
+            lambda: self._prime_copilot("Build me a safer starter bot.", "draft_starter_bot")
+        )
+        self.learn_tab.summarize_button.clicked.connect(
+            lambda: self._prime_copilot("Summarize my last session.", "summarize_last_session")
+        )
+        self.learn_tab.fix_loadout_button.clicked.connect(
+            lambda: self._prime_copilot("Fix my loadout.", "adjust_bot_settings")
+        )
+        self.learn_tab.lock_button.clicked.connect(
+            lambda: self._prime_copilot("Why is live locked?", "explain_lock")
+        )
 
         self.scanner_tab.refresh_button.clicked.connect(self._refresh_scanner)
+        self.scanner_tab.explain_button.clicked.connect(
+            lambda: self._prime_copilot("Explain this route.", "explain_route")
+        )
         self.scanner_tab.paper_button.clicked.connect(self._start_selected_session)
         self.scanner_tab.live_preview_button.clicked.connect(self._preview_live_lock)
         self.scanner_tab.candidate_list.currentItemChanged.connect(self._on_candidate_changed)
@@ -2054,6 +2295,9 @@ class DesktopMainWindow(QMainWindow):
 
         self.paper_bots_tab.run_top_button.clicked.connect(self._start_paper_session)
         self.paper_bots_tab.refresh_button.clicked.connect(self._refresh_portfolio_views)
+        self.score_tab.summarize_button.clicked.connect(
+            lambda: self._prime_copilot("Summarize my last session.", "summarize_last_session")
+        )
 
         self.live_unlock_tab.save_button.clicked.connect(self._save_unlock_preferences)
         self.live_unlock_tab.refresh_button.clicked.connect(self._refresh_all_views)
@@ -2150,6 +2394,8 @@ class DesktopMainWindow(QMainWindow):
             if index < 0:
                 index = 0
             self.profile_selector.setCurrentIndex(index)
+        else:
+            self._loaded_copilot_profile_id = None
 
     def _refresh_status_only(self) -> None:
         profile = self._current_profile()
@@ -2158,6 +2404,7 @@ class DesktopMainWindow(QMainWindow):
         credential_statuses = self._credential_statuses(profile)
         score_snapshot = self._score_service.snapshot(profile)
         portfolio_snapshot = self._portfolio_engine.snapshot(profile)
+        paper_summary = self._paper_store.summary(profile) if profile is not None else None
         unlocks = self._unlock_track_service.unlocks(profile, score_snapshot) if profile is not None else []
         bot_configs = self._bot_config_service.configs(profile, score_snapshot) if profile is not None else []
         registry_entries = (
@@ -2208,12 +2455,23 @@ class DesktopMainWindow(QMainWindow):
         )
         self._sync_shell_state(profile, status, len(self._latest_candidates))
         self.live_unlock_tab.update_view(profile, checklist, live_status)
-        self.diagnostics_tab.text.setPlainText(
-            self._diagnostics.diagnostics_text(
-                profile=profile,
-                status=status,
-                credential_statuses=credential_statuses,
-            )
+        diagnostics_text = self._diagnostics.diagnostics_text(
+            profile=profile,
+            status=status,
+            credential_statuses=credential_statuses,
+        )
+        self.diagnostics_tab.text.setPlainText(diagnostics_text)
+        profile_id = profile.id if profile is not None else None
+        provider_config = self._copilot_provider_config(profile)
+        provider_api_key = self._copilot_api_key(profile)
+        if self._loaded_copilot_profile_id != profile_id:
+            self._load_copilot_state(profile)
+        provider_health = self._assistant_service.provider_health(provider_config, provider_api_key)
+        self.learn_tab.update_status(
+            profile=profile,
+            health=provider_health,
+            selected_candidate=self._selected_candidate(),
+            portfolio_summary=paper_summary,
         )
         if profile is not None:
             self.loadout_tab.update_view(
@@ -2405,8 +2663,203 @@ class DesktopMainWindow(QMainWindow):
         del previous
         if current is None:
             self.scanner_tab.set_details(self._latest_candidates[0] if self._latest_candidates else None)
+            self._refresh_status_only()
             return
         self.scanner_tab.set_details(self._selected_candidate())
+        self._refresh_status_only()
+
+    def _prime_copilot(self, prompt: str, skill_id: AgentSkillId) -> None:
+        self.tabs.setCurrentWidget(self.learn_tab)
+        self.learn_tab.queue_prompt(prompt, skill_id)
+        self.learn_tab.prompt_edit.setFocus()
+
+    def _copilot_provider_config(self, profile: AppProfile | None) -> ModelProviderConfig:
+        preset = next(
+            (
+                item
+                for item in self._copilot_presets
+                if item.provider_id == (profile.copilot_provider_id if profile is not None else "none")
+            ),
+            self._copilot_presets[0],
+        )
+        if profile is None:
+            return preset.model_copy(deep=True)
+        return preset.model_copy(
+            update={
+                "model_name": profile.copilot_model_name or preset.model_name,
+                "base_url": profile.copilot_base_url or preset.base_url,
+            }
+        )
+
+    def _copilot_api_key(self, profile: AppProfile | None) -> str:
+        if profile is None:
+            return ""
+        return self._credential_vault.load(profile.id, "coach").get("api_key", "")
+
+    def _load_copilot_state(self, profile: AppProfile | None) -> None:
+        self.learn_tab.load_provider_state(
+            profile,
+            self._copilot_provider_config(profile),
+            self._copilot_api_key(profile),
+        )
+        self._loaded_copilot_profile_id = profile.id if profile is not None else None
+        self._pending_copilot_draft = None
+        self.learn_tab.clear_draft()
+
+    def _test_copilot_connection(self) -> None:
+        profile = self._current_profile()
+        health = self._assistant_service.provider_health(
+            self.learn_tab.provider_config(),
+            self.learn_tab.provider_api_key(),
+        )
+        self.learn_tab.update_status(
+            profile=profile,
+            health=health,
+            selected_candidate=self._selected_candidate(),
+            portfolio_summary=self._paper_store.summary(profile) if profile is not None else None,
+        )
+        self.statusBar().showMessage(f"Copilot: {health.message}", 5000)
+
+    def _save_copilot_settings(self) -> None:
+        profile = self._current_profile()
+        if profile is None:
+            QMessageBox.information(self, "Choose a profile", "Choose a profile before saving Copilot settings.")
+            return
+        config = self.learn_tab.provider_config()
+        api_key = self.learn_tab.provider_api_key()
+        equipped_connectors: list[str] = [
+            connector for connector in profile.equipped_connectors if connector != "coach"
+        ]
+        if config.provider_id != "none":
+            equipped_connectors.append("coach")
+        updated = profile.model_copy(
+            update={
+                "ai_coach_enabled": config.provider_id != "none",
+                "equipped_connectors": equipped_connectors,
+                "copilot_provider_id": config.provider_id,
+                "copilot_model_name": config.model_name,
+                "copilot_base_url": config.base_url,
+            }
+        )
+        self._profile_store.save_profile(updated)
+        if api_key:
+            self._credential_vault.save(
+                updated.id,
+                "coach",
+                {
+                    "provider_name": config.provider_label,
+                    "model_name": config.model_name,
+                    "api_key": api_key,
+                },
+            )
+        else:
+            self._credential_vault.delete(updated.id, "coach")
+        self._loaded_copilot_profile_id = None
+        self._refresh_profiles(updated.id)
+        self._refresh_status_only()
+        self.statusBar().showMessage("Copilot settings saved locally.", 5000)
+
+    def _apply_copilot_draft(self) -> None:
+        profile = self._current_profile()
+        draft = self._pending_copilot_draft
+        if profile is None or draft is None:
+            QMessageBox.information(self, "No draft", "Ask Copilot for a draft before trying to apply one.")
+            return
+        updated_profile = profile
+        applied_actions: list[str] = []
+        for action in draft.actions:
+            if action.action_type == "save_bot_recipe":
+                updated_recipe = self._apply_bot_recipe_draft(updated_profile, action)
+                applied_actions.append(updated_recipe.label)
+                continue
+            if action.action_type == "update_loadout":
+                updated_profile = self._apply_loadout_draft(updated_profile, action)
+                applied_actions.append(action.title)
+        if updated_profile.id != profile.id or updated_profile != profile:
+            self._profile_store.save_profile(updated_profile)
+            self._refresh_profiles(updated_profile.id)
+        self._pending_copilot_draft = None
+        self.learn_tab.clear_draft()
+        self._refresh_all_views()
+        applied_summary = ", ".join(applied_actions) if applied_actions else "No changes were applied."
+        self.statusBar().showMessage(f"Copilot applied: {applied_summary}", 5000)
+
+    def _reject_copilot_draft(self) -> None:
+        self._pending_copilot_draft = None
+        self.learn_tab.clear_draft()
+        self.statusBar().showMessage("Copilot draft cleared.", 4000)
+
+    def _apply_bot_recipe_draft(self, profile: AppProfile, action: DraftAction) -> BotRecipe:
+        changes = action.changes
+        if action.target_id:
+            recipe = self._bot_config_service.fork_recipe(
+                profile,
+                action.target_id,
+                new_label=changes.get("label") or None,
+            )
+            recipe = recipe.model_copy(
+                update={
+                    "label": changes.get("label", recipe.label),
+                    "description": changes.get("description", recipe.description),
+                    "strategy_family": changes.get("strategy_family", recipe.strategy_family),
+                    "min_net_edge_bps": self._draft_int(changes.get("min_net_edge_bps"), recipe.min_net_edge_bps),
+                    "target_stake_cents": self._draft_int(changes.get("target_stake_cents"), recipe.target_stake_cents),
+                    "max_assignments": self._draft_int(changes.get("max_assignments"), recipe.max_assignments),
+                    "route_preference": changes.get("route_preference", recipe.route_preference),
+                    "lab_only": self._draft_bool(changes.get("lab_only"), recipe.lab_only),
+                    "enabled": self._draft_bool(changes.get("enabled"), recipe.enabled),
+                }
+            )
+            return self._bot_recipe_store.save_recipe(profile, recipe)
+        recipe = BotRecipe(
+            recipe_id="",
+            profile_id=profile.id,
+            label=changes.get("label", "Copilot Draft"),
+            description=changes.get("description", "Copilot-created paper recipe."),
+            strategy_family=changes.get("strategy_family", "internal-binary"),
+            min_net_edge_bps=self._draft_int(changes.get("min_net_edge_bps"), 25),
+            target_stake_cents=self._draft_int(changes.get("target_stake_cents"), 1_200),
+            max_assignments=self._draft_int(changes.get("max_assignments"), 1),
+            route_preference=changes.get("route_preference", "highest_edge"),
+            lab_only=self._draft_bool(changes.get("lab_only"), False),
+            enabled=self._draft_bool(changes.get("enabled"), True),
+            source_kind="custom",
+        )
+        return self._bot_recipe_store.save_recipe(profile, recipe)
+
+    def _apply_loadout_draft(self, profile: AppProfile, action: DraftAction) -> AppProfile:
+        changes = action.changes
+        connectors = self._draft_list(changes.get("equipped_connectors"), profile.equipped_connectors)
+        modules = self._draft_list(changes.get("equipped_modules"), profile.equipped_modules)
+        ai_coach_enabled = "coach" in connectors
+        return profile.model_copy(
+            update={
+                "equipped_connectors": connectors,
+                "equipped_modules": modules,
+                "ai_coach_enabled": ai_coach_enabled,
+            }
+        )
+
+    @staticmethod
+    def _draft_int(raw_value: str | None, fallback: int) -> int:
+        if raw_value is None or not raw_value.strip():
+            return fallback
+        try:
+            return int(raw_value)
+        except ValueError:
+            return fallback
+
+    @staticmethod
+    def _draft_bool(raw_value: str | None, fallback: bool) -> bool:
+        if raw_value is None or not raw_value.strip():
+            return fallback
+        return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+
+    @staticmethod
+    def _draft_list(raw_value: str | None, fallback: Sequence[str]) -> list[str]:
+        if raw_value is None or not raw_value.strip():
+            return list(fallback)
+        return [item.strip() for item in raw_value.split(",") if item.strip()]
 
     def _open_setup_wizard(self) -> None:
         wizard = SetupWizard(
@@ -2697,11 +3150,11 @@ class DesktopMainWindow(QMainWindow):
             self._live_execution_engine.preview(profile, candidate, live_status),
         )
 
-    def _ask_coach(self) -> None:
+    def _ask_copilot(self) -> None:
         profile = self._current_profile()
         question = self.learn_tab.prompt_edit.toPlainText().strip()
         if not question:
-            QMessageBox.information(self, "Ask something", "Enter a question for the coach first.")
+            QMessageBox.information(self, "Ask Copilot", "Enter a question for Copilot first.")
             return
         status = self._controller.status(profile)
         checklist = (
@@ -2715,18 +3168,32 @@ class DesktopMainWindow(QMainWindow):
             else None
         )
         summary = self._paper_store.summary(profile) if profile is not None else None
-        remote_configured = (
-            profile is not None and self._credential_vault.status(profile.id, "coach").status == "validated"
+        score_snapshot = self._score_service.snapshot(profile)
+        unlocks = self._unlock_track_service.unlocks(profile, score_snapshot) if profile is not None else []
+        registry_entries = (
+            self._bot_registry_service.entries(profile, score_snapshot, unlocks) if profile is not None else []
         )
+        provider_config = self.learn_tab.provider_config()
+        provider_api_key = self.learn_tab.provider_api_key()
         session = self._assistant_service.answer(
             question=question,
+            skill_id=self.learn_tab.requested_skill(),
             profile=profile,
             candidates=self._latest_candidates,
+            selected_candidate=self._selected_candidate(),
+            registry_entries=registry_entries,
             checklist=checklist,
             portfolio_summary=summary,
-            remote_configured=remote_configured,
+            diagnostics_summary=self.diagnostics_tab.text.toPlainText(),
+            provider_config=provider_config,
+            provider_api_key=provider_api_key,
         )
+        self._pending_copilot_draft = session.draft
         self.learn_tab.set_response(session)
+        self.learn_tab.clear_requested_skill()
+
+    def _ask_coach(self) -> None:
+        self._ask_copilot()
 
     def _save_unlock_preferences(self) -> None:
         profile = self._current_profile()

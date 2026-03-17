@@ -8,6 +8,7 @@ test("homepage keeps the primary download path visible", async ({ page }) => {
   await expect(
     page.getByText(/helps you watch public prediction markets, understand why a route looks interesting/i)
   ).toBeVisible();
+  await expect(page.getByText("Use your own model", { exact: true })).toBeVisible();
   const downloadLink = page.getByRole("link", { name: /download/i }).first();
   await expect(downloadLink).toBeVisible();
   await expect(downloadLink).toHaveAttribute(
@@ -22,6 +23,7 @@ test("download page explains the guided setup path", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /install the windows build and start in paper mode\./i })).toBeVisible();
   await expect(page.getByText(/keep the guided template/i)).toBeVisible();
   await expect(page.getByText(/record books, inspect routes, paper them/i)).toBeVisible();
+  await expect(page.getByText(/openai-compatible, anthropic, gemini, or ollama/i)).toBeVisible();
   await expect(page.getByRole("link", { name: /download sha256sums/i })).toHaveAttribute(
     "href",
     "https://github.com/Zwin-ux/arbitrage/releases/latest/download/SHA256SUMS.txt"

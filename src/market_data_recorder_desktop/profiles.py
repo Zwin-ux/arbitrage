@@ -132,6 +132,9 @@ class ProfileStore:
         scoreboard_mode: str = "paper",
         first_run_completed: bool = False,
         primary_mission: str | None = None,
+        copilot_provider_id: str = "none",
+        copilot_model_name: str = "",
+        copilot_base_url: str = "",
     ) -> AppProfile:
         profile_id = str(uuid.uuid4())
         target_dir = data_dir or (self._paths.data_dir / profile_id)
@@ -162,6 +165,9 @@ class ProfileStore:
             scoreboard_mode=scoreboard_mode,
             first_run_completed=first_run_completed,
             primary_mission=primary_mission or _primary_mission(primary_goal, enabled_venues),
+            copilot_provider_id=copilot_provider_id,
+            copilot_model_name=copilot_model_name,
+            copilot_base_url=copilot_base_url,
         )
         return self.save_profile(profile)
 

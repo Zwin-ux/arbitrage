@@ -135,6 +135,10 @@ def test_setup_wizard_creates_profile_and_keeps_secrets_out_of_json(
     cast(QLineEdit, box["api_key"]).setText("api-key")
     cast(QLineEdit, box["api_secret"]).setText("secret-value")
     cast(QLineEdit, box["api_passphrase"]).setText("passphrase-value")
+    wizard.coach_page.provider_combo.setCurrentIndex(wizard.coach_page.provider_combo.findData("openai_compatible"))
+    wizard.coach_page.model_edit.setText("gpt-4o-mini")
+    wizard.coach_page.base_url_edit.setText("https://api.openai.com/v1")
+    wizard.coach_page.api_key_edit.setText("copilot-key")
     wizard.risk_page.market_filters_edit.setText("sports, elections")
     wizard.accept()
 
@@ -144,9 +148,15 @@ def test_setup_wizard_creates_profile_and_keeps_secrets_out_of_json(
     assert created.primary_goal == "learn_and_scan"
     assert created.risk_policy_id == "starter"
     assert created.brand_name == "Superior"
+    assert created.copilot_provider_id == "openai_compatible"
+    assert created.copilot_model_name == "gpt-4o-mini"
+    assert "coach" in created.equipped_connectors
+    assert created.ai_coach_enabled is True
     assert "CONNECTOR KEYS ENTERED NOW: Polymarket" in wizard.finish_page.summary_label.text()
+    assert "COPILOT: OpenAI-compatible / gpt-4o-mini" in wizard.finish_page.summary_label.text()
     profiles_json = store.profiles_path.read_text(encoding="utf-8")
     assert "secret-value" not in profiles_json
+    assert "copilot-key" not in profiles_json
     assert fake_keyring.store
 
 
@@ -175,6 +185,8 @@ def test_setup_wizard_allows_first_run_without_credentials(
     created = store.get_profile(wizard.created_profile_id or "")
     assert created is not None
     assert created.enabled_venues == ["Polymarket"]
+    assert created.copilot_provider_id == "none"
+    assert created.ai_coach_enabled is False
     assert "START ONE PAPER RUN AND USE SCORE AS THE MAIN PROGRESSION SURFACE." in wizard.finish_page.summary_label.text()
     assert fake_keyring.store == {}
 
@@ -293,6 +305,148 @@ def test_main_window_can_fork_bot_recipe_from_loadout(
 
     assert "Scout Bot Mk II" in window.loadout_tab.registry_text.toPlainText()
     assert "Scout Bot Mk II" in window.loadout_tab.bot_bay_text.toPlainText()
+    controller.shutdown()
+
+
+def test_main_window_can_save_copilot_settings_without_key(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Copilot Settings",
+        template="Guided",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    selector_index = window.profile_selector.findData(profile.id)
+    window.profile_selector.setCurrentIndex(selector_index)
+    window.tabs.setCurrentWidget(window.learn_tab)
+    window.learn_tab.provider_combo.setCurrentIndex(window.learn_tab.provider_combo.findData("openai_compatible"))
+    qtbot.mouseClick(window.learn_tab.save_provider_button, Qt.MouseButton.LeftButton)
+
+    updated = store.get_profile(profile.id)
+    assert updated is not None
+    assert updated.copilot_provider_id == "openai_compatible"
+    assert updated.ai_coach_enabled is True
+    assert "coach" in updated.equipped_connectors
+    assert fake_keyring.store == {}
+    controller.shutdown()
+
+
+def test_scanner_explain_button_primes_copilot_prompt(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Explain Route",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    _store_internal_binary_sample(profile)
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    selector_index = window.profile_selector.findData(profile.id)
+    window.profile_selector.setCurrentIndex(selector_index)
+    window._refresh_scanner()  # noqa: SLF001
+    qtbot.mouseClick(window.scanner_tab.explain_button, Qt.MouseButton.LeftButton)
+
+    assert window.tabs.currentWidget() is window.learn_tab
+    assert window.learn_tab.prompt_edit.toPlainText() == "Explain this route."
+    controller.shutdown()
+
+
+def test_main_window_apply_copilot_draft_creates_local_recipe(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Copilot Apply",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    _store_internal_binary_sample(profile)
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    selector_index = window.profile_selector.findData(profile.id)
+    window.profile_selector.setCurrentIndex(selector_index)
+    window._refresh_scanner()  # noqa: SLF001
+    qtbot.mouseClick(window.loadout_tab.copilot_button, Qt.MouseButton.LeftButton)
+    qtbot.mouseClick(window.learn_tab.ask_button, Qt.MouseButton.LeftButton)
+    qtbot.waitUntil(lambda: window.learn_tab.apply_draft_button.isEnabled(), timeout=1500)
+    qtbot.mouseClick(window.learn_tab.apply_draft_button, Qt.MouseButton.LeftButton)
+    qtbot.waitUntil(lambda: "COPILOT" in window.loadout_tab.registry_text.toPlainText().upper(), timeout=1500)
+
+    assert "COPILOT" in window.loadout_tab.registry_text.toPlainText().upper()
+    assert window.learn_tab.apply_draft_button.isEnabled() is False
+    controller.shutdown()
+
+
+def test_score_summarize_button_primes_copilot_prompt(
+    qtbot: Any,
+    app_paths: AppPaths,
+    fake_keyring: Any,
+) -> None:
+    store = ProfileStore(app_paths)
+    profile = store.create_profile(
+        display_name="Score Prompt",
+        template="Recorder",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    controller = EngineController(RecorderSettings())
+    window = _desktop_window(
+        app_paths=app_paths,
+        store=store,
+        fake_keyring=fake_keyring,
+        controller=controller,
+    )
+    qtbot.addWidget(window)
+    window.show()
+
+    selector_index = window.profile_selector.findData(profile.id)
+    window.profile_selector.setCurrentIndex(selector_index)
+    qtbot.mouseClick(window.score_tab.summarize_button, Qt.MouseButton.LeftButton)
+
+    assert window.tabs.currentWidget() is window.learn_tab
+    assert window.learn_tab.prompt_edit.toPlainText() == "Summarize my last session."
     controller.shutdown()
 
 

@@ -142,7 +142,7 @@ class KalshiCredentialProvider(CredentialProvider):
 
 class CoachCredentialProvider(CredentialProvider):
     provider_id = "coach"
-    provider_label = "AI coach"
+    provider_label = "Copilot"
     docs_url = "https://github.com/Zwin-ux/arbitrage/tree/main/docs"
 
     def fields(self) -> list[CredentialField]:
@@ -151,18 +151,18 @@ class CoachCredentialProvider(CredentialProvider):
                 key="provider_name",
                 label="Provider name",
                 help_text="Optional note so you remember which model provider this key belongs to.",
-                placeholder="OpenAI, Anthropic, or your preferred provider",
+                placeholder="OpenAI-compatible, Anthropic, Gemini, or Ollama",
             ),
             CredentialField(
                 key="model_name",
                 label="Model name",
-                help_text="Optional. Used only for coach labeling in v1.",
-                placeholder="gpt-5-mini or similar",
+                help_text="Optional. Used only for Copilot labeling in v1.",
+                placeholder="gpt-4o-mini or similar",
             ),
             CredentialField(
                 key="api_key",
                 label="API key",
-                help_text="Stored locally only. The coach never uses this key to place trades.",
+                help_text="Stored locally only. Copilot never uses this key to place trades.",
                 secret=True,
                 required=True,
             ),
@@ -174,12 +174,12 @@ class CoachCredentialProvider(CredentialProvider):
             return CredentialValidationResult(
                 ok=False,
                 status="missing",
-                message="No AI coach key stored yet.",
+                message="No Copilot API key stored yet.",
             )
         return CredentialValidationResult(
             ok=True,
             status="validated",
-            message="AI coach key looks complete. Coach mode still remains read-only.",
+            message="Copilot key looks complete. Copilot mode still remains read-only.",
         )
 
 

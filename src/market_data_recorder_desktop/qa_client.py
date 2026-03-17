@@ -816,10 +816,9 @@ def _coach_guardrail_response(sandbox: QASandbox) -> QAScenarioOutcome:
         candidates=candidates,
         checklist=checklist,
         portfolio_summary=portfolio,
-        remote_configured=True,
     )
     response = session.messages[-1].content.lower()
-    if "coach mode only" not in response or "outside the assistant" not in response:
+    if "read-only mode" not in response or "outside copilot" not in response:
         raise AssertionError("Coach response did not preserve the read-only guardrail.")
     artifact = sandbox.write_json_artifact("coach-session.json", session)
     return QAScenarioOutcome(

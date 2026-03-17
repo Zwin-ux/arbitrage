@@ -47,6 +47,17 @@ ModuleId = Literal[
     "maker-rebate-lab",
 ]
 LedgerType = Literal["paper_stake", "paper_pnl", "live_pnl"]
+LLMProviderId = Literal["none", "openai_compatible", "anthropic", "gemini", "ollama"]
+ProviderHealthState = Literal["ready", "missing_key", "offline", "invalid_config"]
+AgentSkillId = Literal[
+    "explain_route",
+    "draft_starter_bot",
+    "adjust_bot_settings",
+    "summarize_last_session",
+    "explain_lock",
+    "review_diagnostics",
+]
+DraftActionType = Literal["save_bot_recipe", "update_loadout"]
 
 
 class RunPreset(BaseModel):
@@ -76,6 +87,9 @@ class AppProfile(BaseModel):
     lab_enabled: bool = False
     live_unlocked: bool = False
     ai_coach_enabled: bool = False
+    copilot_provider_id: LLMProviderId = "none"
+    copilot_model_name: str = ""
+    copilot_base_url: str = ""
     default_strategy_tier: StrategyTier = "core"
     risk_policy_id: str = "starter"
     primary_goal: str = "learn_and_scan"
@@ -396,6 +410,7 @@ class BotRegistryEntry(BaseModel):
     blueprint_id: str
     recipe_id: str | None = None
     label: str
+    strategy_family: ModuleId
     family_label: str
     description: str
     min_net_edge_bps: int = 20
@@ -555,6 +570,82 @@ class StrategyModule(BaseModel):
     paper_only: bool = True
 
 
+class ModelPreset(BaseModel):
+    provider_id: LLMProviderId
+    label: str
+    model_name: str
+    base_url: str = ""
+    api_key_required: bool = True
+
+
+class ModelProviderConfig(BaseModel):
+    provider_id: LLMProviderId = "none"
+    provider_label: str = "Skip for now"
+    model_name: str = ""
+    base_url: str = ""
+    api_key_required: bool = True
+    local_only: bool = False
+
+
+class ProviderHealth(BaseModel):
+    provider_id: LLMProviderId = "none"
+    provider_label: str = "Skip for now"
+    status: ProviderHealthState = "invalid_config"
+    message: str = "No copilot model configured."
+    model_name: str = ""
+    base_url: str = ""
+
+
+class DraftAction(BaseModel):
+    action_type: DraftActionType
+    title: str
+    target_id: str | None = None
+    changes: dict[str, str] = Field(default_factory=dict)
+
+
+class AgentDraft(BaseModel):
+    draft_id: str
+    title: str
+    summary: str
+    reason: str
+    affected_fields: list[str] = Field(default_factory=list)
+    actions: list[DraftAction] = Field(default_factory=list)
+
+
+class ApplyDraftResult(BaseModel):
+    ok: bool
+    message: str
+    applied_actions: list[str] = Field(default_factory=list)
+
+
+class AgentContextPack(BaseModel):
+    profile_id: str | None = None
+    profile_name: str = ""
+    primary_mission: str = ""
+    selected_route_id: str | None = None
+    selected_route_summary: str = ""
+    selected_route_strategy: str = ""
+    loadout_summary: str = ""
+    score_summary: str = ""
+    diagnostics_summary: str = ""
+    active_sources: list[str] = Field(default_factory=list)
+
+
+class AgentRequest(BaseModel):
+    question: str
+    skill_id: AgentSkillId
+    context: AgentContextPack = Field(default_factory=AgentContextPack)
+    provider_config: ModelProviderConfig = Field(default_factory=ModelProviderConfig)
+
+
+class AgentResponse(BaseModel):
+    skill_id: AgentSkillId
+    response_text: str
+    draft: AgentDraft | None = None
+    provider_health: ProviderHealth = Field(default_factory=ProviderHealth)
+    used_remote_model: bool = False
+
+
 class AssistantMessage(BaseModel):
     role: Literal["system", "user", "assistant"]
     content: str
@@ -568,6 +659,12 @@ class AssistantSession(BaseModel):
     messages: list[AssistantMessage] = Field(default_factory=list)
     remote_configured: bool = False
     sources: list[str] = Field(default_factory=list)
+    skill_id: AgentSkillId = "explain_route"
+    provider_id: LLMProviderId = "none"
+    model_name: str = ""
+    response_text: str = ""
+    provider_health: ProviderHealth = Field(default_factory=ProviderHealth)
+    draft: AgentDraft | None = None
 
 
 class VenueMarketQuote(BaseModel):

@@ -264,6 +264,7 @@ class BotRegistryService:
                     blueprint_id=recipe.source_blueprint_id or recipe.recipe_id,
                     recipe_id=recipe.recipe_id,
                     label=recipe.label,
+                    strategy_family=recipe.strategy_family,
                     family_label=_family_label(recipe.strategy_family),
                     description=recipe.description,
                     min_net_edge_bps=recipe.min_net_edge_bps,

@@ -14,12 +14,14 @@ from market_data_recorder_desktop.app_types import (
     AppProfile,
     EngineStatus,
     LiveUnlockChecklist,
+    ModelProviderConfig,
     OpportunityCandidate,
     PaperBotSession,
     PaperRunResult,
     ScoreSnapshot,
 )
 from market_data_recorder_desktop.bot_services import (
+    AssistantService,
     CapabilityService,
     ConnectorLoadoutService,
     ContractMatcher,
@@ -637,3 +639,77 @@ def test_paper_simulation_engine_generates_human_trace_lines(app_paths: Any, fak
     assert any(decision.trace_lines for decision in session.decisions)
     assert "TACTICAL TRACE" in rendered
     assert "RESULT" in rendered
+
+
+def test_copilot_provider_health_stays_local_and_explicit() -> None:
+    service = AssistantService()
+
+    missing_key = service.provider_health(
+        ModelProviderConfig(
+            provider_id="openai_compatible",
+            provider_label="OpenAI-compatible",
+            model_name="gpt-4o-mini",
+            base_url="https://api.openai.com/v1",
+            api_key_required=True,
+        ),
+        "",
+    )
+    ollama_missing_model = service.provider_health(
+        ModelProviderConfig(
+            provider_id="ollama",
+            provider_label="Ollama / local",
+            model_name="",
+            base_url="http://localhost:11434",
+            api_key_required=False,
+            local_only=True,
+        ),
+        "",
+    )
+
+    assert missing_key.status == "missing_key"
+    assert "API key" in missing_key.message
+    assert ollama_missing_model.status == "invalid_config"
+    assert "model name" in ollama_missing_model.message.lower()
+
+
+def test_copilot_drafts_bot_changes_without_applying_live_actions(app_paths: Any) -> None:
+    profile = AppProfile(
+        id="profile-copilot-1",
+        display_name="Copilot Draft",
+        data_dir=app_paths.data_dir / "profile-copilot-1",
+        enabled_venues=["Polymarket"],
+        equipped_connectors=["polymarket"],
+        equipped_modules=["internal-binary"],
+    )
+    candidate = OpportunityCandidate(
+        id="cand-copilot-1",
+        strategy_id="internal-binary",
+        strategy_label="Internal Binary",
+        market_slug="copilot-draft-market",
+        summary="Clean internal-binary route",
+        venues=["Polymarket"],
+        gross_edge_bps=118,
+        net_edge_bps=76,
+        recommended_stake_cents=1400,
+        opportunity_quality_score=72,
+        explanation={"summary": "Exact complement survives net deductions."},
+    )
+    service = AssistantService()
+
+    session = service.answer(
+        question="Build me a safer starter bot",
+        skill_id="draft_starter_bot",
+        profile=profile,
+        candidates=[candidate],
+        selected_candidate=candidate,
+        registry_entries=[],
+        checklist=None,
+        portfolio_summary=None,
+        provider_config=ModelProviderConfig(provider_id="none", provider_label="Skip for now", api_key_required=False),
+        provider_api_key="",
+    )
+
+    assert session.draft is not None
+    assert session.provider_id == "none"
+    assert all(action.action_type == "save_bot_recipe" for action in session.draft.actions)
+    assert "live" not in session.response_text.lower()

@@ -3,9 +3,26 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QCheckBox, QComboBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QPlainTextEdit, QVBoxLayout, QWidget, QWizard, QWizardPage
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QPlainTextEdit,
+    QVBoxLayout,
+    QWidget,
+    QWizard,
+    QWizardPage,
+)
 
-from .app_types import SetupCompletionRoute, SetupStepState, default_risk_policies
+from .app_types import ModelProviderConfig, SetupCompletionRoute, SetupStepState, default_risk_policies
+from .copilot import default_model_presets
 from .credentials import CredentialProvider, CredentialVault
 from .profiles import ProfileStore
 from .startup import StartupManager
@@ -255,40 +272,103 @@ class RiskPage(QWizardPage):
 class CoachPage(QWizardPage):
     def __init__(self, provider: CredentialProvider) -> None:
         super().__init__()
-        self.setTitle("COACH LINK")
-        self.setSubTitle("OPTIONAL READ-ONLY HELP LINK. NEVER ARMS EXECUTION.")
-        self._field_widgets: dict[str, QLineEdit | QPlainTextEdit] = {}
+        self.setTitle("COPILOT")
+        self.setSubTitle("OPTIONAL MODEL HELP. SUPERIOR STILL WORKS FULLY IN PAPER MODE WITHOUT IT.")
+        self._provider = provider
+        self._presets = [
+            ModelProviderConfig(
+                provider_id=preset.provider_id,
+                provider_label=preset.label,
+                model_name=preset.model_name,
+                base_url=preset.base_url,
+                api_key_required=preset.api_key_required,
+                local_only=preset.provider_id in {"none", "ollama"},
+            )
+            for preset in default_model_presets()
+        ]
         layout = QVBoxLayout(self)
-        intro = QLabel("LEAVE THIS OFF FOR THE CLEANEST CART. LOCAL DOCS AND PROFILE STATE STILL HANDLE THE FIRST LOOP.")
+        intro = QLabel(
+            "SKIP THIS FOR NOW IF YOU JUST WANT THE RECORDER, SCANNER, AND PAPER LOOP. "
+            "WHEN YOU DO ADD A MODEL, THE KEY STAYS LOCAL AND COPILOT STAYS READ-ONLY."
+        )
         intro.setWordWrap(True)
         layout.addWidget(intro)
-        self.enable_checkbox = QCheckBox("ARM COACH LINK FOR THIS CART")
-        layout.addWidget(self.enable_checkbox)
-        group = QGroupBox(provider.provider_label.upper())
+        group = QGroupBox("COPILOT SOURCE")
         form = QFormLayout(group)
-        docs_label = QLabel(f'<a href="{provider.docs_url}">OPEN COACH DOCS</a>')
+        self.provider_combo = QComboBox()
+        for preset in self._presets:
+            self.provider_combo.addItem(preset.provider_label, preset.provider_id)
+        self.model_edit = QLineEdit()
+        self.base_url_edit = QLineEdit()
+        self.api_key_edit = QLineEdit()
+        self.api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        docs_label = QLabel(f'<a href="{provider.docs_url}">OPEN COPILOT DOCS</a>')
         docs_label.setOpenExternalLinks(True)
         form.addRow("", docs_label)
-        for field in provider.fields():
-            if field.multiline:
-                widget: QLineEdit | QPlainTextEdit = QPlainTextEdit()
-                widget.setPlaceholderText(field.placeholder or "")
-            else:
-                widget = QLineEdit()
-                widget.setPlaceholderText(field.placeholder or "")
-                if field.secret:
-                    widget.setEchoMode(QLineEdit.EchoMode.Password)
-            widget.setToolTip(field.help_text)
-            form.addRow(field.label.upper(), widget)
-            self._field_widgets[field.key] = widget
+        form.addRow("PROVIDER", self.provider_combo)
+        form.addRow("MODEL", self.model_edit)
+        form.addRow("BASE URL", self.base_url_edit)
+        form.addRow("API KEY", self.api_key_edit)
         layout.addWidget(group)
-        hint = QLabel("BYO MODEL KEYS ARE OPTIONAL. THE MACHINE CAN STILL ANSWER FROM LOCAL DOCS + PROFILE STATE.")
+        self.status_label = QLabel()
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
+        hint = QLabel(
+            "OPENAI-COMPATIBLE, ANTHROPIC, GEMINI, AND OLLAMA ARE SUPPORTED. "
+            "COPILOT CAN EXPLAIN AND DRAFT, BUT IT CANNOT TRADE OR UNLOCK LIVE."
+        )
         hint.setWordWrap(True)
         layout.addWidget(hint)
         layout.addStretch(1)
+        self.provider_combo.currentIndexChanged.connect(self._apply_selected_preset)
+        self._apply_selected_preset()
+
+    def _selected_preset(self) -> ModelProviderConfig:
+        provider_id = self.provider_combo.currentData()
+        for preset in self._presets:
+            if preset.provider_id == provider_id:
+                return preset
+        return self._presets[0]
+
+    def _apply_selected_preset(self) -> None:
+        preset = self._selected_preset()
+        self.model_edit.setText(preset.model_name)
+        self.base_url_edit.setText(preset.base_url)
+        self.api_key_edit.setEnabled(preset.api_key_required)
+        if preset.api_key_required:
+            self.api_key_edit.setPlaceholderText("Stored in the OS keychain only")
+        else:
+            self.api_key_edit.clear()
+            self.api_key_edit.setPlaceholderText("No API key needed for local models")
+        if preset.provider_id == "none":
+            self.status_label.setText("SKIP FOR NOW KEEPS SUPERIOR LOCAL-FIRST. YOU CAN ADD A MODEL LATER.")
+        else:
+            self.status_label.setText(
+                f"{preset.provider_label.upper()} STAYS OPTIONAL. SAVE THE KEY ONLY IF YOU WANT COPILOT TO REWRITE OR SUMMARIZE WITH THAT MODEL."
+            )
+
+    def is_enabled(self) -> bool:
+        return self._selected_preset().provider_id != "none"
+
+    def config(self) -> ModelProviderConfig:
+        preset = self._selected_preset()
+        return preset.model_copy(
+            update={
+                "model_name": self.model_edit.text().strip(),
+                "base_url": self.base_url_edit.text().strip(),
+            }
+        )
+
+    def api_key(self) -> str:
+        return self.api_key_edit.text().strip()
 
     def payload(self) -> dict[str, str]:
-        return {key: widget.toPlainText() if isinstance(widget, QPlainTextEdit) else widget.text() for key, widget in self._field_widgets.items()}
+        config = self.config()
+        return {
+            "provider_name": config.provider_label,
+            "model_name": config.model_name,
+            "api_key": self.api_key(),
+        }
 
 
 class FinishPage(QWizardPage):
@@ -377,14 +457,15 @@ class SetupWizard(QWizard):
             self.risk_page.risk_policy_combo.currentIndexChanged,
             self.risk_page.auto_start_checkbox.toggled,
             self.risk_page.start_minimized_checkbox.toggled,
-            self.coach_page.enable_checkbox.toggled,
+            self.coach_page.provider_combo.currentIndexChanged,
         ):
             signal.connect(self._refresh_dynamic_content)
         for widgets in self.credentials_page._field_widgets.values():
             for widget in widgets.values():
                 (widget.textChanged if isinstance(widget, QPlainTextEdit) else widget.textChanged).connect(self._refresh_dynamic_content)
-        for widget in self.coach_page._field_widgets.values():
-            (widget.textChanged if isinstance(widget, QPlainTextEdit) else widget.textChanged).connect(self._refresh_dynamic_content)
+        self.coach_page.model_edit.textChanged.connect(self._refresh_dynamic_content)
+        self.coach_page.base_url_edit.textChanged.connect(self._refresh_dynamic_content)
+        self.coach_page.api_key_edit.textChanged.connect(self._refresh_dynamic_content)
         self._refresh_dynamic_content()
 
     def _refresh_dynamic_content(self) -> None:
@@ -419,10 +500,13 @@ class SetupWizard(QWizard):
                 experience_level=self.intent_page.experience_combo.currentData(),
                 guided_mode=self.intent_page.guided_mode_checkbox.isChecked(),
                 lab_enabled=self.intent_page.lab_checkbox.isChecked(),
-                ai_coach_enabled=self.coach_page.enable_checkbox.isChecked(),
+                ai_coach_enabled=self.coach_page.is_enabled(),
                 default_strategy_tier="lab" if self.intent_page.lab_checkbox.isChecked() else "core",
                 risk_policy_id=self.risk_page.risk_policy_combo.currentData(),
                 primary_goal=self.intent_page.goal_combo.currentData(),
+                copilot_provider_id=self.coach_page.config().provider_id,
+                copilot_model_name=self.coach_page.config().model_name,
+                copilot_base_url=self.coach_page.config().base_url,
             )
             selected_provider_ids = [venue.lower() for venue in selected_venues]
             for provider_id, payload in self.credentials_page.payloads().items():
@@ -432,10 +516,10 @@ class SetupWizard(QWizard):
                 if result.status == "invalid":
                     QMessageBox.warning(self, "FIX KEY SLOT", f"{provider_id.title()} KEY SLOT IS INCOMPLETE: {result.message.upper()}")
                     return
-            if self.coach_page.enable_checkbox.isChecked():
+            if self.coach_page.api_key().strip():
                 result = self._credential_vault.save(profile.id, "coach", self.coach_page.payload())
                 if result.status == "invalid":
-                    QMessageBox.warning(self, "FIX COACH LINK", result.message.upper())
+                    QMessageBox.warning(self, "FIX COPILOT LINK", result.message.upper())
                     return
         if profile.auto_start:
             self._startup_manager.set_enabled(True)
@@ -474,8 +558,15 @@ class SetupWizard(QWizard):
         selected_provider_ids = [venue.lower() for venue in self.venue_page.selected_venues()]
         credential_labels = [self._provider_labels.get(provider_id, provider_id.title()) for provider_id, payload in self.credentials_page.payloads().items() if provider_id in selected_provider_ids and any(value.strip() for value in payload.values())]
         data_dir = self.profile_page.data_dir_edit.text().strip() or "RECOMMENDED PER-USER STORAGE BAY"
+        copilot_config = self.coach_page.config()
+        copilot_line = (
+            f"COPILOT: {copilot_config.provider_label} / {copilot_config.model_name or 'DEFAULT MODEL'}"
+            if self.coach_page.is_enabled()
+            else "COPILOT: SKIP FOR NOW"
+        )
+        copilot_key_line = "COPILOT KEY ENTERED NOW" if self.coach_page.api_key().strip() else "COPILOT KEY SAVED LATER"
         return (
-            f"NEW CART SUMMARY\nCART: {self.profile_page.name_edit.text().strip() or 'MY SUPERIOR CART'}\nMODE: {self.profile_page.template_combo.currentText()}\nMISSION: {self.intent_page.goal_combo.currentText()}\nPOSTURE: {self.intent_page.experience_combo.currentText()}\nLOADOUT: {venues}\nDATA SLOT: {data_dir}\nBOOT PRESET: {default_preset}\nRISK POSTURE: {self.risk_page.risk_policy_combo.currentText()}\nGUIDED BOOT: {'ON' if self.intent_page.guided_mode_checkbox.isChecked() else 'OFF'}\nLAB: {'ON' if self.intent_page.lab_checkbox.isChecked() else 'OFF'}\nCONNECTOR KEYS ENTERED NOW: {', '.join(credential_labels) if credential_labels else 'NONE'}\nCOACH LINK: {'ARMED' if self.coach_page.enable_checkbox.isChecked() else 'OFFLINE'}\nIGNITION PLAN:\n- OPEN HANGAR AND BOOT THE RECORDER.\n- RUN SCAN AFTER THE FIRST SAMPLE LANDS.\n- START ONE PAPER RUN AND USE SCORE AS THE MAIN PROGRESSION SURFACE."
+            f"NEW CART SUMMARY\nCART: {self.profile_page.name_edit.text().strip() or 'MY SUPERIOR CART'}\nMODE: {self.profile_page.template_combo.currentText()}\nMISSION: {self.intent_page.goal_combo.currentText()}\nPOSTURE: {self.intent_page.experience_combo.currentText()}\nLOADOUT: {venues}\nDATA SLOT: {data_dir}\nBOOT PRESET: {default_preset}\nRISK POSTURE: {self.risk_page.risk_policy_combo.currentText()}\nGUIDED BOOT: {'ON' if self.intent_page.guided_mode_checkbox.isChecked() else 'OFF'}\nLAB: {'ON' if self.intent_page.lab_checkbox.isChecked() else 'OFF'}\nCONNECTOR KEYS ENTERED NOW: {', '.join(credential_labels) if credential_labels else 'NONE'}\n{copilot_line}\n{copilot_key_line}\nIGNITION PLAN:\n- OPEN HANGAR AND BOOT THE RECORDER.\n- RUN SCAN AFTER THE FIRST SAMPLE LANDS.\n- START ONE PAPER RUN AND USE SCORE AS THE MAIN PROGRESSION SURFACE."
         )
 
     def _completion_summary_text(self) -> str:
