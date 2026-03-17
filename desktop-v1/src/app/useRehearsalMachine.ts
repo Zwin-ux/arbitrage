@@ -5,6 +5,7 @@ import { STARTER_BOTS } from "@presets/starterBots";
 import { evaluatePresetAgainstEvent } from "@services/botEngine";
 import { getTapeById, listTapeSummaries, listTapes } from "@services/datasetLoader";
 import { LocalProgressStore } from "@services/persistenceService";
+import { PRACTICE_STAKE, STARTING_BANKROLL } from "@services/practiceMoney";
 import { recordRun } from "@services/progressService";
 import { RunEngine } from "@services/runEngine";
 import { TapeEngine } from "@services/tapeEngine";
@@ -220,6 +221,7 @@ export function useRehearsalMachine() {
     setHoldProgress(0);
     setCurrentTime(0);
     setCurrentEvent(currentTape?.events[0] ?? null);
+    setLatestRun(null);
     setPhase("standby");
   }
 
@@ -246,7 +248,8 @@ export function useRehearsalMachine() {
   }
 
   function resolveMiss(event: TapeEvent): void {
-    if (!currentTape || !event.routeSnapshot) {
+    const resolutionEvent = event.routeSnapshot && event.window ? event : currentEvent;
+    if (!currentTape || !resolutionEvent?.routeSnapshot || !resolutionEvent.window) {
       setIsRunning(false);
       return;
     }
@@ -254,7 +257,7 @@ export function useRehearsalMachine() {
       return;
     }
     runEngineRef.current.transition("resolution", event.t, "window closed");
-    const run = runEngineRef.current.finalize(currentTape, event);
+    const run = runEngineRef.current.finalize(currentTape, resolutionEvent);
     runEngineRef.current.transition("afterimage", event.t, "debrief");
     setPhase("afterimage");
     setIsRunning(false);
@@ -274,6 +277,8 @@ export function useRehearsalMachine() {
     progress,
     selectedPreset,
     botDecision,
+    startingBankroll: STARTING_BANKROLL,
+    practiceStake: PRACTICE_STAKE,
     availableTapes,
     selectedTapeId,
     selectMode,

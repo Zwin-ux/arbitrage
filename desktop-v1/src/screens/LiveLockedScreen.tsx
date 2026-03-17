@@ -9,13 +9,13 @@ export function LiveLockedScreen({ gate }: LiveLockedScreenProps) {
     <section aria-label="Live books locked" className="locked-surface">
       <strong className="locked-title">LIVE BOOKS LOCKED</strong>
       <div className="locked-summary">
-        <span>RUNS {gate.successfulRuns}</span>
-        <span>CONSISTENCY {gate.consistencyScore}%</span>
+        <span>PRACTICE WINS {gate.successfulRuns}</span>
+        <span>TIMING {gate.consistencyScore}%</span>
       </div>
       <ul className="locked-list">
         {gate.unlockRequirements.map((item) => (
           <li key={item.label}>
-            <span>{item.label}</span>
+            <span>{item.label.toUpperCase()}</span>
             <strong>
               {item.current}/{item.target}
             </strong>

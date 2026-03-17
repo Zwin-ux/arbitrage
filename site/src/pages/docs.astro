@@ -21,24 +21,24 @@ const docsRoot = "https://github.com/Zwin-ux/arbitrage/tree/main/docs";
           <div class="machine-page__block">
             <span>Docs root</span>
             <strong>GitHub repo docs are the source of truth.</strong>
-            <p>Use the repo for trust docs, first paper run, and release procedures.</p>
+            <p>Use the repo for practice money, replay tapes, and release procedures.</p>
           </div>
           <div class="machine-page__block">
             <span>Trust</span>
-            <strong>Risk model / live limitations / privacy and secrets.</strong>
-            <p>Paper-first posture stays visible before any live path is considered.</p>
+            <strong>Practice first / live locked / local storage.</strong>
+            <p>Start with fake money. Keep live off until local progress passes.</p>
           </div>
           <div class="machine-page__block">
-            <span>Deploy</span>
-            <strong>Railway hosts the site only.</strong>
-            <p>Set the service root to <code>/site</code>. Keep runtime, data, and secrets local.</p>
+            <span>Desktop</span>
+            <strong>desktop-v1 is the current consumer app.</strong>
+            <p>Keep the app local. Bundle the replay tapes. Ship the Tauri build.</p>
           </div>
         </div>
 
         <div class="machine-page__list">
           <div class="machine-page__row">
             <span>Guide</span>
-            <strong>First paper run</strong>
+            <strong>First practice run</strong>
           </div>
           <div class="machine-page__row">
             <span>Release</span>
@@ -54,24 +54,22 @@ const docsRoot = "https://github.com/Zwin-ux/arbitrage/tree/main/docs";
       <div class="machine-page__column">
         <div class="machine-page__code-wrap">
           <span class="machine-page__code-title">Quick start</span>
-          <pre class="machine-page__code"><code>python -m pip install -e ".[dev]"
-market-data-recorder-app
-market-data-recorder record</code></pre>
+          <pre class="machine-page__code"><code>npm --prefix desktop-v1 install
+npm --prefix desktop-v1 run dev</code></pre>
         </div>
 
         <div class="machine-page__code-wrap">
           <span class="machine-page__code-title">Release build</span>
-          <pre class="machine-page__code"><code>powershell -ExecutionPolicy Bypass -File scripts/bootstrap-iscc.ps1
-powershell -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1</code></pre>
+          <pre class="machine-page__code"><code>npm --prefix desktop-v1 run build
+npm --prefix desktop-v1 run tauri:build</code></pre>
         </div>
 
         <div class="machine-page__code-wrap">
           <span class="machine-page__code-title">Quality gates</span>
-          <pre class="machine-page__code"><code>pytest -q
-python -m mypy src tests
-market-data-recorder-qa --headless --output .tmp/qa-report.json
-npm --prefix site ci
-npm --prefix site run build</code></pre>
+          <pre class="machine-page__code"><code>npm --prefix desktop-v1 run check
+npm --prefix desktop-v1 run test
+npm --prefix site run build
+npm --prefix site run test:browser</code></pre>
         </div>
       </div>
     </div>

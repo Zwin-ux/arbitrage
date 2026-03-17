@@ -10,6 +10,7 @@ import type {
   TapeEvent,
   UserActionLogEntry,
 } from "@domain/types";
+import { createPracticeMoneyReceipt, PRACTICE_STAKE, STARTING_BANKROLL } from "@services/practiceMoney";
 import { createDebrief } from "@services/routeEvaluator";
 
 export class RunEngine {
@@ -39,7 +40,12 @@ export class RunEngine {
     this.actions.push({ type: "commit", at });
   }
 
-  finalize(tape: Tape, event: TapeEvent): RunRecord {
+  finalize(
+    tape: Tape,
+    event: TapeEvent,
+    startingBankroll = STARTING_BANKROLL,
+    stake = PRACTICE_STAKE,
+  ): RunRecord {
     const snapshot = event.routeSnapshot;
     if (!snapshot || !event.window) {
       throw new Error("run resolution requires a route snapshot and window");
@@ -47,12 +53,13 @@ export class RunEngine {
 
     const commitOffset = this.commitTimestamp === null ? null : this.commitTimestamp - event.window.idealCommitAt;
     const outcome = resolveOutcome(this.commitTimestamp, event);
+    const receipt = createPracticeMoneyReceipt(snapshot, outcome, startingBankroll, stake);
     const afterimage: Afterimage = {
       frozenAt: event.t,
       windowState: outcome.success ? "closed" : "missed",
       commitState: this.commitTimestamp === null ? "none" : "resolved",
     };
-    const debrief: Debrief = createDebrief(snapshot, outcome, commitOffset);
+    const debrief: Debrief = createDebrief(snapshot, outcome, receipt, commitOffset);
 
     return {
       id: `run-${Date.now()}`,
@@ -64,6 +71,7 @@ export class RunEngine {
       commitTimestamp: this.commitTimestamp,
       outcome,
       afterimage,
+      receipt,
       debrief,
     };
   }

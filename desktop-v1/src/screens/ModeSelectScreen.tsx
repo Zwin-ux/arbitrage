@@ -25,7 +25,7 @@ export function ModeSelectScreen({ selected, liveUnlocked, onSelectMode }: ModeS
         onClick={() => onSelectMode("live-preview")}
       >
         <span className="mode-button__index">03</span>
-        <strong className="mode-button__label">Live Books</strong>
+        <strong className="mode-button__label">{liveUnlocked ? "Live Books" : "Live Locked"}</strong>
       </button>
     </section>
   );

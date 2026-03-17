@@ -19,7 +19,11 @@ describe("run engine", () => {
 
     expect(result.outcome.grade).toBe("clear");
     expect(result.outcome.success).toBe(true);
-    expect(result.debrief.headline).toBe("Clean commit.");
+    expect(result.debrief.headline).toBe("CLEAN WIN");
+    expect(result.receipt.startingBankroll).toBe(100);
+    expect(result.receipt.stake).toBe(25);
+    expect(result.receipt.netPnl).toBe(7.74);
+    expect(result.receipt.endingBankroll).toBe(107.74);
   });
 
   it("resolves an early commit before the window", () => {
@@ -33,5 +37,8 @@ describe("run engine", () => {
 
     expect(result.outcome.grade).toBe("early");
     expect(result.outcome.success).toBe(false);
+    expect(result.receipt.label).toBe("EARLY BUY");
+    expect(result.receipt.netPnl).toBeLessThan(0);
+    expect(result.receipt.endingBankroll).toBeLessThan(100);
   });
 });

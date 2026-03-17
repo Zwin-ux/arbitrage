@@ -10,16 +10,18 @@ export function App() {
   const tapeTitle = machine.currentTape
     ? `${machine.currentTape.name} / ${machine.currentTape.market.symbol}`
     : "NO TAPE";
+  const modeLabel = machine.mode === "tutorial" ? "TUTORIAL" : machine.mode === "replay" ? "REPLAY" : "LIVE LOCKED";
 
   return (
-    <AppShell label="SUP rehearsal machine">
+    <AppShell label="SUP practice money">
       <div className="sup-shell">
         <header className="sup-marquee">
           <img alt="Superior" className="sup-wordmark" src={superiorWordmark} />
           <div className="sup-status">
-            <span>{machine.mode === "tutorial" ? "TUTORIAL" : machine.mode === "replay" ? "REPLAY" : "LIVE BOOKS"}</span>
+            <span>PRACTICE MONEY</span>
+            <span>{modeLabel}</span>
             <span>{tapeTitle}</span>
-            <span>{machine.phase.toUpperCase()}</span>
+            <span>LIVE LOCKED</span>
           </div>
         </header>
 
@@ -42,6 +44,9 @@ export function App() {
             selectedPreset={machine.selectedPreset}
             availableTapes={machine.availableTapes}
             selectedTapeId={machine.selectedTapeId}
+            latestRun={machine.latestRun}
+            startingBankroll={machine.startingBankroll}
+            practiceStake={machine.practiceStake}
             onSelectPreset={machine.selectPreset}
             onSelectTape={machine.selectTape}
             onStartRun={machine.startRun}
@@ -49,8 +54,6 @@ export function App() {
             onHoldStart={machine.startHold}
             onHoldEnd={machine.cancelHold}
             onReset={machine.reset}
-            debrief={machine.latestRun?.debrief ?? null}
-            botDecision={machine.botDecision}
           />
         ) : null}
       </div>

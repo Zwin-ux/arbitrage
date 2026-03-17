@@ -1,4 +1,4 @@
-import type { Debrief, DebriefMetrics, RouteSnapshot, RunOutcome } from "@domain/types";
+import type { Debrief, DebriefMetrics, PracticeMoneyReceipt, RouteSnapshot, RunOutcome } from "@domain/types";
 
 export interface RouteEvaluation {
   netEdgeBps: number;
@@ -21,26 +21,34 @@ export function evaluateRoute(snapshot: RouteSnapshot): RouteEvaluation {
 export function createDebrief(
   snapshot: RouteSnapshot,
   outcome: RunOutcome,
+  receipt: PracticeMoneyReceipt,
   commitOffsetMs: number | null,
 ): Debrief {
   const metrics: DebriefMetrics = {
-    grossEdgeBps: snapshot.grossEdgeBps,
-    netEdgeBps: snapshot.netEdgeBps,
+    grossPnl: receipt.grossPnl,
+    netPnl: receipt.netPnl,
     commitOffsetMs,
   };
 
   return {
-    headline: outcome.success ? "Clean commit." : "Commit missed the window.",
+    headline: receipt.label,
     reasons: [
-      `Gross ${formatBps(snapshot.grossEdgeBps)} -> Net ${formatBps(snapshot.netEdgeBps)}`,
-      outcome.reason,
+      receipt.entryPrice === null
+        ? "No position opened."
+        : `Buy ${formatPrice(receipt.entryPrice)} -> Sell ${formatPrice(receipt.exitPrice ?? receipt.entryPrice)}`,
+      `Gross ${formatMoney(receipt.grossPnl)} / Fees ${formatMoney(receipt.fees)} / Slip ${formatMoney(receipt.slippage)}`,
+      `Net ${formatMoney(receipt.netPnl)} / Bankroll ${formatMoney(receipt.endingBankroll)}`,
     ],
     metrics,
-    recommendation: outcome.success ? "Hold this pace." : "Wait for a cleaner window.",
+    recommendation: outcome.success ? "Hold inside the center of the buy window." : "Wait for a cleaner buy window.",
   };
 }
 
-function formatBps(value: number): string {
-  const sign = value >= 0 ? "+" : "";
-  return `${sign}${(value / 100).toFixed(2)}%`;
+function formatMoney(value: number): string {
+  const sign = value >= 0 ? "+" : "-";
+  return `${sign}$${Math.abs(value).toFixed(2)}`;
+}
+
+function formatPrice(value: number): string {
+  return `${Math.round(value * 100)}c`;
 }

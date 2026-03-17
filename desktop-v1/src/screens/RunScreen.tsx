@@ -1,5 +1,4 @@
-import type { BotPresetName, Debrief, RunPhase, Tape, TapeEvent } from "@domain/types";
-import type { BotDecision } from "@services/botEngine";
+import type { BotPresetName, RunPhase, RunRecord, Tape, TapeEvent } from "@domain/types";
 import type { TapeSummary } from "@services/datasetLoader";
 import { DecisionLane } from "@ui/DecisionLane";
 
@@ -13,8 +12,9 @@ interface RunScreenProps {
   selectedPreset: BotPresetName;
   availableTapes: TapeSummary[];
   selectedTapeId: string | null;
-  debrief: Debrief | null;
-  botDecision: BotDecision | null;
+  latestRun: RunRecord | null;
+  startingBankroll: number;
+  practiceStake: number;
   onSelectPreset: (preset: BotPresetName) => void;
   onSelectTape: (tapeId: string) => void;
   onStartRun: () => void;
@@ -36,8 +36,9 @@ export function RunScreen({
   selectedPreset,
   availableTapes,
   selectedTapeId,
-  debrief,
-  botDecision,
+  latestRun,
+  startingBankroll,
+  practiceStake,
   onSelectPreset,
   onSelectTape,
   onStartRun,
@@ -46,24 +47,23 @@ export function RunScreen({
   onHoldEnd,
   onReset,
 }: RunScreenProps) {
-  const netEdgeLabel = currentEvent?.routeSnapshot
-    ? `${(currentEvent.routeSnapshot.netEdgeBps / 100).toFixed(2)}% NET`
-    : "NO EDGE";
   const windowLabel = currentEvent?.window
     ? phase === "commit_hold"
-      ? "COMMIT HOLD"
-      : "WINDOW OPEN"
+      ? "HOLD TO BUY"
+      : "BUY WINDOW OPEN"
     : phase === "afterimage"
-      ? "AFTERIMAGE"
-      : "WINDOW CLOSED";
-  const decisionLabel = botDecision ? `${botDecision.preset.toUpperCase()} ${botDecision.shouldCommit ? "IN" : "OUT"}` : "NO CALL";
+      ? "RUN COMPLETE"
+      : "WAIT";
+  const bankrollLabel = formatMoney(latestRun?.receipt.endingBankroll ?? startingBankroll);
+  const resultLabel = latestRun?.receipt.label ?? "READY";
+  const phaseLabel = phase === "commit_hold" ? "HOLD" : phase.toUpperCase();
 
   return (
     <section aria-label={`${tape.name} run`} className="run-surface">
       <header className="run-header">
         <span>{tape.market.symbol}</span>
-        <strong>{phase.toUpperCase()}</strong>
-        <span>{currentEvent?.label?.toUpperCase() ?? "READY"}</span>
+        <strong>{tape.name.toUpperCase()}</strong>
+        <span>{phaseLabel}</span>
       </header>
 
       <div className="preset-strip" aria-label="Starter presets">
@@ -97,15 +97,27 @@ export function RunScreen({
       <DecisionLane tape={tape} currentTime={currentTime} currentEvent={currentEvent} phase={phase} />
 
       <div className="run-readout">
-        <span>{selectedPreset.toUpperCase()}</span>
-        <span>{windowLabel}</span>
-        <span>{netEdgeLabel}</span>
-        <span>{decisionLabel}</span>
+        <div className="run-readout__item">
+          <span className="run-readout__label">BANKROLL</span>
+          <strong>{bankrollLabel}</strong>
+        </div>
+        <div className="run-readout__item">
+          <span className="run-readout__label">STAKE</span>
+          <strong>{formatMoney(practiceStake)}</strong>
+        </div>
+        <div className="run-readout__item">
+          <span className="run-readout__label">BUY WINDOW</span>
+          <strong>{windowLabel}</strong>
+        </div>
+        <div className="run-readout__item">
+          <span className="run-readout__label">RESULT</span>
+          <strong>{resultLabel}</strong>
+        </div>
       </div>
 
       <footer className="command-row">
         <button type="button" className="command-button" onClick={onStartRun} disabled={isRunning}>
-          {isRunning ? "RUNNING" : "START RUN"}
+          {isRunning ? "RUNNING" : "START"}
         </button>
         <button type="button" className="command-button" onClick={onStep} disabled={isRunning}>
           STEP
@@ -121,22 +133,48 @@ export function RunScreen({
           disabled={!currentEvent?.window || phase === "afterimage"}
         >
           <span className="command-fill" style={{ transform: `scaleX(${holdProgress})` }} />
-          <span className="command-text">HOLD TO COMMIT</span>
+          <span className="command-text">{`HOLD TO BUY ${formatMoney(practiceStake)}`}</span>
         </button>
         <button type="button" className="command-button" onClick={onReset}>
           RESET
         </button>
       </footer>
 
-      {debrief ? (
-        <div className="afterimage">
-          <strong>{debrief.headline.toUpperCase()}</strong>
-          {debrief.reasons.map((reason) => (
-            <span key={reason}>{reason}</span>
-          ))}
-          <span>{debrief.recommendation}</span>
+      {latestRun ? (
+        <div className={`afterimage afterimage--${latestRun.receipt.tone}`}>
+          <div className="afterimage__main">
+            <span className="afterimage__label">RESULT</span>
+            <strong>{formatSignedMoney(latestRun.receipt.netPnl)}</strong>
+            <span className="afterimage__bankroll">BANKROLL {formatMoney(latestRun.receipt.endingBankroll)}</span>
+          </div>
+          <div className="afterimage__receipt">
+            <span>
+              {latestRun.receipt.entryPrice === null
+                ? "NO POSITION OPENED"
+                : `BUY ${formatPrice(latestRun.receipt.entryPrice)} -> SELL ${formatPrice(latestRun.receipt.exitPrice)}`}
+            </span>
+            <span>
+              {`GROSS ${formatSignedMoney(latestRun.receipt.grossPnl)} / FEES ${formatSignedMoney(-latestRun.receipt.fees)} / SLIP ${formatSignedMoney(-latestRun.receipt.slippage)}`}
+            </span>
+            <span>{latestRun.debrief.recommendation.toUpperCase()}</span>
+          </div>
         </div>
       ) : null}
     </section>
   );
+}
+
+function formatMoney(value: number): string {
+  return `$${value.toFixed(2)}`;
+}
+
+function formatSignedMoney(value: number): string {
+  return `${value >= 0 ? "+" : "-"}$${Math.abs(value).toFixed(2)}`;
+}
+
+function formatPrice(value: number | null): string {
+  if (value === null) {
+    return "--";
+  }
+  return `${Math.round(value * 100)}c`;
 }

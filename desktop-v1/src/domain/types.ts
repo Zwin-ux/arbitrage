@@ -89,8 +89,8 @@ export interface UserActionLogEntry {
 }
 
 export interface DebriefMetrics {
-  grossEdgeBps: number;
-  netEdgeBps: number;
+  grossPnl: number;
+  netPnl: number;
   commitOffsetMs: number | null;
 }
 
@@ -99,6 +99,20 @@ export interface Debrief {
   reasons: string[];
   metrics: DebriefMetrics;
   recommendation: string;
+}
+
+export interface PracticeMoneyReceipt {
+  label: string;
+  tone: "positive" | "negative" | "idle";
+  startingBankroll: number;
+  stake: number;
+  entryPrice: number | null;
+  exitPrice: number | null;
+  grossPnl: number;
+  fees: number;
+  slippage: number;
+  netPnl: number;
+  endingBankroll: number;
 }
 
 export interface Afterimage {
@@ -124,6 +138,7 @@ export interface RunRecord {
   commitTimestamp: number | null;
   outcome: RunOutcome;
   afterimage: Afterimage;
+  receipt: PracticeMoneyReceipt;
   debrief: Debrief;
 }
 

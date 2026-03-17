@@ -15,5 +15,5 @@ const { variant } = Astro.props;
 ---
 
 <LandingLayout title={variant.pageTitle} description={variant.pageDescription}>
-  <SuperiorLanding variant={variant} />
+  <SuperiorLanding client:load variant={variant} />
 </LandingLayout>
