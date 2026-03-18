@@ -41,4 +41,19 @@ describe("run engine", () => {
     expect(result.receipt.netPnl).toBeLessThan(0);
     expect(result.receipt.endingBankroll).toBeLessThan(100);
   });
+
+  it("produces an explicit blocked run instead of dying on invalid tape state", () => {
+    const engine = new RunEngine();
+    engine.transition("arm", 0, "start");
+    engine.transition("run", 1200, "motion");
+    engine.transition("pressure", 1480, "window");
+    engine.transition("resolution", 1980, "invalid tape");
+
+    const result = engine.finalizeBlocked(tape, 1980, "invalid tape state");
+
+    expect(result.outcome.grade).toBe("blocked");
+    expect(result.receipt.label).toBe("NO TRADE");
+    expect(result.receipt.netPnl).toBe(0);
+    expect(result.debrief.reasons[0]).toContain("without a valid buy window");
+  });
 });

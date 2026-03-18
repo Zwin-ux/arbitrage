@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  createPracticeMoneyOutcome,
+  PRACTICE_STAKE,
+  STARTING_BANKROLL,
+} from "@shared/practiceMoneyProfiles";
 
-const START_BANKROLL = 100;
-const STAKE = 25;
 const RUN_DURATION_MS = 5200;
 const HOLD_DURATION_MS = 420;
 const TRACK_START = 12;
@@ -25,68 +28,18 @@ function formatPnl(value) {
 function resolveTrade(progress, bankroll) {
   const offset = progress - IDEAL_COMMIT;
   const absoluteOffset = Math.abs(offset);
+  const profileId = absoluteOffset >= 0.018 && offset < 0
+    ? "early"
+    : absoluteOffset >= 0.018 && offset > 0
+      ? "late"
+      : "clear";
 
-  let label = "CLEAN";
-  let entryPrice = 0.52;
-  let exitPrice = 0.71;
-  let fees = 0.62;
-  let slip = 0.77;
-
-  if (absoluteOffset >= 0.018 && offset < 0) {
-    label = "EARLY";
-    entryPrice = 0.59;
-    exitPrice = 0.68;
-    fees = 0.62;
-    slip = 0.78;
-  } else if (absoluteOffset >= 0.018 && absoluteOffset < 0.055 && offset > 0) {
-    label = "LATE";
-    entryPrice = 0.65;
-    exitPrice = 0.61;
-    fees = 0.62;
-    slip = 1.02;
-  } else if (absoluteOffset >= 0.055) {
-    label = "MISSED";
-    entryPrice = 0.71;
-    exitPrice = 0.55;
-    fees = 0.62;
-    slip = 2.16;
-  }
-
-  const shares = STAKE / entryPrice;
-  const gross = shares * (exitPrice - entryPrice);
-  const pnl = Number((gross - fees - slip).toFixed(2));
-  const nextBankroll = Number((bankroll + pnl).toFixed(2));
-
-  return {
-    label,
-    tone: pnl >= 0 ? "positive" : "negative",
-    pnl,
-    nextBankroll,
-    entryPrice,
-    exitPrice,
-    gross: Number(gross.toFixed(2)),
-    fees,
-    slip,
-  };
-}
-
-function noTrade(bankroll) {
-  return {
-    label: "NO TRADE",
-    tone: "idle",
-    pnl: 0,
-    nextBankroll: bankroll,
-    entryPrice: null,
-    exitPrice: null,
-    gross: 0,
-    fees: 0,
-    slip: 0,
-  };
+  return createPracticeMoneyOutcome(profileId, bankroll, PRACTICE_STAKE);
 }
 
 export default function SuperiorLanding({ variant }) {
   const installerUrl = variant?.windowsInstallerUrl ?? "/download/";
-  const [bankroll, setBankroll] = useState(START_BANKROLL);
+  const [bankroll, setBankroll] = useState(STARTING_BANKROLL);
   const [phase, setPhase] = useState("idle");
   const [progress, setProgress] = useState(0);
   const [holdProgress, setHoldProgress] = useState(0);
@@ -198,7 +151,7 @@ export default function SuperiorLanding({ variant }) {
   function finishCommit() {
     clearMotion();
     const trade = resolveTrade(progress, bankroll);
-    setBankroll(trade.nextBankroll);
+    setBankroll(trade.endingBankroll);
     setResult(trade);
     setHoldProgress(0);
     setPhase("resolved");
@@ -206,7 +159,7 @@ export default function SuperiorLanding({ variant }) {
 
   function finishWithoutCommit() {
     clearMotion();
-    setResult(noTrade(bankroll));
+    setResult(createPracticeMoneyOutcome("no_trade", bankroll, PRACTICE_STAKE));
     setHoldProgress(0);
     setPhase("resolved");
   }
@@ -215,7 +168,7 @@ export default function SuperiorLanding({ variant }) {
     clearMotion();
     runStartRef.current = null;
     holdStartRef.current = null;
-    setBankroll(START_BANKROLL);
+    setBankroll(STARTING_BANKROLL);
     setProgress(0);
     setHoldProgress(0);
     setResult(null);
@@ -251,7 +204,7 @@ export default function SuperiorLanding({ variant }) {
               <span>BANKROLL</span>
               <strong>{formatMoney(bankroll)}</strong>
               <span>STAKE</span>
-              <strong>{formatMoney(STAKE)}</strong>
+              <strong>{formatMoney(PRACTICE_STAKE)}</strong>
             </div>
 
             <div className="demo-readout demo-readout--right">
@@ -277,13 +230,13 @@ export default function SuperiorLanding({ variant }) {
                 <div className="decision-lane__result-head">
                   <div className="decision-lane__result-main">
                     <span>{result.label}</span>
-                    <strong>{formatPnl(result.pnl)}</strong>
+                    <strong>{formatPnl(result.netPnl)}</strong>
                     <small>
                       {result.entryPrice === null
                         ? "NO POSITION OPENED"
                         : `BUY ${Math.round(result.entryPrice * 100)}c -> SELL ${Math.round(result.exitPrice * 100)}c`}
                     </small>
-                    <small>BANKROLL {formatMoney(result.nextBankroll)}</small>
+                    <small>BANKROLL {formatMoney(result.endingBankroll)}</small>
                   </div>
                   <img
                     className="decision-lane__result-sprite"
@@ -296,10 +249,10 @@ export default function SuperiorLanding({ variant }) {
                   />
                 </div>
                 <div className="decision-lane__receipt">
-                  <small>GROSS {formatPnl(result.gross)}</small>
+                  <small>GROSS {formatPnl(result.grossPnl)}</small>
                   <small>FEES -{formatMoney(result.fees)}</small>
-                  <small>SLIP -{formatMoney(result.slip)}</small>
-                  <small>NET {formatPnl(result.pnl)}</small>
+                  <small>SLIP -{formatMoney(result.slippage)}</small>
+                  <small>NET {formatPnl(result.netPnl)}</small>
                 </div>
               </div>
             ) : null}
@@ -320,7 +273,7 @@ export default function SuperiorLanding({ variant }) {
             onTouchEnd={cancelHold}
             disabled={!isRunning || result !== null}
           >
-            <span>{phase === "holding" ? `HOLD ${Math.round(holdProgress * 100)}%` : `HOLD TO BUY ${formatMoney(STAKE)}`}</span>
+            <span>{phase === "holding" ? `HOLD ${Math.round(holdProgress * 100)}%` : `HOLD TO BUY ${formatMoney(PRACTICE_STAKE)}`}</span>
           </button>
           <button type="button" className="machine-control machine-control--reset" onClick={resetDemo}>
             <span>RESET</span>

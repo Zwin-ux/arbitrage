@@ -24,6 +24,13 @@ export class TapeEngine {
     return event;
   }
 
+  peek(): TapeEvent | null {
+    if (!this.tape) {
+      return null;
+    }
+    return this.tape.events[this.cursor] ?? null;
+  }
+
   current(): TapeEvent | null {
     if (!this.tape) {
       return null;

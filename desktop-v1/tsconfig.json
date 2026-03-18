@@ -19,8 +19,9 @@
       "@presets/*": ["presets/*"],
       "@screens/*": ["screens/*"],
       "@ui/*": ["ui/*"],
-      "@tapes/*": ["tapes/*"]
+      "@tapes/*": ["tapes/*"],
+      "@shared/*": ["../../shared/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../shared/**/*.ts"]
 }

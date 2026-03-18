@@ -54,12 +54,71 @@ export class RunEngine {
     const commitOffset = this.commitTimestamp === null ? null : this.commitTimestamp - event.window.idealCommitAt;
     const outcome = resolveOutcome(this.commitTimestamp, event);
     const receipt = createPracticeMoneyReceipt(snapshot, outcome, startingBankroll, stake);
+    const debrief: Debrief = createDebrief(snapshot, outcome, receipt, commitOffset);
+
+    return this.buildRecord(tape, event.t, outcome, receipt, debrief);
+  }
+
+  finalizeBlocked(
+    tape: Tape,
+    at: number,
+    reason: string,
+    startingBankroll = STARTING_BANKROLL,
+    stake = PRACTICE_STAKE,
+  ): RunRecord {
+    const outcome: RunOutcome = {
+      grade: "blocked",
+      success: false,
+      committed: false,
+      reason,
+    };
+    const receipt = createPracticeMoneyReceipt(
+      {
+        grossEdgeBps: 0,
+        feesBps: 0,
+        slippageBps: 0,
+        netEdgeBps: 0,
+        path: [],
+        assumptions: [],
+        qualityBand: "weak",
+      },
+      outcome,
+      startingBankroll,
+      stake,
+    );
+    const debrief: Debrief = {
+      headline: receipt.label,
+      reasons: ["Run ended without a valid buy window.", "Reset and load a clean tape."],
+      metrics: {
+        grossPnl: receipt.grossPnl,
+        netPnl: receipt.netPnl,
+        commitOffsetMs: null,
+      },
+      recommendation: "Reset and start the run again.",
+    };
+
+    return this.buildRecord(tape, at, outcome, receipt, debrief);
+  }
+
+  reset(): void {
+    this.phase = "standby";
+    this.transitions = [{ phase: "standby", at: 0, reason: "reset" }];
+    this.actions = [{ type: "reset", at: 0 }];
+    this.commitTimestamp = null;
+  }
+
+  private buildRecord(
+    tape: Tape,
+    frozenAt: number,
+    outcome: RunOutcome,
+    receipt: ReturnType<typeof createPracticeMoneyReceipt>,
+    debrief: Debrief,
+  ): RunRecord {
     const afterimage: Afterimage = {
-      frozenAt: event.t,
+      frozenAt,
       windowState: outcome.success ? "closed" : "missed",
       commitState: this.commitTimestamp === null ? "none" : "resolved",
     };
-    const debrief: Debrief = createDebrief(snapshot, outcome, receipt, commitOffset);
 
     return {
       id: `run-${Date.now()}`,
@@ -74,13 +133,6 @@ export class RunEngine {
       receipt,
       debrief,
     };
-  }
-
-  reset(): void {
-    this.phase = "standby";
-    this.transitions = [{ phase: "standby", at: 0, reason: "reset" }];
-    this.actions = [{ type: "reset", at: 0 }];
-    this.commitTimestamp = null;
   }
 }
 

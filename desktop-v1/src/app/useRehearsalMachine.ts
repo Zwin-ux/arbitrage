@@ -58,13 +58,12 @@ export function useRehearsalMachine() {
       const elapsed = now - playbackStartRef.current;
       setCurrentTime(elapsed);
 
-      let next = tapeEngineRef.current.current();
       while (true) {
-        const peek = getNextEvent(currentTape, tapeEngineRef.current);
+        const peek = tapeEngineRef.current.peek();
         if (!peek || peek.t > elapsed) {
           break;
         }
-        next = tapeEngineRef.current.step();
+        const next = tapeEngineRef.current.step();
         if (next) {
           applyEvent(next);
         }
@@ -249,15 +248,18 @@ export function useRehearsalMachine() {
 
   function resolveMiss(event: TapeEvent): void {
     const resolutionEvent = event.routeSnapshot && event.window ? event : currentEvent;
-    if (!currentTape || !resolutionEvent?.routeSnapshot || !resolutionEvent.window) {
-      setIsRunning(false);
-      return;
-    }
     if (runEngineRef.current.getPhase() === "resolution" || runEngineRef.current.getPhase() === "afterimage") {
       return;
     }
+    if (!currentTape) {
+      setIsRunning(false);
+      return;
+    }
+
     runEngineRef.current.transition("resolution", event.t, "window closed");
-    const run = runEngineRef.current.finalize(currentTape, resolutionEvent);
+    const run = !resolutionEvent?.routeSnapshot || !resolutionEvent.window
+      ? runEngineRef.current.finalizeBlocked(currentTape, event.t, "invalid tape state")
+      : runEngineRef.current.finalize(currentTape, resolutionEvent);
     runEngineRef.current.transition("afterimage", event.t, "debrief");
     setPhase("afterimage");
     setIsRunning(false);
@@ -290,14 +292,4 @@ export function useRehearsalMachine() {
     cancelHold,
     reset,
   };
-}
-
-function getNextEvent(tape: Tape, engine: TapeEngine): TapeEvent | null {
-  const events = engine.allEvents();
-  const current = engine.current();
-  if (!current) {
-    return events[0] ?? null;
-  }
-  const index = events.findIndex((item) => item.id === current.id);
-  return events[index + 1] ?? null;
 }

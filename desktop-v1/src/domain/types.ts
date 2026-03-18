@@ -162,6 +162,8 @@ export interface LiveGate {
   unlocked: boolean;
   successfulRuns: number;
   consistencyScore: number;
+  tutorialClears: number;
+  replayClears: number;
   unlockRequirements: UnlockRequirement[];
 }
 
