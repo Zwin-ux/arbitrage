@@ -142,6 +142,13 @@ export interface RunRecord {
   debrief: Debrief;
 }
 
+export interface BotComparisonResult {
+  preset: BotPresetName;
+  verdict: "clean" | "early" | "late" | "wait";
+  reason: string;
+  receipt: PracticeMoneyReceipt;
+}
+
 export interface BotPreset {
   name: BotPresetName;
   commitThresholdBps: number;
@@ -170,5 +177,10 @@ export interface LiveGate {
 export interface ProgressSnapshot {
   lastSelectedMode: TapeMode;
   recentRuns: RunRecord[];
+  practiceBankroll: number;
+  bestBankroll: number;
+  clearStreak: number;
+  tutorialClearedTapeIds: string[];
+  replayClearedTapeIds: string[];
   liveGate: LiveGate;
 }

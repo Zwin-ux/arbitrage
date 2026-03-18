@@ -1,0 +1,99 @@
+{
+  "id": "replay-thin-reversal",
+  "name": "Thin Reversal",
+  "mode": "replay",
+  "source": {
+    "type": "bundled-replay",
+    "label": "Bundled replay tape"
+  },
+  "market": {
+    "venue": "Polymarket",
+    "marketId": "pm-019",
+    "marketSlug": "sol-above-300",
+    "symbol": "SOL",
+    "title": "Solana above 300 by month end"
+  },
+  "timeRange": {
+    "start": "2026-02-23T16:14:00Z",
+    "end": "2026-02-23T16:15:00Z"
+  },
+  "lane": {
+    "baseline": 39,
+    "minValue": 26,
+    "maxValue": 61
+  },
+  "events": [
+    {
+      "id": "tr1",
+      "t": 0,
+      "value": 38,
+      "volume": 7,
+      "confidence": 0.29,
+      "eventType": "baseline",
+      "severity": "low",
+      "label": "ready"
+    },
+    {
+      "id": "tr2",
+      "t": 1160,
+      "value": 46,
+      "volume": 12,
+      "confidence": 0.55,
+      "eventType": "window_open",
+      "severity": "medium",
+      "label": "window open",
+      "window": {
+        "opensAt": 1160,
+        "closesAt": 1760,
+        "idealCommitAt": 1430,
+        "holdMs": 500,
+        "routeSnapshotId": "tr2-route"
+      },
+      "routeSnapshot": {
+        "grossEdgeBps": 305,
+        "feesBps": 72,
+        "slippageBps": 108,
+        "netEdgeBps": 125,
+        "path": ["BUY YES", "SELL NO"],
+        "assumptions": ["thin size", "fast reversal"],
+        "qualityBand": "usable"
+      }
+    },
+    {
+      "id": "tr3",
+      "t": 1430,
+      "value": 44,
+      "volume": 10,
+      "confidence": 0.48,
+      "eventType": "route_snapshot",
+      "severity": "medium",
+      "label": "narrow lane",
+      "window": {
+        "opensAt": 1160,
+        "closesAt": 1760,
+        "idealCommitAt": 1430,
+        "holdMs": 500,
+        "routeSnapshotId": "tr2-route"
+      },
+      "routeSnapshot": {
+        "grossEdgeBps": 305,
+        "feesBps": 72,
+        "slippageBps": 108,
+        "netEdgeBps": 125,
+        "path": ["BUY YES", "SELL NO"],
+        "assumptions": ["thin size", "fast reversal"],
+        "qualityBand": "usable"
+      }
+    },
+    {
+      "id": "tr4",
+      "t": 1880,
+      "value": 33,
+      "volume": 5,
+      "confidence": 0.2,
+      "eventType": "hazard",
+      "severity": "high",
+      "label": "reversal hit"
+    }
+  ]
+}

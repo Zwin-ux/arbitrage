@@ -1,0 +1,109 @@
+{
+  "id": "tutorial-steady-window",
+  "name": "Steady Window",
+  "mode": "tutorial",
+  "source": {
+    "type": "bundled-tutorial",
+    "label": "Bundled tutorial tape"
+  },
+  "market": {
+    "venue": "Polymarket",
+    "marketId": "pm-002",
+    "marketSlug": "eth-above-5k",
+    "symbol": "ETH",
+    "title": "Ethereum above 5k by quarter end"
+  },
+  "timeRange": {
+    "start": "2026-03-04T10:12:00Z",
+    "end": "2026-03-04T10:13:00Z"
+  },
+  "lane": {
+    "baseline": 46,
+    "minValue": 32,
+    "maxValue": 66
+  },
+  "events": [
+    {
+      "id": "s1",
+      "t": 0,
+      "value": 45,
+      "volume": 11,
+      "confidence": 0.38,
+      "eventType": "baseline",
+      "severity": "low",
+      "label": "ready"
+    },
+    {
+      "id": "s2",
+      "t": 880,
+      "value": 50,
+      "volume": 14,
+      "confidence": 0.58,
+      "eventType": "shift",
+      "severity": "medium",
+      "label": "setup forming"
+    },
+    {
+      "id": "s3",
+      "t": 1320,
+      "value": 56,
+      "volume": 18,
+      "confidence": 0.75,
+      "eventType": "window_open",
+      "severity": "medium",
+      "label": "window open",
+      "window": {
+        "opensAt": 1320,
+        "closesAt": 2260,
+        "idealCommitAt": 1860,
+        "holdMs": 500,
+        "routeSnapshotId": "s1-route"
+      },
+      "routeSnapshot": {
+        "grossEdgeBps": 420,
+        "feesBps": 70,
+        "slippageBps": 85,
+        "netEdgeBps": 265,
+        "path": ["BUY YES", "SELL NO"],
+        "assumptions": ["book depth holds", "move fades after one pass"],
+        "qualityBand": "clean"
+      }
+    },
+    {
+      "id": "s4",
+      "t": 1860,
+      "value": 60,
+      "volume": 19,
+      "confidence": 0.81,
+      "eventType": "route_snapshot",
+      "severity": "medium",
+      "label": "commit lane",
+      "window": {
+        "opensAt": 1320,
+        "closesAt": 2260,
+        "idealCommitAt": 1860,
+        "holdMs": 500,
+        "routeSnapshotId": "s1-route"
+      },
+      "routeSnapshot": {
+        "grossEdgeBps": 420,
+        "feesBps": 70,
+        "slippageBps": 85,
+        "netEdgeBps": 265,
+        "path": ["BUY YES", "SELL NO"],
+        "assumptions": ["book depth holds", "move fades after one pass"],
+        "qualityBand": "clean"
+      }
+    },
+    {
+      "id": "s5",
+      "t": 2360,
+      "value": 47,
+      "volume": 8,
+      "confidence": 0.28,
+      "eventType": "window_close",
+      "severity": "high",
+      "label": "window closed"
+    }
+  ]
+}

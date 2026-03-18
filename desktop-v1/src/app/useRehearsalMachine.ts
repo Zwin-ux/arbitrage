@@ -3,10 +3,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { BotPresetName, RunPhase, RunRecord, Tape, TapeEvent, TapeMode } from "@domain/types";
 import { STARTER_BOTS } from "@presets/starterBots";
 import { evaluatePresetAgainstEvent } from "@services/botEngine";
+import { buildBotComparisonResults } from "@services/botComparisonService";
 import { getTapeById, listTapeSummaries, listTapes } from "@services/datasetLoader";
 import { LocalProgressStore } from "@services/persistenceService";
 import { PRACTICE_STAKE, STARTING_BANKROLL } from "@services/practiceMoney";
-import { recordRun } from "@services/progressService";
+import { createInitialProgress, recordRun } from "@services/progressService";
 import { RunEngine } from "@services/runEngine";
 import { TapeEngine } from "@services/tapeEngine";
 
@@ -44,6 +45,15 @@ export function useRehearsalMachine() {
     }
     return evaluatePresetAgainstEvent(STARTER_BOTS[selectedPreset], currentEvent);
   }, [currentEvent, selectedPreset]);
+
+  const practiceBankroll = progress.practiceBankroll;
+  const practiceStake = Math.min(PRACTICE_STAKE, Math.max(0, practiceBankroll));
+  const comparisonResults = useMemo(() => {
+    if (!latestRun || !currentTape) {
+      return [];
+    }
+    return buildBotComparisonResults(currentTape, latestRun.receipt.startingBankroll, latestRun.receipt.stake);
+  }, [currentTape, latestRun]);
 
   useEffect(() => {
     if (!isRunning || !currentTape) {
@@ -107,7 +117,7 @@ export function useRehearsalMachine() {
   }
 
   function startRun(): void {
-    if (!currentTape) {
+    if (!currentTape || practiceStake <= 0) {
       return;
     }
     tapeEngineRef.current.load(currentTape);
@@ -197,7 +207,7 @@ export function useRehearsalMachine() {
     setPhase("resolution");
     setIsRunning(false);
 
-    const run = runEngineRef.current.finalize(currentTape, currentEvent);
+    const run = runEngineRef.current.finalize(currentTape, currentEvent, practiceBankroll, practiceStake);
     runEngineRef.current.transition("afterimage", currentTime, "resolved");
     setPhase("afterimage");
     setHoldProgress(0);
@@ -258,13 +268,27 @@ export function useRehearsalMachine() {
 
     runEngineRef.current.transition("resolution", event.t, "window closed");
     const run = !resolutionEvent?.routeSnapshot || !resolutionEvent.window
-      ? runEngineRef.current.finalizeBlocked(currentTape, event.t, "invalid tape state")
-      : runEngineRef.current.finalize(currentTape, resolutionEvent);
+      ? runEngineRef.current.finalizeBlocked(currentTape, event.t, "invalid tape state", practiceBankroll, practiceStake)
+      : runEngineRef.current.finalize(currentTape, resolutionEvent, practiceBankroll, practiceStake);
     runEngineRef.current.transition("afterimage", event.t, "debrief");
     setPhase("afterimage");
     setIsRunning(false);
     setLatestRun(run);
     setProgress((current) => recordRun(current, run));
+  }
+
+  function resetWorld(): void {
+    const fresh = {
+      ...createInitialProgress(),
+      lastSelectedMode: mode,
+    };
+    setProgress(fresh);
+    setLatestRun(null);
+    setHoldProgress(0);
+    setCurrentTime(0);
+    setCurrentEvent(currentTape?.events[0] ?? null);
+    setPhase("standby");
+    setIsRunning(false);
   }
 
   return {
@@ -277,10 +301,14 @@ export function useRehearsalMachine() {
     holdProgress,
     latestRun,
     progress,
+    comparisonResults,
     selectedPreset,
     botDecision,
-    startingBankroll: STARTING_BANKROLL,
-    practiceStake: PRACTICE_STAKE,
+    startingBankroll: practiceBankroll || STARTING_BANKROLL,
+    practiceBankroll,
+    bestBankroll: progress.bestBankroll,
+    clearStreak: progress.clearStreak,
+    practiceStake,
     availableTapes,
     selectedTapeId,
     selectMode,
@@ -291,5 +319,6 @@ export function useRehearsalMachine() {
     startHold,
     cancelHold,
     reset,
+    resetWorld,
   };
 }

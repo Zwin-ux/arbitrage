@@ -21,8 +21,8 @@ const shared = {
     { label: "Live", value: "Locked" },
   ],
   product: {
-    eyebrow: "Practice loop",
-    line: "Start with $100. Take one fake trade. Reset.",
+    eyebrow: "Practice world",
+    line: "Start with $100. Build it on replay.",
     bullets: [
       "Start with $100",
       "Hold to buy",
@@ -31,10 +31,10 @@ const shared = {
     ],
   },
   routePreview: {
-    eyebrow: "Example run",
+    eyebrow: "World state",
     routeId: "09:41:18 LOCAL",
     path: "BUY 52C / SELL 71C",
-    note: "Practice money",
+    note: "Bankroll carries",
     metrics: [
       { label: "Stake", value: "$25.00" },
       { label: "Gross", value: "+$9.13" },
@@ -75,9 +75,9 @@ export const landingVariants = {
     navLabel: "Control",
     pageTitle: "Superior | Start with $100",
     pageDescription:
-      "Superior is a Windows app for practicing fake trades on replay before real money is involved.",
+      "Superior is a Windows app for building a fake bankroll on replay before real money is involved.",
     eyebrow: "WINDOWS / LOCAL / LIVE OFF",
-    heroLine: "Start with $100.",
+    heroLine: "Build a fake bankroll.",
     heroSupport: "Practice before real money.",
     ...shared,
   },
@@ -86,10 +86,10 @@ export const landingVariants = {
     navLabel: "Focus",
     pageTitle: "Superior | Practice before real money",
     pageDescription:
-      "Superior is a local Windows app for replaying trades with fake money before anything live is unlocked.",
-    eyebrow: "POLYMARKET / LOCAL / PRACTICE",
-    heroLine: "Practice before real money.",
-    heroSupport: "Local replay. Fake bankroll. Live stays locked.",
+      "Superior is a local Windows app for replaying trades, growing a fake bankroll, and keeping live locked.",
+    eyebrow: "POLYMARKET / LOCAL / REPLAY",
+    heroLine: "Grow it on replay.",
+    heroSupport: "Local tapes. Fake bankroll. Live stays locked.",
     ...shared,
   },
 };

@@ -10,6 +10,8 @@ export function LiveLockedScreen({ gate }: LiveLockedScreenProps) {
       <strong className="locked-title">LIVE BOOKS LOCKED</strong>
       <div className="locked-summary">
         <span>PRACTICE WINS {gate.successfulRuns}</span>
+        <span>TUTORIAL {gate.tutorialClears}</span>
+        <span>REPLAY {gate.replayClears}</span>
         <span>TIMING {gate.consistencyScore}%</span>
       </div>
       <ul className="locked-list">

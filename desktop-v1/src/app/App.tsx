@@ -13,12 +13,14 @@ export function App() {
   const modeLabel = machine.mode === "tutorial" ? "TUTORIAL" : machine.mode === "replay" ? "REPLAY" : "LIVE LOCKED";
 
   return (
-    <AppShell label="SUP practice money">
+    <AppShell label="SUP practice world">
       <div className="sup-shell">
         <header className="sup-marquee">
           <img alt="Superior" className="sup-wordmark" src={superiorWordmark} />
           <div className="sup-status">
-            <span>PRACTICE MONEY</span>
+            <span>BANK {formatMoney(machine.practiceBankroll)}</span>
+            <span>BEST {formatMoney(machine.bestBankroll)}</span>
+            <span>STREAK {machine.clearStreak}</span>
             <span>{modeLabel}</span>
             <span>{tapeTitle}</span>
             <span>LIVE LOCKED</span>
@@ -45,7 +47,10 @@ export function App() {
             availableTapes={machine.availableTapes}
             selectedTapeId={machine.selectedTapeId}
             latestRun={machine.latestRun}
+            comparisonResults={machine.comparisonResults}
             startingBankroll={machine.startingBankroll}
+            currentBankroll={machine.practiceBankroll}
+            clearStreak={machine.clearStreak}
             practiceStake={machine.practiceStake}
             onSelectPreset={machine.selectPreset}
             onSelectTape={machine.selectTape}
@@ -54,9 +59,14 @@ export function App() {
             onHoldStart={machine.startHold}
             onHoldEnd={machine.cancelHold}
             onReset={machine.reset}
+            onResetWorld={machine.resetWorld}
           />
         ) : null}
       </div>
     </AppShell>
   );
+}
+
+function formatMoney(value: number): string {
+  return `$${value.toFixed(2)}`;
 }

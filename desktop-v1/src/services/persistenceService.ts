@@ -82,6 +82,13 @@ function isProgressSnapshot(value: unknown): value is ProgressSnapshot {
     && isTapeMode(value.lastSelectedMode)
     && Array.isArray(value.recentRuns)
     && value.recentRuns.every(isRunRecord)
+    && typeof value.practiceBankroll === "number"
+    && typeof value.bestBankroll === "number"
+    && typeof value.clearStreak === "number"
+    && Array.isArray(value.tutorialClearedTapeIds)
+    && value.tutorialClearedTapeIds.every((item) => typeof item === "string")
+    && Array.isArray(value.replayClearedTapeIds)
+    && value.replayClearedTapeIds.every((item) => typeof item === "string")
     && isLiveGate(value.liveGate);
 }
 

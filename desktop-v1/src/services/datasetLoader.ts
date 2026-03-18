@@ -1,8 +1,15 @@
 import introRouteTape from "@tapes/tutorial/intro-route.json";
+import steadyWindowTape from "@tapes/tutorial/steady-window.json";
 import openingWindowTape from "@tapes/replay/opening-window.json";
+import thinReversalTape from "@tapes/replay/thin-reversal.json";
 import type { Tape, TapeMode } from "@domain/types";
 
-const manifest: Tape[] = [introRouteTape as Tape, openingWindowTape as Tape];
+const manifest: Tape[] = [
+  introRouteTape as Tape,
+  steadyWindowTape as Tape,
+  openingWindowTape as Tape,
+  thinReversalTape as Tape,
+];
 
 export interface TapeSummary {
   id: string;
