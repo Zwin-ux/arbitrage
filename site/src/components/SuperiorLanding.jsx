@@ -181,19 +181,19 @@ export default function SuperiorLanding({ variant }) {
         <header className="superior-screen__header">
           <div className="superior-screen__brand">
             <img
-              src="/assets/superior-head.png"
-              alt=""
-              width="30"
-              height="30"
+              className="superior-screen__wordmark"
+              src="/assets/superior-wordmark.png"
+              alt="Superior"
+              width="168"
+              height="52"
               loading="eager"
               decoding="async"
             />
-            <span>SUPERIOR</span>
           </div>
 
           <div className="superior-screen__status" aria-label="Machine status">
             <span>PRACTICE MONEY</span>
-            <span>LOCAL / POLYMARKET</span>
+            <span>$100 START</span>
             <span>LIVE LOCKED</span>
           </div>
         </header>
@@ -208,10 +208,10 @@ export default function SuperiorLanding({ variant }) {
             </div>
 
             <div className="demo-readout demo-readout--right">
-              <span>BEST RUN</span>
-              <strong>+{formatMoney(7.74)}</strong>
-              <span>BUY</span>
-              <strong>52c -&gt; 71c</strong>
+              <span>MARKET</span>
+              <strong>POLYMARKET</strong>
+              <span>MODE</span>
+              <strong>PRACTICE</strong>
             </div>
 
             <span className="decision-lane__track" aria-hidden="true" />
@@ -227,26 +227,15 @@ export default function SuperiorLanding({ variant }) {
 
             {result ? (
               <div className={`decision-lane__result decision-lane__result--${result.tone}`}>
-                <div className="decision-lane__result-head">
-                  <div className="decision-lane__result-main">
-                    <span>{result.label}</span>
-                    <strong>{formatPnl(result.netPnl)}</strong>
-                    <small>
-                      {result.entryPrice === null
-                        ? "NO POSITION OPENED"
-                        : `BUY ${Math.round(result.entryPrice * 100)}c -> SELL ${Math.round(result.exitPrice * 100)}c`}
-                    </small>
-                    <small>BANKROLL {formatMoney(result.endingBankroll)}</small>
-                  </div>
-                  <img
-                    className="decision-lane__result-sprite"
-                    src="/assets/generated/superior-mascot-core.png"
-                    alt=""
-                    width="56"
-                    height="56"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                <div className="decision-lane__result-main">
+                  <span>{result.label}</span>
+                  <strong>{formatPnl(result.netPnl)}</strong>
+                  <small>
+                    {result.entryPrice === null
+                      ? "NO POSITION OPENED"
+                      : `BUY ${Math.round(result.entryPrice * 100)}c -> SELL ${Math.round(result.exitPrice * 100)}c`}
+                  </small>
+                  <small>BANKROLL {formatMoney(result.endingBankroll)}</small>
                 </div>
                 <div className="decision-lane__receipt">
                   <small>GROSS {formatPnl(result.grossPnl)}</small>

@@ -88,13 +88,13 @@ export class RunEngine {
     );
     const debrief: Debrief = {
       headline: receipt.label,
-      reasons: ["Run ended without a valid buy window.", "Reset and load a clean tape."],
+      reasons: ["Run ended without a valid buy window.", "Load a clean tape and restart."],
       metrics: {
         grossPnl: receipt.grossPnl,
         netPnl: receipt.netPnl,
         commitOffsetMs: null,
       },
-      recommendation: "Reset and start the run again.",
+      recommendation: "Reset",
     };
 
     return this.buildRecord(tape, at, outcome, receipt, debrief);

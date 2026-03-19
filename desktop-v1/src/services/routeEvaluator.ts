@@ -40,8 +40,23 @@ export function createDebrief(
       `Net ${formatMoney(receipt.netPnl)} / Bankroll ${formatMoney(receipt.endingBankroll)}`,
     ],
     metrics,
-    recommendation: outcome.success ? "Hold inside the center of the buy window." : "Wait for a cleaner buy window.",
+    recommendation: resolveRecommendation(outcome),
   };
+}
+
+function resolveRecommendation(outcome: RunOutcome): string {
+  switch (outcome.grade) {
+    case "clear":
+      return "Hold center";
+    case "early":
+      return "Wait longer";
+    case "late":
+      return "Commit earlier";
+    case "miss":
+      return "No entry";
+    default:
+      return "Reset";
+  }
 }
 
 function formatMoney(value: number): string {

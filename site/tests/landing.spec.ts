@@ -7,7 +7,7 @@ test("homepage renders one canonical machine screen", async ({ page }) => {
   await expect(page.locator(".superior-screen__header")).toHaveCount(1);
   await expect(page.locator(".superior-screen__playfield")).toHaveCount(1);
   await expect(page.locator(".superior-screen__controls")).toHaveCount(1);
-  await expect(page.locator(".superior-screen__brand")).toContainText("SUPERIOR");
+  await expect(page.getByAltText("Superior")).toBeVisible();
   await expect(page.locator(".superior-screen__status")).toContainText("PRACTICE MONEY");
   await expect(page.getByText("$100.00")).toBeVisible();
   await expect(page.getByRole("button", { name: /^START$/ })).toBeVisible();

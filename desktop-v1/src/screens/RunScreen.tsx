@@ -74,32 +74,40 @@ export function RunScreen({
         <span>{phaseLabel}</span>
       </header>
 
-      <div className="preset-strip" aria-label="Starter presets">
-        {PRESETS.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            className="preset-button"
-            aria-pressed={selectedPreset === preset}
-            onClick={() => onSelectPreset(preset)}
-          >
-            {preset}
-          </button>
-        ))}
-      </div>
+      <div className="run-menu">
+        <div className="selection-strip" aria-label="Starter presets">
+          <span className="selection-strip__label">Preset</span>
+          <div className="selection-strip__group">
+            {PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                className="preset-button"
+                aria-pressed={selectedPreset === preset}
+                onClick={() => onSelectPreset(preset)}
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <div className="tape-strip" aria-label="Tape select">
-        {availableTapes.map((tapeOption) => (
-          <button
-            key={tapeOption.id}
-            type="button"
-            className="preset-button"
-            aria-pressed={selectedTapeId === tapeOption.id}
-            onClick={() => onSelectTape(tapeOption.id)}
-          >
-            {tapeOption.symbol} {tapeOption.name}
-          </button>
-        ))}
+        <div className="selection-strip" aria-label="Tape select">
+          <span className="selection-strip__label">Tape</span>
+          <div className="selection-strip__group">
+            {availableTapes.map((tapeOption) => (
+              <button
+                key={tapeOption.id}
+                type="button"
+                className="preset-button"
+                aria-pressed={selectedTapeId === tapeOption.id}
+                onClick={() => onSelectTape(tapeOption.id)}
+              >
+                {tapeOption.name.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <DecisionLane tape={tape} currentTime={currentTime} currentEvent={currentEvent} phase={phase} />
@@ -124,10 +132,15 @@ export function RunScreen({
       </div>
 
       <footer className="command-row">
-        <button type="button" className="command-button" onClick={onStartRun} disabled={isRunning || practiceStake <= 0}>
+        <button
+          type="button"
+          className="command-button command-button--primary"
+          onClick={onStartRun}
+          disabled={isRunning || practiceStake <= 0}
+        >
           {isRunning ? "RUNNING" : practiceStake > 0 ? "START" : "BANK EMPTY"}
         </button>
-        <button type="button" className="command-button" onClick={onStep} disabled={isRunning}>
+        <button type="button" className="command-button command-button--secondary" onClick={onStep} disabled={isRunning}>
           STEP
         </button>
         <button
@@ -146,7 +159,7 @@ export function RunScreen({
         <button type="button" className="command-button" onClick={onReset}>
           RESET
         </button>
-        <button type="button" className="command-button" onClick={onResetWorld}>
+        <button type="button" className="command-button command-button--secondary" onClick={onResetWorld}>
           NEW $100
         </button>
       </footer>

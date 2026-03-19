@@ -7,10 +7,9 @@ import superiorWordmark from "../assets/superior-wordmark.png";
 
 export function App() {
   const machine = useRehearsalMachine();
-  const tapeTitle = machine.currentTape
-    ? `${machine.currentTape.name} / ${machine.currentTape.market.symbol}`
-    : "NO TAPE";
-  const modeLabel = machine.mode === "tutorial" ? "TUTORIAL" : machine.mode === "replay" ? "REPLAY" : "LIVE LOCKED";
+  const tapeTitle = machine.currentTape ? machine.currentTape.name.toUpperCase() : "NO TAPE";
+  const marketLabel = machine.currentTape?.market.symbol ?? "LOCAL";
+  const modeLabel = machine.mode === "tutorial" ? "TUTORIAL" : machine.mode === "replay" ? "REPLAY" : "LIVE";
 
   return (
     <AppShell label="SUP practice world">
@@ -21,7 +20,10 @@ export function App() {
             <span>BANK {formatMoney(machine.practiceBankroll)}</span>
             <span>BEST {formatMoney(machine.bestBankroll)}</span>
             <span>STREAK {machine.clearStreak}</span>
+          </div>
+          <div className="sup-substatus">
             <span>{modeLabel}</span>
+            <span>{marketLabel}</span>
             <span>{tapeTitle}</span>
             <span>LIVE LOCKED</span>
           </div>
