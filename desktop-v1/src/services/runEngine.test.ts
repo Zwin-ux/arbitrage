@@ -42,6 +42,37 @@ describe("run engine", () => {
     expect(result.receipt.endingBankroll).toBeLessThan(100);
   });
 
+  it("resolves a late commit after the window closes", () => {
+    const engine = new RunEngine();
+    engine.transition("arm", 0, "start");
+    engine.transition("run", event.t, "motion");
+    engine.transition("pressure", event.t, "window");
+    engine.markCommit(event.window!.closesAt + 40);
+
+    const result = engine.finalize(tape, event);
+
+    expect(result.outcome.grade).toBe("late");
+    expect(result.outcome.success).toBe(false);
+    expect(result.receipt.label).toBe("LATE BUY");
+    expect(result.receipt.netPnl).toBeLessThan(0);
+    expect(result.debrief.recommendation).toBe("Commit earlier");
+  });
+
+  it("resolves an explicit miss when no commit is registered", () => {
+    const engine = new RunEngine();
+    engine.transition("arm", 0, "start");
+    engine.transition("run", event.t, "motion");
+    engine.transition("pressure", event.t, "window");
+
+    const result = engine.finalize(tape, event);
+
+    expect(result.outcome.grade).toBe("miss");
+    expect(result.outcome.success).toBe(false);
+    expect(result.outcome.committed).toBe(false);
+    expect(result.receipt.label).toBe("NO TRADE");
+    expect(result.debrief.recommendation).toBe("No entry");
+  });
+
   it("produces an explicit blocked run instead of dying on invalid tape state", () => {
     const engine = new RunEngine();
     engine.transition("arm", 0, "start");

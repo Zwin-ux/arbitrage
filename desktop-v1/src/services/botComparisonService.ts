@@ -1,6 +1,7 @@
 import type { BotComparisonResult, BotPresetName, RunOutcome, Tape, TapeEvent } from "@domain/types";
 import { STARTER_BOTS } from "@presets/starterBots";
 import { evaluatePresetAgainstEvent } from "@services/botEngine";
+import { getBundledTapeExpectation } from "@services/bundledTapeExpectations";
 import { createPracticeMoneyReceipt, PRACTICE_STAKE, STARTING_BANKROLL } from "@services/practiceMoney";
 
 const PRESET_BIAS_MS: Record<BotPresetName, number> = {
@@ -52,6 +53,16 @@ export function buildBotComparisonResults(
 }
 
 export function findPrimaryOpportunityEvent(tape: Tape): TapeEvent | null {
+  const expected = getBundledTapeExpectation(tape.id);
+  if (expected) {
+    const primaryEvent = tape.events.find(
+      (event) => event.id === expected.primaryOpportunityEventId && event.routeSnapshot && event.window,
+    );
+    if (primaryEvent) {
+      return primaryEvent;
+    }
+  }
+
   return tape.events.find((event) => event.eventType === "route_snapshot" && event.routeSnapshot && event.window)
     ?? tape.events.find((event) => event.routeSnapshot && event.window)
     ?? null;
