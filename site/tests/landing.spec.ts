@@ -63,6 +63,7 @@ test("docs page keeps repo guidance inside one machine screen", async ({ page })
   await expect(page.locator(".machine-page")).toHaveCount(1);
   await expect(page.locator(".machine-page__label")).toContainText("Docs");
   await expect(page.getByText(/start with fake money\. keep live off until local progress passes\./i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /first practice run/i })).toBeVisible();
   await expect(page.getByText(/npm --prefix desktop-v1 run dev/i)).toBeVisible();
   await expect(page.getByRole("link", { name: /release checklist/i })).toHaveAttribute(
     "href",
@@ -70,13 +71,25 @@ test("docs page keeps repo guidance inside one machine screen", async ({ page })
   );
 });
 
-test("variant lab exposes both control and focus routes", async ({ page }) => {
+test("roadmap page uses the same machine shell and release ladder", async ({ page }) => {
+  await page.goto("/roadmap/");
+
+  await expect(page.locator(".machine-page")).toHaveCount(1);
+  await expect(page.locator(".machine-page__label")).toContainText("Roadmap");
+  await expect(page.getByText(/practice world \/ release ladder/i)).toBeVisible();
+  await expect(page.getByText(/tape packs/i)).toBeVisible();
+  await expect(page.getByText(/daily run/i)).toBeVisible();
+  await expect(page.getByText(/no hosted live bot/i)).toBeVisible();
+});
+
+test("variant lab exposes both control and focus routes inside the same machine shell", async ({ page }) => {
   await page.goto("/lab/");
 
-  await expect(page.locator("h1")).toContainText("Compare the homepage");
-  await expect(page.getByRole("link", { name: /open variant/i })).toHaveCount(2);
-  await expect(page.getByRole("link", { name: /open variant/i }).nth(0)).toHaveAttribute("href", "/lab/control");
-  await expect(page.getByRole("link", { name: /open variant/i }).nth(1)).toHaveAttribute("href", "/lab/focus");
+  await expect(page.locator(".machine-page")).toHaveCount(1);
+  await expect(page.locator(".machine-page__label")).toContainText("Lab");
+  await expect(page.getByRole("link", { name: /^Open$/ }).nth(0)).toHaveAttribute("href", "/lab/control");
+  await expect(page.getByRole("link", { name: /^Open$/ }).nth(1)).toHaveAttribute("href", "/lab/focus");
+  await expect(page.getByText(/does the download feel safe enough to click\?/i)).toBeVisible();
 });
 
 test("control and focus variants share the same canonical screen", async ({ page }) => {

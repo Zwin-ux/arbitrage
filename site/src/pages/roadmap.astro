@@ -2,37 +2,76 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout title="Roadmap | Superior">
-  <section class="page-hero compact">
-    <p class="eyebrow">Roadmap</p>
-    <h1>Ship the clean Windows bot first. Add risk later.</h1>
-    <p class="lead">
-      Superior does not skip ahead to speculative live-trading claims. The roadmap starts with guided onboarding, explainable scanner output, paper execution, release quality, and a reliable Windows product before any broader live trading surface.
-    </p>
-  </section>
+<BaseLayout
+  title="Roadmap | Superior"
+  description="Release ladder for Superior: practice money now, replay depth next, live still locked."
+>
+  <section class="machine-page">
+    <header class="machine-page__header">
+      <div class="machine-page__title">
+        <span class="machine-page__label">Roadmap</span>
+        <strong>Practice world / release ladder</strong>
+      </div>
+      <div class="machine-page__status">LOCAL / $100 START / LIVE LOCKED</div>
+    </header>
 
-  <section class="workflow-band roadmap-band">
-    <div class="workflow-steps">
-      <article>
-        <span>Now</span>
-        <h3>Consumer paper bot</h3>
-        <p>Polymarket-first onboarding, explainable scanner results, paper routes, benchmark lab, trust docs, QA tooling, and a clean Windows installer.</p>
-      </article>
-      <article>
-        <span>Next</span>
-        <h3>Experimental live graduation</h3>
-        <p>Shadow mode first, then tiny Polymarket-first micro-live with explicit caps, diagnostics, and deterministic order rules.</p>
-      </article>
-      <article>
-        <span>Later</span>
-        <h3>Broader venue depth</h3>
-        <p>Kalshi depth, stronger exact-match tooling, clearer cross-venue explanations, and more complete connector support after the live graduation path is stable.</p>
-      </article>
-      <article>
-        <span>Not now</span>
-        <h3>No hosted bot runtime</h3>
-        <p>Railway is for the public site only. User data, model keys, and trading controls remain local-first.</p>
-      </article>
+    <div class="machine-page__body machine-page__body--single">
+      <div class="machine-page__column">
+        <div class="machine-page__block">
+          <span>Current shape</span>
+          <strong>Start with $100. Replay. Compare presets. Keep live off.</strong>
+          <p>Ship the practice loop first. Add more depth only after the fake-money run feels clean and repeatable.</p>
+        </div>
+
+        <div class="machine-page__rail">
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">Now</span>
+            <div class="machine-page__strip-body">
+              <strong>Tape packs</strong>
+              <p>More tutorial and replay chapters, bankroll carry, and preset comparisons that teach timing through repetition.</p>
+            </div>
+          </article>
+
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">Next</span>
+            <div class="machine-page__strip-body">
+              <strong>Daily run</strong>
+              <p>One deterministic challenge per day, one saved result, same tape for everyone, no extra menu sprawl.</p>
+            </div>
+          </article>
+
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">Later</span>
+            <div class="machine-page__strip-body">
+              <strong>Deeper practice</strong>
+              <p>Harder tapes, longer runs, and more replay depth once the core loop proves it can hold regular use.</p>
+            </div>
+          </article>
+
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">Not now</span>
+            <div class="machine-page__strip-body">
+              <strong>No hosted live bot</strong>
+              <p>No cloud runtime, no always-on money mode, and no credentials in the first-run path.</p>
+            </div>
+          </article>
+        </div>
+      </div>
     </div>
+
+    <nav class="machine-page__controls" aria-label="Roadmap controls">
+      <a class="machine-page__control machine-page__control--primary" href="/download/">
+        <span>Download</span>
+      </a>
+      <a class="machine-page__control machine-page__control--secondary" href="/docs/">
+        <span>Docs</span>
+      </a>
+      <a class="machine-page__control machine-page__control--commit" href="/lab/">
+        <span>Variants</span>
+      </a>
+      <a class="machine-page__control machine-page__control--reset" href="https://github.com/Zwin-ux/arbitrage" target="_blank" rel="noreferrer">
+        <span>GitHub</span>
+      </a>
+    </nav>
   </section>
 </BaseLayout>

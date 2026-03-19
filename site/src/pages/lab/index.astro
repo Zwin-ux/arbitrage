@@ -5,45 +5,82 @@ import { landingVariantOrder, landingVariants } from "../../data/landingVariants
 
 <BaseLayout
   title="Superior Lab | Landing Variants"
-  description="Compare landing-page variants for Superior and keep homepage changes deliberate."
+  description="Compare landing variants for Superior without changing the public route blind."
 >
-  <section class="content-card">
-    <p class="eyebrow">Variant lab</p>
-    <h1>Compare the homepage without editing the public route blind.</h1>
-    <p>
-      This lab keeps a stable control and a stable challenger so copy, composition, and CTA changes can be judged
-      deliberately. Use it before replacing the public homepage.
-    </p>
-  </section>
+  <section class="machine-page">
+    <header class="machine-page__header">
+      <div class="machine-page__title">
+        <span class="machine-page__label">Lab</span>
+        <strong>Landing compare / control vs focus</strong>
+      </div>
+      <div class="machine-page__status">LOCAL / VARIANTS / DOWNLOAD</div>
+    </header>
 
-  <section class="card-grid">
-    {landingVariantOrder.map((key) => {
-      const variant = landingVariants[key];
-      return (
-        <article class="content-card">
-          <p class="eyebrow">{variant.navLabel}</p>
-          <h2>{variant.heroLine}</h2>
-          <p>{variant.heroSupport}</p>
-          <div class="link-row">
-            <a class="button-primary" href={`/lab/${variant.key}`}>
-              Open variant
-            </a>
-            <a class="button-secondary" href={variant.windowsInstallerUrl}>
-              Test download
-            </a>
+    <div class="machine-page__body machine-page__body--single">
+      <div class="machine-page__column">
+        <div class="machine-page__block">
+          <span>Use</span>
+          <strong>Compare the homepage before swapping the public route.</strong>
+          <p>Keep one stable control, one challenger, and one short judging rubric.</p>
+        </div>
+
+        <div class="machine-page__rail">
+          {landingVariantOrder.map((key) => {
+            const variant = landingVariants[key];
+            return (
+              <article class="machine-page__strip">
+                <span class="machine-page__strip-label">{variant.navLabel}</span>
+                <div class="machine-page__strip-body">
+                  <strong>{variant.heroLine}</strong>
+                  <p>{variant.heroSupport}</p>
+                  <div class="machine-page__mini-actions">
+                    <a class="machine-page__mini-link machine-page__mini-link--primary" href={`/lab/${variant.key}`}>
+                      Open
+                    </a>
+                    <a class="machine-page__mini-link" href={variant.windowsInstallerUrl}>
+                      Download
+                    </a>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <div class="machine-page__list">
+          <div class="machine-page__row">
+            <span>Judge</span>
+            <strong>Can you tell what the app does in one screen?</strong>
           </div>
-        </article>
-      );
-    })}
-  </section>
+          <div class="machine-page__row">
+            <span>Judge</span>
+            <strong>Does the download feel safe enough to click?</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Judge</span>
+            <strong>Does the logo lead without drowning the interface?</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Judge</span>
+            <strong>Does it feel like a shipped build instead of a concept mock?</strong>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <section class="content-card">
-    <p class="eyebrow">What to judge</p>
-    <ul class="criteria-list">
-      <li>Does the headline communicate paper-first prediction-market use immediately?</li>
-      <li>Does the CTA feel trustworthy enough to click?</li>
-      <li>Does the visual mark feel central without fighting the Superior brand text?</li>
-      <li>Does the page feel like a shipped product instead of a concept render?</li>
-    </ul>
+    <nav class="machine-page__controls" aria-label="Lab controls">
+      <a class="machine-page__control machine-page__control--primary" href="/lab/control/">
+        <span>Open control</span>
+      </a>
+      <a class="machine-page__control machine-page__control--secondary" href="/lab/focus/">
+        <span>Open focus</span>
+      </a>
+      <a class="machine-page__control machine-page__control--commit" href="/download/">
+        <span>Download</span>
+      </a>
+      <a class="machine-page__control machine-page__control--reset" href="/">
+        <span>Home</span>
+      </a>
+    </nav>
   </section>
 </BaseLayout>

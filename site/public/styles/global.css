@@ -378,6 +378,11 @@ pre,
   background: var(--surface-3);
 }
 
+.machine-page__body--single {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
 .machine-page__column {
   padding: 16px;
   display: flex;
@@ -385,12 +390,17 @@ pre,
   gap: 16px;
 }
 
+.machine-page__body--single .machine-page__column {
+  width: min(760px, 100%);
+}
+
 .machine-page__column + .machine-page__column {
   border-left: 1px solid var(--line);
 }
 
 .machine-page__stack,
-.machine-page__list {
+.machine-page__list,
+.machine-page__rail {
   display: grid;
   gap: 10px;
 }
@@ -437,6 +447,76 @@ pre,
 .machine-page__row:first-child {
   border-top: 0;
   padding-top: 0;
+}
+
+.machine-page__strip {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.machine-page__strip:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.machine-page__strip-label {
+  color: var(--text-secondary);
+  font-family: "Press Start 2P", "IBM Plex Mono", monospace;
+  font-size: 0.5rem;
+  line-height: 1.55;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.machine-page__strip-body {
+  display: grid;
+  gap: 6px;
+}
+
+.machine-page__strip-body strong {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.machine-page__strip-body p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+.machine-page__mini-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.machine-page__mini-link {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  background: var(--button);
+  border: 1px solid var(--line-strong);
+  font-family: "Press Start 2P", "IBM Plex Mono", monospace;
+  font-size: 0.48rem;
+  line-height: 1.55;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 0 rgba(0, 0, 0, 0.48);
+}
+
+.machine-page__mini-link--primary {
+  border-color: var(--accent-blue);
 }
 
 .machine-page__code-wrap {
@@ -574,5 +654,10 @@ pre,
   .machine-page__row {
     grid-template-columns: 1fr;
     gap: 4px;
+  }
+
+  .machine-page__strip {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }
