@@ -3,17 +3,21 @@ import { describe, expect, it } from "vitest";
 import type { Tape, TapeEvent } from "@domain/types";
 import replayTapeJson from "@tapes/replay/opening-window.json";
 import tutorialTapeJson from "@tapes/tutorial/intro-route.json";
-import { createInitialProgress, recordRun } from "@services/progressService";
+import steadyWindowTapeJson from "@tapes/tutorial/steady-window.json";
+import { canEnterMode, createInitialProgress, listPackStatuses, recordRun } from "@services/progressService";
 import { RunEngine } from "@services/runEngine";
 
 const tutorialTape = tutorialTapeJson as Tape;
+const steadyWindowTape = steadyWindowTapeJson as Tape;
 const replayTape = replayTapeJson as Tape;
 
 describe("progress service", () => {
-  it("keeps live locked when only one tutorial tape is farmed", () => {
+  it("keeps replay packs locked until both tutorial packs are cleared", () => {
     const tutorialRun = createClearRun(tutorialTape, tutorialTape.events[3] as TapeEvent);
     const first = recordRun(createInitialProgress(), tutorialRun);
     const second = recordRun(first, createClearRun(tutorialTape, tutorialTape.events[3] as TapeEvent, first.practiceBankroll));
+    const tutorialPacks = listPackStatuses(second, "tutorial");
+    const replayPacks = listPackStatuses(second, "replay");
 
     expect(second.liveGate.successfulRuns).toBe(2);
     expect(second.liveGate.tutorialClears).toBe(1);
@@ -21,22 +25,31 @@ describe("progress service", () => {
     expect(second.practiceBankroll).toBe(115.48);
     expect(second.bestBankroll).toBe(115.48);
     expect(second.clearStreak).toBe(2);
+    expect(tutorialPacks[0]?.completed).toBe(true);
+    expect(tutorialPacks[1]?.unlocked).toBe(true);
+    expect(replayPacks[0]?.unlocked).toBe(false);
+    expect(canEnterMode(second, "replay")).toBe(false);
     expect(second.liveGate.unlocked).toBe(false);
   });
 
-  it("unlocks live only after one tutorial clear and one replay clear with consistent timing", () => {
+  it("unlocks replay after the tutorial packs are cleared and tracks pack progress", () => {
     const tutorialRun = createClearRun(tutorialTape, tutorialTape.events[3] as TapeEvent);
     const first = recordRun(createInitialProgress(), tutorialRun);
-    const replayRun = createClearRun(replayTape, replayTape.events[2] as TapeEvent, first.practiceBankroll);
+    const second = recordRun(first, createClearRun(steadyWindowTape, steadyWindowTape.events[3] as TapeEvent, first.practiceBankroll));
+    const replayRun = createClearRun(replayTape, replayTape.events[2] as TapeEvent, second.practiceBankroll);
 
-    const progressed = recordRun(first, replayRun);
+    const progressed = recordRun(second, replayRun);
+    const replayPacks = listPackStatuses(progressed, "replay");
 
-    expect(progressed.liveGate.tutorialClears).toBe(1);
+    expect(progressed.liveGate.tutorialClears).toBe(2);
     expect(progressed.liveGate.replayClears).toBe(1);
     expect(progressed.liveGate.consistencyScore).toBe(100);
-    expect(progressed.practiceBankroll).toBe(115.48);
-    expect(progressed.bestBankroll).toBe(115.48);
-    expect(progressed.clearStreak).toBe(2);
+    expect(progressed.practiceBankroll).toBe(123.22);
+    expect(progressed.bestBankroll).toBe(123.22);
+    expect(progressed.clearStreak).toBe(3);
+    expect(replayPacks[0]?.completed).toBe(true);
+    expect(replayPacks[1]?.unlocked).toBe(true);
+    expect(canEnterMode(progressed, "replay")).toBe(true);
     expect(progressed.liveGate.unlocked).toBe(true);
   });
 });

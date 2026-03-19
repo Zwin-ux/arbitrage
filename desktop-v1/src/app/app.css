@@ -62,7 +62,7 @@ button {
 }
 
 .sup-marquee,
-.mode-strip,
+.mode-deck,
 .run-surface,
 .locked-surface {
   width: min(66vw, 780px);
@@ -70,8 +70,9 @@ button {
 }
 
 .sup-marquee,
-.mode-strip,
+.mode-deck,
 .run-header,
+.run-packline,
 .run-menu,
 .run-readout,
 .command-row,
@@ -141,13 +142,25 @@ button {
   font-size: 0.62rem;
 }
 
+.mode-deck {
+  display: grid;
+  gap: var(--space-2);
+}
+
 .mode-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
+.pack-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
 .mode-button,
+.pack-button,
 .command-button {
   position: relative;
   min-height: 42px;
@@ -168,6 +181,16 @@ button {
   padding: 0 var(--space-4);
 }
 
+.pack-button {
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  text-align: left;
+}
+
 .mode-button__index {
   color: var(--dim);
   min-width: 18px;
@@ -180,13 +203,36 @@ button {
   font-weight: 600;
 }
 
+.pack-button__index,
+.pack-button__meta {
+  color: var(--dim);
+  font-size: 0.6rem;
+}
+
+.pack-button__label {
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
 .mode-button[aria-pressed="true"] {
   border-color: var(--line-hard);
   background: var(--surface-4);
   color: var(--gold);
 }
 
+.pack-button[aria-pressed="true"] {
+  border-color: rgba(207, 188, 115, 0.42);
+  background: rgba(207, 188, 115, 0.08);
+  color: var(--gold);
+}
+
 .mode-button[aria-disabled="true"] {
+  color: var(--dim);
+  cursor: default;
+  opacity: 0.56;
+}
+
+.pack-button[aria-disabled="true"] {
   color: var(--dim);
   cursor: default;
   opacity: 0.56;
@@ -251,6 +297,14 @@ button {
 .run-header strong,
 .afterimage strong {
   color: var(--text);
+}
+
+.run-packline {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--dim);
+  font-size: 0.6rem;
 }
 
 .run-menu {
@@ -616,13 +670,14 @@ button {
   }
 
   .sup-marquee,
-  .mode-strip,
+  .mode-deck,
   .run-surface,
   .locked-surface {
     width: 100%;
   }
 
-  .mode-strip {
+  .mode-strip,
+  .pack-strip {
     grid-template-columns: 1fr;
   }
 
@@ -632,6 +687,10 @@ button {
   }
 
   .run-header {
+    flex-direction: column;
+  }
+
+  .run-packline {
     flex-direction: column;
   }
 

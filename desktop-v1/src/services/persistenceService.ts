@@ -1,6 +1,7 @@
 import type {
   Debrief,
   LiveGate,
+  PackProgress,
   PracticeMoneyReceipt,
   ProgressSnapshot,
   RunOutcome,
@@ -10,10 +11,10 @@ import type {
 } from "@domain/types";
 import { createInitialProgress, rehydrateProgressSnapshot } from "@services/progressService";
 
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 const MODE_SET = new Set<TapeMode>(["tutorial", "replay", "live-preview"]);
 
-interface ProgressEnvelopeV1 {
+interface ProgressEnvelopeV2 {
   version: typeof STORAGE_VERSION;
   snapshot: ProgressSnapshot;
 }
@@ -46,7 +47,7 @@ export class LocalProgressStore implements ProgressStore {
 
     try {
       const parsed = JSON.parse(raw) as unknown;
-      if (isProgressEnvelopeV1(parsed)) {
+      if (isProgressEnvelopeV2(parsed)) {
         return parsed.snapshot;
       }
       const legacy = readLegacyProgressSnapshot(parsed);
@@ -65,7 +66,7 @@ export class LocalProgressStore implements ProgressStore {
       return;
     }
 
-    const payload: ProgressEnvelopeV1 = {
+    const payload: ProgressEnvelopeV2 = {
       version: STORAGE_VERSION,
       snapshot,
     };
@@ -73,13 +74,14 @@ export class LocalProgressStore implements ProgressStore {
   }
 }
 
-function isProgressEnvelopeV1(value: unknown): value is ProgressEnvelopeV1 {
+function isProgressEnvelopeV2(value: unknown): value is ProgressEnvelopeV2 {
   return isRecord(value) && value.version === STORAGE_VERSION && isProgressSnapshot(value.snapshot);
 }
 
 function isProgressSnapshot(value: unknown): value is ProgressSnapshot {
   return isRecord(value)
     && isTapeMode(value.lastSelectedMode)
+    && (value.lastSelectedPackId === null || typeof value.lastSelectedPackId === "string")
     && Array.isArray(value.recentRuns)
     && value.recentRuns.every(isRunRecord)
     && typeof value.practiceBankroll === "number"
@@ -89,17 +91,38 @@ function isProgressSnapshot(value: unknown): value is ProgressSnapshot {
     && value.tutorialClearedTapeIds.every((item) => typeof item === "string")
     && Array.isArray(value.replayClearedTapeIds)
     && value.replayClearedTapeIds.every((item) => typeof item === "string")
+    && Array.isArray(value.packProgress)
+    && value.packProgress.every(isPackProgress)
     && isLiveGate(value.liveGate);
 }
 
 function readLegacyProgressSnapshot(value: unknown): ProgressSnapshot | null {
-  if (!isRecord(value) || !isTapeMode(value.lastSelectedMode) || !Array.isArray(value.recentRuns)) {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (value.version === 1 && isRecord(value.snapshot)) {
+    return readLegacyProgressSnapshot(value.snapshot);
+  }
+
+  if (!isTapeMode(value.lastSelectedMode) || !Array.isArray(value.recentRuns)) {
     return null;
   }
   if (!value.recentRuns.every(isRunRecord)) {
     return null;
   }
-  return rehydrateProgressSnapshot(value.lastSelectedMode, value.recentRuns);
+
+  const lastSelectedPackId = typeof value.lastSelectedPackId === "string" ? value.lastSelectedPackId : null;
+  return rehydrateProgressSnapshot(value.lastSelectedMode, value.recentRuns, lastSelectedPackId);
+}
+
+function isPackProgress(value: unknown): value is PackProgress {
+  return isRecord(value)
+    && typeof value.packId === "string"
+    && Array.isArray(value.clearedTapeIds)
+    && value.clearedTapeIds.every((item) => typeof item === "string")
+    && typeof value.completed === "boolean"
+    && typeof value.bestNetPnl === "number";
 }
 
 function isRunRecord(value: unknown): value is RunRecord {

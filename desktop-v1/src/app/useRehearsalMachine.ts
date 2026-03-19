@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { BotPresetName, RunPhase, RunRecord, Tape, TapeEvent, TapeMode } from "@domain/types";
+import type { BotPresetName, PackStatus, RunPhase, RunRecord, Tape, TapeEvent, TapeMode } from "@domain/types";
 import { STARTER_BOTS } from "@presets/starterBots";
 import { evaluatePresetAgainstEvent } from "@services/botEngine";
 import { buildBotComparisonResults } from "@services/botComparisonService";
-import { getTapeById, listTapeSummaries, listTapes } from "@services/datasetLoader";
+import { getTapeById, listTapeSummariesForPack, listTapesForPack } from "@services/datasetLoader";
 import { LocalProgressStore } from "@services/persistenceService";
 import { PRACTICE_STAKE, STARTING_BANKROLL } from "@services/practiceMoney";
-import { createInitialProgress, recordRun } from "@services/progressService";
+import { canEnterMode, createInitialProgress, listPackStatuses, recordRun } from "@services/progressService";
 import { RunEngine } from "@services/runEngine";
 import { TapeEngine } from "@services/tapeEngine";
 
@@ -24,7 +24,8 @@ export function useRehearsalMachine() {
 
   const [progress, setProgress] = useState(() => progressStoreRef.current.load());
   const [mode, setMode] = useState<TapeMode>(progress.lastSelectedMode);
-  const [selectedTapeId, setSelectedTapeId] = useState<string | null>(listTapes(progress.lastSelectedMode)[0]?.id ?? null);
+  const [selectedPackId, setSelectedPackId] = useState<string | null>(progress.lastSelectedPackId);
+  const [selectedTapeId, setSelectedTapeId] = useState<string | null>(null);
   const [phase, setPhase] = useState<RunPhase>("standby");
   const [currentTime, setCurrentTime] = useState(0);
   const [currentEvent, setCurrentEvent] = useState<TapeEvent | null>(null);
@@ -33,11 +34,22 @@ export function useRehearsalMachine() {
   const [holdProgress, setHoldProgress] = useState(0);
   const [selectedPreset, setSelectedPreset] = useState<BotPresetName>("Balanced");
 
-  const availableTapes = useMemo(() => listTapeSummaries(mode), [mode]);
+  const packStatuses = useMemo<PackStatus[]>(() => {
+    return mode === "live-preview" ? [] : listPackStatuses(progress, mode);
+  }, [mode, progress]);
+
+  const selectedPack = useMemo(() => {
+    return packStatuses.find((pack) => pack.pack.id === selectedPackId) ?? packStatuses[0] ?? null;
+  }, [packStatuses, selectedPackId]);
+
+  const availableTapes = useMemo(() => {
+    return selectedPack ? listTapeSummariesForPack(selectedPack.pack.id) : [];
+  }, [selectedPack]);
 
   const currentTape = useMemo<Tape | undefined>(() => {
-    return selectedTapeId ? getTapeById(selectedTapeId) : listTapes(mode)[0];
-  }, [mode, selectedTapeId]);
+    const fallbackTape = selectedPack ? listTapesForPack(selectedPack.pack.id)[0] : undefined;
+    return selectedTapeId ? getTapeById(selectedTapeId) ?? fallbackTape : fallbackTape;
+  }, [selectedPack, selectedTapeId]);
 
   const botDecision = useMemo(() => {
     if (!currentEvent) {
@@ -48,12 +60,35 @@ export function useRehearsalMachine() {
 
   const practiceBankroll = progress.practiceBankroll;
   const practiceStake = Math.min(PRACTICE_STAKE, Math.max(0, practiceBankroll));
+  const replayUnlocked = useMemo(() => canEnterMode(progress, "replay"), [progress]);
   const comparisonResults = useMemo(() => {
     if (!latestRun || !currentTape) {
       return [];
     }
     return buildBotComparisonResults(currentTape, latestRun.receipt.startingBankroll, latestRun.receipt.stake);
   }, [currentTape, latestRun]);
+
+  useEffect(() => {
+    if (mode === "live-preview") {
+      if (selectedPackId !== null) {
+        setSelectedPackId(null);
+      }
+      if (selectedTapeId !== null) {
+        setSelectedTapeId(null);
+      }
+      return;
+    }
+
+    const nextPackId = selectedPack?.pack.id ?? null;
+    if (nextPackId !== selectedPackId) {
+      setSelectedPackId(nextPackId);
+    }
+
+    const nextTapeId = availableTapes[0]?.id ?? null;
+    if (!selectedTapeId || !availableTapes.some((tape) => tape.id === selectedTapeId)) {
+      setSelectedTapeId(nextTapeId);
+    }
+  }, [availableTapes, mode, selectedPack, selectedPackId, selectedTapeId]);
 
   useEffect(() => {
     if (!isRunning || !currentTape) {
@@ -97,23 +132,54 @@ export function useRehearsalMachine() {
   }, [progress]);
 
   function selectMode(nextMode: TapeMode): void {
-    if (nextMode === "live-preview" && !progress.liveGate.unlocked) {
+    if (!canEnterMode(progress, nextMode)) {
       return;
     }
+
+    const nextPack = nextMode === "live-preview"
+      ? null
+      : listPackStatuses(progress, nextMode)[0]?.pack.id ?? null;
+    const nextTape = nextPack ? listTapesForPack(nextPack)[0] : null;
+
     setMode(nextMode);
-    const nextTape = listTapes(nextMode)[0] ?? null;
+    setSelectedPackId(nextPack);
     setSelectedTapeId(nextTape?.id ?? null);
-    reset();
-    setProgress((current) => ({ ...current, lastSelectedMode: nextMode }));
+    reset(nextTape);
+    setProgress((current) => ({
+      ...current,
+      lastSelectedMode: nextMode,
+      lastSelectedPackId: nextPack,
+    }));
   }
 
   function selectPreset(nextPreset: BotPresetName): void {
     setSelectedPreset(nextPreset);
   }
 
+  function selectPack(packId: string): void {
+    if (mode === "live-preview") {
+      return;
+    }
+
+    const pack = packStatuses.find((entry) => entry.pack.id === packId);
+    if (!pack || !pack.unlocked) {
+      return;
+    }
+
+    const nextTape = listTapesForPack(packId)[0] ?? null;
+    setSelectedPackId(packId);
+    setSelectedTapeId(nextTape?.id ?? null);
+    reset(nextTape);
+    setProgress((current) => ({
+      ...current,
+      lastSelectedPackId: packId,
+    }));
+  }
+
   function selectTape(tapeId: string): void {
+    const nextTape = getTapeById(tapeId) ?? null;
     setSelectedTapeId(tapeId);
-    reset();
+    reset(nextTape);
   }
 
   function startRun(): void {
@@ -215,7 +281,7 @@ export function useRehearsalMachine() {
     setProgress((current) => recordRun(current, run));
   }
 
-  function reset(): void {
+  function reset(nextTape: Tape | null = currentTape ?? null): void {
     if (playbackFrameRef.current !== null) {
       window.cancelAnimationFrame(playbackFrameRef.current);
     }
@@ -229,7 +295,7 @@ export function useRehearsalMachine() {
     setIsRunning(false);
     setHoldProgress(0);
     setCurrentTime(0);
-    setCurrentEvent(currentTape?.events[0] ?? null);
+    setCurrentEvent(nextTape?.events[0] ?? null);
     setLatestRun(null);
     setPhase("standby");
   }
@@ -280,13 +346,15 @@ export function useRehearsalMachine() {
   function resetWorld(): void {
     const fresh = {
       ...createInitialProgress(),
-      lastSelectedMode: mode,
     };
     setProgress(fresh);
+    setMode(fresh.lastSelectedMode);
+    setSelectedPackId(fresh.lastSelectedPackId);
+    setSelectedTapeId(fresh.lastSelectedPackId ? listTapesForPack(fresh.lastSelectedPackId)[0]?.id ?? null : null);
     setLatestRun(null);
     setHoldProgress(0);
     setCurrentTime(0);
-    setCurrentEvent(currentTape?.events[0] ?? null);
+    setCurrentEvent(fresh.lastSelectedPackId ? listTapesForPack(fresh.lastSelectedPackId)[0]?.events[0] ?? null : null);
     setPhase("standby");
     setIsRunning(false);
   }
@@ -309,9 +377,14 @@ export function useRehearsalMachine() {
     bestBankroll: progress.bestBankroll,
     clearStreak: progress.clearStreak,
     practiceStake,
+    replayUnlocked,
+    packStatuses,
+    selectedPack,
     availableTapes,
+    selectedPackId,
     selectedTapeId,
     selectMode,
+    selectPack,
     selectPreset,
     selectTape,
     startRun,

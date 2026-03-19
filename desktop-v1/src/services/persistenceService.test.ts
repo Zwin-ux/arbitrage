@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import type { Tape, TapeEvent } from "@domain/types";
 import replayTapeJson from "@tapes/replay/opening-window.json";
 import tutorialTapeJson from "@tapes/tutorial/intro-route.json";
+import steadyWindowTapeJson from "@tapes/tutorial/steady-window.json";
 import { LocalProgressStore } from "@services/persistenceService";
 import { createInitialProgress, recordRun } from "@services/progressService";
 import { RunEngine } from "@services/runEngine";
 
 const tutorialTape = tutorialTapeJson as Tape;
+const steadyWindowTape = steadyWindowTapeJson as Tape;
 const replayTape = replayTapeJson as Tape;
 
 describe("local progress store", () => {
@@ -23,8 +25,9 @@ describe("local progress store", () => {
   it("migrates legacy unversioned progress into the current live-gate shape", () => {
     const tutorialRun = createClearRun(tutorialTape, tutorialTape.events[3] as TapeEvent);
     const first = recordRun(createInitialProgress(), tutorialRun);
-    const replayRun = createClearRun(replayTape, replayTape.events[2] as TapeEvent, first.practiceBankroll);
-    const legacySnapshot = recordRun(first, replayRun);
+    const second = recordRun(first, createClearRun(steadyWindowTape, steadyWindowTape.events[3] as TapeEvent, first.practiceBankroll));
+    const replayRun = createClearRun(replayTape, replayTape.events[2] as TapeEvent, second.practiceBankroll);
+    const legacySnapshot = recordRun(second, replayRun);
     const storage = createMemoryStorage({
       "sup-v1-progress": JSON.stringify({
         lastSelectedMode: legacySnapshot.lastSelectedMode,
@@ -34,12 +37,14 @@ describe("local progress store", () => {
     const store = new LocalProgressStore("sup-v1-progress", storage);
     const loaded = store.load();
 
-    expect(loaded.liveGate.tutorialClears).toBe(1);
+    expect(loaded.liveGate.tutorialClears).toBe(2);
     expect(loaded.liveGate.replayClears).toBe(1);
     expect(loaded.liveGate.unlocked).toBe(true);
-    expect(loaded.practiceBankroll).toBe(115.48);
-    expect(loaded.bestBankroll).toBe(115.48);
-    expect(loaded.clearStreak).toBe(2);
+    expect(loaded.practiceBankroll).toBe(123.22);
+    expect(loaded.bestBankroll).toBe(123.22);
+    expect(loaded.clearStreak).toBe(3);
+    expect(loaded.lastSelectedPackId).toBe("pack-tutorial-open");
+    expect(loaded.packProgress).toHaveLength(4);
   });
 
   it("saves snapshots inside a versioned envelope", () => {
@@ -50,7 +55,7 @@ describe("local progress store", () => {
     store.save(snapshot);
 
     expect(JSON.parse(storage.getItem("sup-v1-progress") ?? "{}")).toEqual({
-      version: 1,
+      version: 2,
       snapshot,
     });
   });

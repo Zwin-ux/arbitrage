@@ -1,4 +1,4 @@
-import type { BotComparisonResult, BotPresetName, RunPhase, RunRecord, Tape, TapeEvent } from "@domain/types";
+import type { BotComparisonResult, BotPresetName, PackStatus, RunPhase, RunRecord, Tape, TapeEvent } from "@domain/types";
 import type { TapeSummary } from "@services/datasetLoader";
 import { DecisionLane } from "@ui/DecisionLane";
 
@@ -18,6 +18,7 @@ interface RunScreenProps {
   currentBankroll: number;
   clearStreak: number;
   practiceStake: number;
+  selectedPack: PackStatus | null;
   onSelectPreset: (preset: BotPresetName) => void;
   onSelectTape: (tapeId: string) => void;
   onStartRun: () => void;
@@ -46,6 +47,7 @@ export function RunScreen({
   currentBankroll,
   clearStreak,
   practiceStake,
+  selectedPack,
   onSelectPreset,
   onSelectTape,
   onStartRun,
@@ -65,6 +67,7 @@ export function RunScreen({
   const bankrollLabel = formatMoney(currentBankroll);
   const resultLabel = latestRun?.receipt.label ?? "READY";
   const phaseLabel = phase === "commit_hold" ? "HOLD" : phase.toUpperCase();
+  const packProgressLabel = selectedPack ? `${selectedPack.clearedCount}/${selectedPack.totalCount}` : "--";
 
   return (
     <section aria-label={`${tape.name} run`} className="run-surface">
@@ -73,6 +76,14 @@ export function RunScreen({
         <strong>{tape.name.toUpperCase()}</strong>
         <span>{phaseLabel}</span>
       </header>
+
+      {selectedPack ? (
+        <div className="run-packline">
+          <span>{`PACK ${selectedPack.pack.label} ${selectedPack.pack.name.toUpperCase()}`}</span>
+          <span>{`${packProgressLabel} CLEARED`}</span>
+          <span>{selectedPack.completed ? "PACK CLEAR" : "IN PROGRESS"}</span>
+        </div>
+      ) : null}
 
       <div className="run-menu">
         <div className="selection-strip" aria-label="Starter presets">
@@ -126,8 +137,8 @@ export function RunScreen({
           <strong>{windowLabel}</strong>
         </div>
         <div className="run-readout__item">
-          <span className="run-readout__label">CLEAR STREAK</span>
-          <strong>{String(clearStreak).padStart(2, "0")}</strong>
+          <span className="run-readout__label">PACK</span>
+          <strong>{selectedPack ? packProgressLabel : String(clearStreak).padStart(2, "0")}</strong>
         </div>
       </div>
 
@@ -182,6 +193,7 @@ export function RunScreen({
               {`GROSS ${formatSignedMoney(latestRun.receipt.grossPnl)} / FEES ${formatSignedMoney(-latestRun.receipt.fees)} / SLIP ${formatSignedMoney(-latestRun.receipt.slippage)}`}
             </span>
             <span>{latestRun.debrief.recommendation.toUpperCase()}</span>
+            {selectedPack ? <span>{selectedPack.completed ? "PACK CLEAR" : `${packProgressLabel} CLEARED`}</span> : null}
           </div>
           {comparisonResults.length > 0 ? (
             <div className="comparison-grid" aria-label="Bot comparison">

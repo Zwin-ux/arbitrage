@@ -1,4 +1,5 @@
 export type TapeMode = "tutorial" | "replay" | "live-preview";
+export type PackMode = Exclude<TapeMode, "live-preview">;
 export type RunPhase =
   | "standby"
   | "arm"
@@ -13,6 +14,7 @@ export type Severity = "low" | "medium" | "high";
 export type OutcomeGrade = "clear" | "early" | "late" | "miss" | "blocked";
 export type BotPresetName = "Safe" | "Balanced" | "Aggressive";
 export type SourceType = "bundled-tutorial" | "bundled-replay" | "live-preview";
+export type PackUnlockType = "free" | "requires_pack_clear";
 
 export interface TapeSource {
   type: SourceType;
@@ -75,6 +77,37 @@ export interface Tape {
     maxValue: number;
   };
   events: TapeEvent[];
+}
+
+export interface PackUnlockRule {
+  type: PackUnlockType;
+  targetId?: string;
+}
+
+export interface TapePack {
+  id: string;
+  mode: PackMode;
+  name: string;
+  order: number;
+  label: string;
+  tapeIds: string[];
+  unlock: PackUnlockRule;
+}
+
+export interface PackProgress {
+  packId: string;
+  clearedTapeIds: string[];
+  completed: boolean;
+  bestNetPnl: number;
+}
+
+export interface PackStatus {
+  pack: TapePack;
+  unlocked: boolean;
+  completed: boolean;
+  clearedCount: number;
+  totalCount: number;
+  bestNetPnl: number;
 }
 
 export interface StateTransition {
@@ -176,11 +209,13 @@ export interface LiveGate {
 
 export interface ProgressSnapshot {
   lastSelectedMode: TapeMode;
+  lastSelectedPackId: string | null;
   recentRuns: RunRecord[];
   practiceBankroll: number;
   bestBankroll: number;
   clearStreak: number;
   tutorialClearedTapeIds: string[];
   replayClearedTapeIds: string[];
+  packProgress: PackProgress[];
   liveGate: LiveGate;
 }

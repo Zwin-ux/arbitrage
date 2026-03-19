@@ -31,7 +31,11 @@ export function App() {
 
         <ModeSelectScreen
           selected={machine.mode}
+          availablePacks={machine.packStatuses}
+          selectedPackId={machine.selectedPackId}
           onSelectMode={machine.selectMode}
+          onSelectPack={machine.selectPack}
+          replayUnlocked={machine.replayUnlocked}
           liveUnlocked={machine.progress.liveGate.unlocked}
         />
 
@@ -54,6 +58,7 @@ export function App() {
             currentBankroll={machine.practiceBankroll}
             clearStreak={machine.clearStreak}
             practiceStake={machine.practiceStake}
+            selectedPack={machine.selectedPack}
             onSelectPreset={machine.selectPreset}
             onSelectTape={machine.selectTape}
             onStartRun={machine.startRun}
