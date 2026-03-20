@@ -15,6 +15,7 @@ from .replay import ReplayEngine
 from .service import RecorderService
 from .storage import DuckDBStorage
 from .verify import RecorderVerifier
+from .wlfi import WLFI_BENCHMARK_SYMBOLS, WLFIMarketScanner
 from market_data_recorder_desktop.app_types import BenchmarkInstrumentType
 from market_data_recorder_desktop.benchmark_lab import (
     BenchmarkAuditService,
@@ -28,6 +29,8 @@ from market_data_recorder_desktop.bot_services import PaperRunStore
 app = typer.Typer(no_args_is_help=True)
 benchmark_app = typer.Typer(no_args_is_help=True, help="Lab-only benchmark sync and audit tools.")
 app.add_typer(benchmark_app, name="benchmark")
+wlfi_app = typer.Typer(no_args_is_help=True, help="World Liberty Fi market discovery and benchmark presets.")
+app.add_typer(wlfi_app, name="wlfi")
 
 
 def _settings() -> RecorderSettings:
@@ -243,3 +246,130 @@ def benchmark_audit(
         raise typer.BadParameter(f"No run found for profile {profile_id} and run id {run_id}.")
     audits = BenchmarkAuditService(store).audit_latest_run(profile_id, runs[0])
     typer.echo(json.dumps([audit.model_dump(mode="json") for audit in audits], indent=2))
+
+
+@wlfi_app.command("scan")
+def wlfi_scan(
+    db_path: Path | None = typer.Option(default=None, help="Override DuckDB path for the local discovery snapshot."),
+    live: bool = typer.Option(
+        default=False,
+        help="Fetch a fresh discovery page from the Gamma API instead of using the local snapshot.",
+    ),
+    max_pages: int | None = typer.Option(
+        default=5,
+        help="Cap Gamma API pagination when --live is set.",
+    ),
+    keyword: list[str] = typer.Option(
+        default_factory=list,
+        help="Extra keywords to match in addition to the built-in WLFI keyword list.",
+    ),
+) -> None:
+    """Scan for Polymarket prediction markets related to World Liberty Fi.
+
+    Without --live the command reads the locally stored discovery metadata
+    (markets/events tables).  With --live it queries the Gamma API directly.
+
+    Output is a JSON array of matching markets with their event title,
+    market question, slug, and asset IDs.
+    """
+    settings = _settings()
+    if keyword:
+        from .wlfi import WLFI_MARKET_KEYWORDS  # noqa: PLC0415
+        scanner = WLFIMarketScanner(keywords=WLFI_MARKET_KEYWORDS + list(keyword))
+    else:
+        scanner = WLFIMarketScanner()
+
+    if live:
+        from .clients.gamma import GammaClient  # noqa: PLC0415
+
+        async def _run() -> list[dict[str, Any]]:
+            gamma = GammaClient(base_url=settings.gamma_api_url)
+            try:
+                items = await scanner.fetch(gamma, max_pages=max_pages)
+            finally:
+                await gamma.close()
+            return _serialize_markets(items)
+
+        typer.echo(json.dumps(asyncio.run(_run()), indent=2))
+        return
+
+    # --- local snapshot path ---
+    storage = DuckDBStorage(db_path or settings.duckdb_path, read_only=True)
+    try:
+        from .models import DiscoverySnapshot, DiscoveredMarket, PolymarketEvent, PolymarketMarket  # noqa: PLC0415
+        from datetime import datetime, timezone  # noqa: PLC0415
+
+        rows = storage.fetch_discovered_markets()
+
+        items: list[DiscoveredMarket] = []
+        for row in rows:
+            (
+                event_id, ticker, event_slug, title,
+                event_active, event_closed,
+                market_id, condition_id, question, market_slug,
+                active, closed, accepting_orders, enable_order_book,
+                neg_risk, fees_enabled, order_min_size, tick_size,
+                clob_token_ids_json, outcomes_json,
+            ) = row
+            event = PolymarketEvent(
+                event_id=event_id or "",
+                ticker=ticker,
+                slug=event_slug,
+                title=title,
+                active=bool(event_active),
+                closed=bool(event_closed),
+                markets=[],
+            )
+            market = PolymarketMarket(
+                market_id=market_id,
+                condition_id=condition_id,
+                question=question,
+                slug=market_slug,
+                active=bool(active),
+                closed=bool(closed),
+                accepting_orders=accepting_orders,
+                enable_order_book=bool(enable_order_book),
+                neg_risk=neg_risk,
+                fees_enabled=fees_enabled,
+                order_min_size=order_min_size,
+                order_price_min_tick_size=tick_size,
+                clob_token_ids=json.loads(clob_token_ids_json or "[]"),
+                outcomes=json.loads(outcomes_json or "[]"),
+            )
+            items.append(DiscoveredMarket(event=event, market=market))
+
+        snapshot = DiscoverySnapshot(
+            discovered_at=datetime.now(timezone.utc),
+            items=items,
+        )
+        matched = scanner.scan(snapshot)
+        typer.echo(json.dumps(_serialize_markets(matched), indent=2))
+    finally:
+        storage.close()
+
+
+@wlfi_app.command("benchmarks")
+def wlfi_benchmarks() -> None:
+    """Print pre-configured WLFI benchmark symbol presets.
+
+    Each entry shows the symbol and instrument type accepted by
+    ``market-data-recorder benchmark sync``.
+    """
+    result = [{"symbol": symbol, "instrument_type": itype} for symbol, itype in WLFI_BENCHMARK_SYMBOLS]
+    typer.echo(json.dumps(result, indent=2))
+
+
+def _serialize_markets(items: list[Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for item in items:
+        out.append(
+            {
+                "event_title": item.event.title,
+                "event_slug": item.event.slug,
+                "market_id": item.market.market_id,
+                "question": item.market.question,
+                "slug": item.market.slug,
+                "asset_ids": item.market.clob_token_ids,
+            }
+        )
+    return out

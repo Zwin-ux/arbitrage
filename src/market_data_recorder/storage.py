@@ -674,3 +674,44 @@ class DuckDBStorage:
             ORDER BY latest.recorded_at DESC, token.market_id, token.outcome_index
             """
         ).fetchall()
+
+    def fetch_discovered_markets(self) -> list[tuple[Any, ...]]:
+        """Return rows for active orderbook-enabled markets from the local snapshot.
+
+        Each row contains:
+        ``(event_id, ticker, event_slug, title, event_active, event_closed,
+        market_id, condition_id, question, market_slug, active, closed,
+        accepting_orders, enable_order_book, neg_risk, fees_enabled,
+        order_min_size, order_price_min_tick_size,
+        clob_token_ids_json, outcomes_json)``
+        """
+        return self._connection.execute(
+            """
+            SELECT
+              e.event_id,
+              e.ticker,
+              e.slug        AS event_slug,
+              e.title,
+              e.active      AS event_active,
+              e.closed      AS event_closed,
+              m.market_id,
+              m.condition_id,
+              m.question,
+              m.slug        AS market_slug,
+              m.active,
+              m.closed,
+              m.accepting_orders,
+              m.enable_order_book,
+              m.neg_risk,
+              m.fees_enabled,
+              m.order_min_size,
+              m.order_price_min_tick_size,
+              (SELECT to_json(ARRAY_AGG(t.asset_id ORDER BY t.outcome_index))
+               FROM tokens AS t WHERE t.market_id = m.market_id) AS clob_token_ids,
+              (SELECT to_json(ARRAY_AGG(t.outcome ORDER BY t.outcome_index))
+               FROM tokens AS t WHERE t.market_id = m.market_id) AS outcomes
+            FROM markets AS m
+            LEFT JOIN events AS e ON e.event_id = m.event_id
+            WHERE m.enable_order_book = TRUE AND m.closed = FALSE
+            """
+        ).fetchall()
