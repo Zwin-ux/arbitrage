@@ -76,10 +76,10 @@ market-data-recorder-qa --headless --output .tmp\qa-report.json
 The QA client runs deterministic local scenarios for:
 
 - guided onboarding and profile bootstrap
-- loadout and capability gating
+- setup and capability gating
 - scanner detection on seeded Polymarket fixtures
-- first paper loop without credentials
-- paper-score ledger updates
+- first practice loop without credentials
+- practice-score ledger updates
 - experimental live graduation
 - live-gate lock and unlock rules
 - coach guardrails

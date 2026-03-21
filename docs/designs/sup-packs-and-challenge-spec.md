@@ -4,9 +4,9 @@
 The next best move is `chapterized tape packs` with `daily challenge` built on the same content spine.
 
 This is the highest-leverage step because the core loop already works:
-- start with fake money
-- time a buy
-- see the bankroll move
+- start in practice mode
+- time a commit
+- see the practice score move
 - compare against presets
 
 What is missing now is a reason to come back.
@@ -22,7 +22,7 @@ Current state:
 - the product is understandable
 - the loop is deterministic
 - the visuals are finally coherent
-- bankroll persists
+- practice score persists
 - preset comparison works
 
 Current gap:
@@ -46,14 +46,14 @@ Turn replay into a small practice world:
 
 2. `Replay Packs`
 - more volatile tapes
-- same fake-money rules
+- same practice rules
 - more punishing timing
 
 3. `Daily Challenge`
 - one highlighted tape per day
 - fixed rules
 - compares your result against house presets
-- no live money, no randomness
+- live stays locked, no randomness
 
 The result should feel like:
 - start the app
@@ -98,7 +98,7 @@ Add only:
 
 Hierarchy:
 1. current tape
-2. current bankroll
+2. current practice score
 3. current result
 4. pack progress
 5. challenge state
@@ -235,7 +235,7 @@ Challenge ID format:
 Rules:
 - one tape per day
 - one visible highlighted slot
-- same fake-money rules
+- same practice-mode rules
 - same preset comparison
 - saves one result per day in local progress
 
@@ -249,7 +249,7 @@ Keep them simple:
 - next replay pack: unlock after prior replay pack cleared
 
 ### Pack clear
-A pack is cleared when every tape in the pack has one successful run.
+A pack is cleared when every tape in the pack has one successful practice run.
 
 ### Live gate
 Do not change the live gate yet except to let pack clears count toward existing replay/tutorial totals.

@@ -4,11 +4,12 @@ Superior is designed to be stable software, not a promise of stable profits.
 
 ## Core principles
 
-- Paper mode is the default.
-- Live mode stays locked until a checklist passes.
+- Learn and shadow come before auto.
+- The only live venue in the consumer plan is Kalshi.
+- The only live strategy family in the consumer plan is internal-binary.
 - Risk policies cap position size, open positions, and daily loss.
 - The coach can explain and summarize, but it cannot place or tune trades.
-- Experimental strategies live in the Lab and stay paper-only in v1.
+- Experimental strategies live in the Lab and stay practice-only in v1.
 
 ## What the scanner does
 
@@ -27,7 +28,7 @@ Superior is designed to be stable software, not a promise of stable profits.
 The intended user experience is:
 
 1. Learn the venue
-2. Record local books
-3. Inspect explainable scanner output
-4. Run paper bots
-5. Decide whether live unlock is earned
+2. Clear a shadow run
+3. See the bot's caps and activity log
+4. Arm one narrow starter bot
+5. Halt instantly if trust breaks

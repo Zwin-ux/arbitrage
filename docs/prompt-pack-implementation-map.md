@@ -83,5 +83,5 @@ The prompt pack maps cleanly onto these active repo surfaces:
 ## Notes
 
 - Treat the prompt pack as a planning and refinement tool, not as a replacement for the current repo architecture.
-- Keep the repo trust posture intact: paper-first, local-first, no profit guarantees, live locked by default.
+- Keep the repo trust posture intact: practice-first, local-first, no profit guarantees, live locked by default.
 - The macOS starter files are intentionally isolated in `packaging/macos_poc` until a real cross-platform release lane is approved.

@@ -1,23 +1,23 @@
 # Live Trading Limitations
 
-Superior v1 is paper-first.
+Superior v1 is a staged consumer autopilot, not a broad trading engine.
 
-## Experimental live is intentionally limited
+## Live is intentionally narrow
 
-- Live begins as a staged rollout: `locked`, `shadow`, `micro`, then `experimental`.
-- `Shadow` mode never sends real orders. It records would-be live decisions only.
-- `Micro` and `experimental` modes are Polymarket-first in v1.
-- Validated credentials, paper activity, and risk acknowledgements must exist before live modes above `shadow`.
-- Critical diagnostics issues block progression.
-- Tiny live caps are intentional. The point is controlled experimentation, not broad consumer autonomy.
+- The consumer path is `learn`, `shadow`, `armed`, `auto on`, then `halted` if something goes wrong.
+- `Shadow` stays read-only and records would-be decisions before auto can be armed.
+- The first real-money live lane is Kalshi-only.
+- The first live strategy family is internal-binary only.
+- Validated credentials, shadow completion, and visible caps must exist before auto can start.
+- Tiny live caps are intentional. The point is constrained trust, not broad autonomy.
 
-## Live mode does not mean autonomy
+## Live mode does not mean unlimited autonomy
 
-- The in-app coach cannot place trades.
-- The coach cannot unlock live mode.
-- The coach cannot override risk controls.
-- Experimental Lab strategies do not bypass the paper-first gate.
-- Paper score and live score remain separate.
+- The starter bot can only run inside its fixed venue, strategy, and cap envelope.
+- The in-app coach cannot place trades or override risk controls.
+- Experimental Lab strategies do not bypass the starter-bot gate.
+- A kill switch must remain visible on the main consumer path.
+- Live claims must stay narrower than the actual execution spine.
 
 ## Hosted services
 

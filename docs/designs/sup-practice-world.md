@@ -1,11 +1,11 @@
 # SUP Practice World
 
 ## Product line
-Superior is a persistent fake-money prediction market where players run simple bots, grow a bankroll on replay tapes, and only graduate toward real money after the engine proves itself.
+Superior is a persistent market-practice world where players run simple bots, grow a practice score across replay tapes, and only graduate toward live trading after the engine proves itself.
 
 ## What changes
 - The product stops feeling like isolated demo runs.
-- Every run feeds a persistent bankroll.
+- Every run feeds a persistent practice score.
 - Starter bots become benchmarks, not just labels.
 - Replay tapes become a world map of lessons and pressure tests.
 - Live stays locked and remains a graduation path.
@@ -13,16 +13,16 @@ Superior is a persistent fake-money prediction market where players run simple b
 ## Core loop
 1. Open the app.
 2. Pick a tape.
-3. Start with the current bankroll.
-4. Hold to buy.
+3. Start with the current practice score.
+4. Hold to commit.
 5. See the result.
 6. Compare against Safe / Balanced / Aggressive.
 7. Run again.
 
 ## First shipping world slice
-- Persistent bankroll starting at `$100`
-- Fixed stake cap of `$25`, reduced automatically when bankroll is lower
-- Best bankroll
+- Persistent practice score starting at `100`
+- Fixed practice stake cap of `$25`, reduced automatically until the user earns the full cap
+- Best practice score
 - Clear streak
 - Tutorial and replay clears tracked separately
 - Post-run bot comparison on the same tape
@@ -30,19 +30,19 @@ Superior is a persistent fake-money prediction market where players run simple b
 
 ## What makes it useful
 - The user is always building or losing something visible.
-- Every tape teaches timing and restraint through money movement, not theory.
+- Every tape teaches timing and restraint through practice results, not theory.
 - Bot comparison shows whether the user actually beat the house presets.
 - The app stays local, deterministic, and safe.
 
 ## Not in this slice
 - Shared multiplayer world state
 - Chat, profiles, clans, or social systems
-- Real-money execution
+- Live execution
 - Open strategy builder
 - Cloud sync
 
 ## Immediate roadmap
-1. Persistent bankroll and streaks
+1. Persistent practice score and streaks
 2. Bot comparison after every run
 3. More tapes grouped into packs
 4. Better pack progression and daily challenge

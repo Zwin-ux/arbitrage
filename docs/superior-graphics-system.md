@@ -32,7 +32,7 @@ Every major screen should have one centered visual anchor. The primary pattern i
 Use this in:
 
 - `Scanner` as the main center visual
-- `Hangar` in compact form when showing mission readiness
+- `Home` in compact form when showing mission readiness
 - `Score` in a later pass as a probability or score ring
 
 ### Thin vector geometry
@@ -84,7 +84,7 @@ Avoid large card transitions and decorative bounce.
 
 ## Screen Rules
 
-### Hangar
+### Home
 
 Purpose:
 
@@ -99,7 +99,7 @@ Rules:
 - console feedback must look alive
 - any decorative graphic stays secondary to the recorder and route state
 
-### Loadout
+### Profile
 
 Purpose:
 
@@ -110,7 +110,7 @@ Rules:
 - compact rows
 - low panel count
 - no decorative clutter
-- equipment state should read like a cabinet loadout, not a settings form
+- equipment state should read like a clean setup console, not a settings form
 
 ### Scanner
 
@@ -132,7 +132,7 @@ Current v1 signals:
 - top net edge
 - focused strategy label
 
-### Paper Runs
+### Practice
 
 Purpose:
 
@@ -140,7 +140,7 @@ Purpose:
 
 Rules:
 
-- recent paper result is the primary card
+- recent practice result is the primary card
 - run history is secondary
 - future graphic work should use route bars, not traditional PnL charts
 
@@ -152,7 +152,7 @@ Purpose:
 
 Rules:
 
-- paper score stays primary
+- practice score stays primary
 - live score remains visually present but inactive
 - a later pass should add a score-ring or probability meter instead of line charts
 
@@ -174,7 +174,7 @@ Rules:
 
 Compact state chips for:
 
-- paper mode
+- practice mode
 - live gate
 - lab
 
@@ -209,7 +209,7 @@ Buttons should behave like a cabinet control panel:
 
 State language should stay literal:
 
-- `Paper mode active`
+- `Practice mode active`
 - `Live gate locked`
 - `Scanner standby`
 - `Routes found`

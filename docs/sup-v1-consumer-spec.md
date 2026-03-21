@@ -1,12 +1,62 @@
 # SUP v1 Consumer Spec
 
+## 0. Canonical Consumer Goal
+- Superior is not a stock terminal and not a pro trading workstation.
+- Superior is a consumer autopilot for regular people who want one safer, clearer way to learn the loop and then let one tightly limited bot run.
+- The emotional job is simple: `I learn the route -> I clear shadow -> I arm one bot -> I can trust what it is doing with real money`.
+- The consumer promise is: `Set up one transparent Kalshi starter bot, cap it tightly, and understand every action.`
+
+## 0.1 Why Kalshi and Polymarket Matter
+- Kalshi and Polymarket make market participation legible because they reduce it to simple event contracts and visible probabilities.
+- Kalshi's official help center frames the product around prediction markets, trading, orders, positions, fees, portfolio tools, programs, and regulation. Its onboarding language is beginner-legible and yes/no driven.
+- Polymarket's official product and help copy frames the product around staying informed, profiting from knowledge, buying and selling on future events, prices as probabilities, and exiting positions before resolution.
+- This means the consumer behavior is real: ordinary people are already treating world events like tradable scoreboards.
+- Superior should build on that behavior instead of pretending to be a generic finance dashboard.
+
+## 0.2 Venue Reality
+- Kalshi is the cleaner real-money reference for a U.S. consumer path because the official product and help surfaces emphasize regulation, account funding, trading mechanics, portfolio tools, and legal structure.
+- Polymarket is a strong reference for live probability discovery, market energy, and buy-or-sell-anytime behavior.
+- Important U.S. constraint: Polymarket's homepage metadata currently exposes `trade_eligibility_US = false`. Treat Polymarket as category proof and practice reference, not as a default live path for U.S. consumers.
+
+## 0.3 Product Consequence
+- Superior should not sell "universal arbitrage software" first.
+- Superior should sell `one starter bot you can set up and trust`.
+- The product should feel closer to a restrained control surface than a decision game once live becomes part of the shell.
+- Real-money is part of the plan, but the first live path must stay narrow: one venue, one strategy family, one risk envelope.
+
+## 0.4 Source Anchors
+- Kalshi Help Center home: `https://help.kalshi.com/en/`
+- Kalshi Getting Started: `https://help.kalshi.com/en/collections/18616603-getting-started`
+- Kalshi "What is Kalshi?": `https://help.kalshi.com/en/articles/13823763-what-is-kalshi`
+- Polymarket homepage: `https://polymarket.com/`
+- Polymarket "What is Polymarket": `https://help.polymarket.com/en/articles/13364060-what-is-polymarket`
+- Polymarket "What is a Prediction Market?": `https://help.polymarket.com/en/articles/13364272-what-is-a-prediction-market`
+
 ## 1. Locked Product Summary
-- Product: a rehearsal machine for timing, restraint, and commitment before real action.
-- Primary loop: `Standby -> Arm -> Run -> Pressure -> Commit Hold -> Resolution -> Afterimage -> Reset`.
-- v1 modes: `Tutorial`, `Replay`, `Live Books`.
-- v1 doctrine: Tutorial and Replay are the real product; Live Books is locked and secondary.
+- Product: a Windows desktop starter bot for one tightly capped Kalshi autopilot path.
+- Primary loop: `Learn -> Shadow -> Arm -> Auto -> Halt if needed -> Review activity`.
+- v1 surfaces: `Home`, `Practice`, `Bot`, `Live`.
+- v1 doctrine: Practice is the trust ramp; the starter bot is the product.
 - Visual doctrine: restrained 16-bit control panel, not a dashboard, not terminal cosplay, not cyberpunk.
 - Data doctrine: bundled local replay tapes, deterministic playback, no credentials required for first run.
+
+## 1.1 What The Product Is Not
+- Not a brokerage replacement.
+- Not a quant dashboard.
+- Not a venue-neutral live execution bot.
+- Not an "arb scanner" on the first screen.
+- Not a wall of panels explaining finance to the user.
+
+## 1.2 Core User Fantasy
+- I can turn my opinion into a score.
+- I can practice timing without blowing up money.
+- I can learn whether I was early, late, disciplined, or impulsive.
+- I can improve through short repeatable rounds instead of dense research sessions.
+
+## 1.3 Copy Doctrine
+- Lead with `practice`, `call`, `odds`, `commit`, `score`, `replay`, `locked`, and `session`.
+- De-emphasize `arbitrage`, `execution`, `firmware`, `alpha`, `edge`, and other pro-trader language on first-run surfaces.
+- The first screen should sound like a consumer decision machine, not a hedge-fund console.
 
 ## 2. Final Screen List
 1. Entry / Mode Select

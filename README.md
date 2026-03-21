@@ -2,32 +2,32 @@
 
 ![Superior emblem](docs/assets/superior-emblem.png)
 
-Open-source, Windows-first prediction-market desktop app for learning Polymarket, recording market data, scanning explainable arbitrage ideas, and paper-testing bots before any live unlock.
+Open-source, Windows-first consumer bot project for learning on Polymarket-style replay tapes, then arming one tightly capped Kalshi starter bot with a visible trust ladder, activity log, and kill switch.
 
 The public brand is `Superior`. The current Python package name and CLI entrypoints remain `market-data-recorder` in v1 to avoid breaking existing packaging and release links.
 
-You can complete the first bot session without entering any venue credentials: equip Polymarket, record a local sample, stage a route, start the paper session, and watch Score update.
+The canonical consumer shell now lives in `desktop-v1`. The legacy Python desktop remains in the repo as integration and tooling debt until the narrower consumer bot path is complete.
 
 ## What it includes
 
-- Guided desktop onboarding for Polymarket-first users
+- Guided desktop onboarding for one Kalshi starter bot path
 - Local-first recorder built on current Gamma, CLOB, and market WebSocket flows
-- Explainable scanner for internal binary dislocation and future exact-match cross-venue work
-- Paper bot execution with simple deterministic fills and local portfolio history
-- Live-unlock checklist tied to credentials, diagnostics, risk acknowledgements, and paper activity
+- Explainable route scanner for internal binary dislocation and future exact-match cross-venue work
+- Learn and shadow tapes that qualify the starter bot before auto can be armed
+- Local activity log, hard caps, and starter-bot state transitions in the consumer shell
 - OS-keychain-backed credential vault for Polymarket, Kalshi, and optional AI coach keys
 - Open packaging assets for PyInstaller and Inno Setup
-- Astro-based public site for Railway deployment
+- Tauri-based `desktop-v1` shell for the consumer app plus the Astro public site
 
 ## Product posture
 
 - License: MIT
 - Telemetry: off by default
 - Secrets: OS keychain only
-- Default mode: guided beginner, paper first
-- Live mode: locked until the checklist passes
-- Experimental live: staged as `shadow`, `micro`, and `experimental` after paper progress
-- Lab strategies: explicit opt-in and paper-only in v1
+- Default mode: guided learn and shadow before auto
+- Live mode: Kalshi-only starter bot after a shadow pass and explicit arming
+- Execution posture: one narrow strategy family, one venue, one risk envelope
+- Lab strategies: explicit opt-in and practice-only in v1
 - Profit claims: none; the software aims to be stable and transparent, not to guarantee returns
 
 ## Install
@@ -78,15 +78,13 @@ market-data-recorder arbitrage --min-edge 0.02
 
 The Superior shell is built around:
 
-- `Hangar`: safe state, venue connections, recorder controls, and next steps
-- `Loadout`: equip connectors, bot slots, and strategy modules deliberately
-- `Learn`: local-first coach and beginner guidance
+- `Home`: safe state, venue connections, recorder controls, and next steps
+- `Profile`: connectors, play styles, starter bots, and setup choices
+- `Copilot`: local-first coach and beginner guidance
 - `Scanner`: explainable staged routes from local books
-- `Paper Bots`: deterministic score-attack sessions against current candidates
-- `Score`: local paper ledger, portfolio score, and unlock progression
-- `Live Gate`: checklist and acknowledgements
-- `Experimental Live`: shadow-first graduation path with tiny Polymarket-first caps
-- `Lab`: explicit experimental surface
+- `Practice`: deterministic practice runs against current candidates
+- `Score`: local practice ledger, portfolio score, and unlock progression
+- `Live`: checklist and acknowledgements
 - `Diagnostics` and `About`
 
 ## Storage
@@ -96,7 +94,7 @@ DuckDB tables are documented in [`docs/schema.md`](docs/schema.md).
 Desktop app data uses per-user paths from `platformdirs`:
 
 - config: `profiles.json`
-- data: profile DuckDB files, paper run history, and exports
+- data: profile DuckDB files, practice-run history, and exports
 - logs: per-user app log directory
 
 Secrets are not stored in those paths.

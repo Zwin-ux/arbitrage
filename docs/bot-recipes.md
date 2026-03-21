@@ -6,11 +6,11 @@ Superior keeps bot recipes intentionally small and explicit.
 
 Starter bots are still shipped from code, but the desktop app now treats them as explicit recipe objects so a user can fork them locally without opening up a scripting system.
 
-That gives the product a safe Bot Garage workflow:
+That gives the product a safe starter-bot workflow:
 
 - starter recipes stay deterministic
 - local forks stay profile-owned
-- the paper engine arms from recipes, not just hardcoded blueprints
+- the practice engine arms from recipes, not just hardcoded blueprints
 - future export and sharing work has a stable format to build on
 
 ## Recipe fields
@@ -59,13 +59,13 @@ This is meant for safe local iteration, not for arbitrary code execution.
 - no recipe scripting
 - no custom Python hooks
 - no opaque ranking rules
-- no recipe can bypass risk caps or the paper-first posture
+- no recipe can bypass risk caps or the practice-first posture
 
 ## Follow-up
 
 Good next layers on top of this format:
 
-- editable recipe fields in the Bot Garage UI
+- editable recipe fields in the bot library UI
 - recipe export/import
 - signed starter packs
 - more explicit arm/disable ordering controls

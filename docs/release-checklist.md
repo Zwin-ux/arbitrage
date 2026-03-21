@@ -5,8 +5,8 @@ Use this before every public Windows release of Superior.
 ## Product checks
 
 - Confirm the public product name is `Superior` across the desktop app, installer text, site copy, and release notes.
-- Confirm the golden path still works: setup, record, scan, paper, score.
-- Confirm the app still defaults to paper mode and keeps the live gate locked until the checklist is earned.
+- Confirm the golden path still works: setup, record, scan, practice, score.
+- Confirm the app still defaults to practice mode and keeps the live gate locked until the checklist is earned.
 - Confirm the site download page points to the current installer, portable zip, source repo, and `SHA256SUMS.txt`.
 
 ## Local validation
@@ -49,4 +49,4 @@ Review:
 - Railway deploy uses `site/` only
 - The homepage primary CTA resolves to the latest installer
 - The download page resolves to the installer, portable zip, GitHub source, and checksum manifest
-- Docs and README describe the same product posture: local-first, paper-first, live-gated
+- Docs and README describe the same product posture: local-first, practice-first, live-gated
