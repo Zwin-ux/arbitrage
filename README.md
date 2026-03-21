@@ -4,7 +4,7 @@
 
 Open-source, Windows-first consumer bot project for learning on Polymarket-style replay tapes, then arming one tightly capped Kalshi starter bot with a visible trust ladder, activity log, and kill switch.
 
-The public brand is `Superior`. The current Python package name and CLI entrypoints remain `market-data-recorder` in v1 to avoid breaking existing packaging and release links.
+The public brand is `Superior`. The current Python package name and CLI entrypoints remain `market-data-recorder` in v1 for the legacy recorder and tooling lane.
 
 The canonical consumer shell now lives in `desktop-v1`. The legacy Python desktop remains in the repo as integration and tooling debt until the narrower consumer bot path is complete.
 
@@ -16,7 +16,7 @@ The canonical consumer shell now lives in `desktop-v1`. The legacy Python deskto
 - Learn and shadow tapes that qualify the starter bot before auto can be armed
 - Local activity log, hard caps, and starter-bot state transitions in the consumer shell
 - OS-keychain-backed credential vault for Polymarket, Kalshi, and optional AI coach keys
-- Open packaging assets for PyInstaller and Inno Setup
+- Legacy PyInstaller and Inno Setup assets for the older Python desktop lane
 - Tauri-based `desktop-v1` shell for the consumer app plus the Astro public site
 
 ## Product posture
@@ -115,10 +115,13 @@ Secrets are not stored in those paths.
 
 ## Packaging
 
-- PyInstaller spec: [`packaging/windows/market_data_recorder_app.spec`](packaging/windows/market_data_recorder_app.spec)
-- Inno Setup script: [`packaging/windows/installer.iss`](packaging/windows/installer.iss)
-- Official Inno Setup bootstrap: [`scripts/bootstrap-iscc.ps1`](scripts/bootstrap-iscc.ps1)
-- Release build script: [`scripts/build-windows-release.ps1`](scripts/build-windows-release.ps1)
+- Official public Windows release lane: Tauri build from [`desktop-v1/`](desktop-v1/)
+- Official release workflow: [`.github/workflows/release-windows.yml`](.github/workflows/release-windows.yml)
+- Official public assets: `Superior_<version>_x64-setup.exe`, `Superior_<version>_x64-portable.zip`, `Superior_<version>_x64_en-US.msi`, and `SHA256SUMS.txt`
+- Legacy PyInstaller spec: [`packaging/windows/market_data_recorder_app.spec`](packaging/windows/market_data_recorder_app.spec)
+- Legacy Inno Setup script: [`packaging/windows/installer.iss`](packaging/windows/installer.iss)
+- Legacy bootstrap: [`scripts/bootstrap-iscc.ps1`](scripts/bootstrap-iscc.ps1)
+- Legacy release build script: [`scripts/build-windows-release.ps1`](scripts/build-windows-release.ps1)
 - macOS PoC starter files: [`packaging/macos_poc/README.md`](packaging/macos_poc/README.md)
 - Packaged app smoke test: [`scripts/smoke-test-windows-release.py`](scripts/smoke-test-windows-release.py)
 - Installer smoke test: [`scripts/smoke-test-installer.ps1`](scripts/smoke-test-installer.ps1)

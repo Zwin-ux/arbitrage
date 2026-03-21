@@ -24,6 +24,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "Superior",
+    "copyright": "Copyright (C) 2026 Superior",
     "icon": [
       "icons/icon.ico",
       "icons/128x128.png"
