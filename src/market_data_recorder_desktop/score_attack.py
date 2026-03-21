@@ -311,9 +311,9 @@ class UnlockTrackService:
                 label="Bot Slot 2",
                 unlocked=completed_runs >= 2,
                 detail=(
-                    "A second bot slot opens after two completed paper runs."
+                    "A second bot slot opens after two completed practice runs."
                     if completed_runs < 2
-                    else "Second slot is live for dual-bot paper sessions."
+                    else "Second slot is live for dual-bot practice runs."
                 ),
                 requirements=[
                     UnlockRequirement(
@@ -455,21 +455,21 @@ class ProgressionService:
                 unmet = [requirement.target for requirement in unlock.requirements if not requirement.met]
                 detail = f" Need {', '.join(unmet)}." if unmet else ""
                 return f"Next unlock: {unlock.label}.{detail}"
-        return "All current paper-first unlocks are online."
+        return "All current practice-first unlocks are online."
 
 
 class DecisionTraceFormatter:
     def render(self, session: PaperBotSession | None) -> str:
         if session is None:
             return (
-                "TACTICAL TRACE\n\n"
+                "RUN TRACE\n\n"
                 "No decision trace yet.\n"
-                "Start a paper session to see what each bot saw, why it acted, and how score moved."
+                "Start a practice run to see what each bot saw, why it acted, and how score moved."
             )
         lines = [
-            "TACTICAL TRACE",
+            "RUN TRACE",
             "",
-            f"Session grade: {session.grade.grade}",
+            f"Run grade: {session.grade.grade}",
             f"Score delta: {session.score_delta}",
             "",
         ]
@@ -832,7 +832,7 @@ class PaperSimulationEngine:
         note = {
             "S": "High-discipline session. Multiple routes banked cleanly.",
             "A": "Strong session with consistent score pressure.",
-            "B": "Solid paper session with room for cleaner fills.",
+            "B": "Solid practice run with room for cleaner fills.",
             "C": "Starter session complete. Keep feeding the machine.",
             "D": "No clean score banked yet. Tighten the bot bay and try again.",
         }[grade]

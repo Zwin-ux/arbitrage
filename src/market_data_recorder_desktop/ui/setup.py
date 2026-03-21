@@ -9,10 +9,10 @@ from .primitives import CommandFooter, PixelPanel, repolish
 
 class SetupPhaseCard(PixelPanel):
     def __init__(self, label: str) -> None:
-        super().__init__("PHASE", label, tone="idle", compact=True)
+        super().__init__("STEP", label, tone="idle", compact=True)
         self.value = QLabel("WAIT")
         self.value.setProperty("panelTitle", True)
-        self.detail = QLabel("SYSTEM HOLD")
+        self.detail = QLabel("WAITING")
         self.detail.setProperty("panelToneText", True)
         self.body_layout.addWidget(self.value)
         self.body_layout.addWidget(self.detail)
@@ -21,11 +21,11 @@ class SetupPhaseCard(PixelPanel):
         if state.active:
             value = "ACTIVE"
             tone = "active"
-            detail = "CURRENT BOOT STEP"
+            detail = "CURRENT STEP"
         elif state.complete:
             value = "CLEAR"
             tone = "success"
-            detail = "PHASE LOCKED IN"
+            detail = "DONE"
         else:
             value = "WAIT"
             tone = "idle"
@@ -43,7 +43,7 @@ class SetupStepper(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
-        self.phase_label = QLabel("BOOT PHASES")
+        self.phase_label = QLabel("SETUP STEPS")
         self.phase_label.setProperty("sectionLabel", True)
         layout.addWidget(self.phase_label)
         self._cards: list[SetupPhaseCard] = []
@@ -55,9 +55,9 @@ class SetupStepper(QWidget):
             [
                 ("B", "BACK"),
                 ("A", "NEXT"),
-                ("X", "PREVIEW"),
-                ("START", "IGNITE"),
-                ("SELECT", "HELP"),
+                ("X", "REVIEW"),
+                ("START", "FINISH"),
+                ("SELECT", "GUIDE"),
             ]
         )
         layout.addWidget(self.command_footer)
@@ -70,10 +70,10 @@ class SetupStepper(QWidget):
 
 class SetupCompletionState(PixelPanel):
     def __init__(self) -> None:
-        super().__init__("PHASE 06", "IGNITION", tone="active")
-        self.route_title = QLabel("HANGAR READY")
+        super().__init__("STEP 06", "READY", tone="active")
+        self.route_title = QLabel("HOME READY")
         self.route_title.setObjectName("heroText")
-        self.route_detail = QLabel("HANGAR OPENS WITH BOOT RECORDER HOT.")
+        self.route_detail = QLabel("HOME OPENS WITH RECORDER READY.")
         self.route_detail.setWordWrap(True)
         self.route_detail.setProperty("muted", True)
         self.body_layout.addWidget(self.route_title)

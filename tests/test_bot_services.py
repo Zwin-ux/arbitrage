@@ -590,8 +590,8 @@ def test_paper_simulation_engine_generates_human_trace_lines(app_paths: Any, fak
             {
                 "id": "market-10",
                 "conditionId": "condition-10",
-                "question": "Will the tactical trace render?",
-                "slug": "will-the-tactical-trace-render",
+                "question": "Will the decision trace render?",
+                "slug": "will-the-decision-trace-render",
                 "active": True,
                 "enableOrderBook": True,
                 "outcomes": '["Yes", "No"]',
@@ -637,7 +637,7 @@ def test_paper_simulation_engine_generates_human_trace_lines(app_paths: Any, fak
 
     assert session.decisions
     assert any(decision.trace_lines for decision in session.decisions)
-    assert "TACTICAL TRACE" in rendered
+    assert "RUN TRACE" in rendered
     assert "RESULT" in rendered
 
 

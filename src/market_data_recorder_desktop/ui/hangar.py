@@ -37,16 +37,16 @@ from .primitives import (
 
 class MissionDeck(PixelPanel):
     def __init__(self) -> None:
-        super().__init__("SECTOR A1", "MISSION FIELD", tone="active")
-        self.title_label = QLabel("HANGAR // MISSION CONTROL")
+        super().__init__("HOME", "FIRST RUN", tone="active")
+        self.title_label = QLabel("Home")
         self.title_label.setObjectName("heroTitle")
-        self.next_step_label = QLabel("BOOT RECORDER TO BUILD THE FIRST LOCAL SAMPLE.")
+        self.next_step_label = QLabel("Run recorder to build the first local sample.")
         self.next_step_label.setObjectName("heroText")
         self.next_step_label.setWordWrap(True)
 
         lamps_row = QHBoxLayout()
         lamps_row.setSpacing(8)
-        self.paper_state_badge = TelemetryLamp("PAPER")
+        self.paper_state_badge = TelemetryLamp("PRACTICE")
         self.live_state_badge = TelemetryLamp("GATE")
         self.lab_state_badge = TelemetryLamp("LAB")
         lamps_row.addWidget(self.paper_state_badge)
@@ -58,10 +58,10 @@ class MissionDeck(PixelPanel):
         mission_strip_layout = QHBoxLayout(mission_strip)
         mission_strip_layout.setContentsMargins(0, 0, 0, 0)
         mission_strip_layout.setSpacing(8)
-        self.mission_label = QLabel("ARM POLYMARKET. TAKE SAMPLE. STAGE ONE RUN.")
+        self.mission_label = QLabel("Keep Polymarket on, take one sample, then try one practice run.")
         self.mission_label.setObjectName("heroText")
         self.mission_label.setWordWrap(True)
-        self.score_label = QLabel("PAPER SCORE // WAITING")
+        self.score_label = QLabel("Practice score: waiting")
         self.score_label.setObjectName("heroText")
         self.score_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.score_label.setWordWrap(True)
@@ -76,15 +76,15 @@ class MissionDeck(PixelPanel):
 
 class ObjectivePanel(PixelPanel):
     def __init__(self) -> None:
-        super().__init__("PHASE 01", "OBJECTIVES", tone="warning")
-        self.setup_progress_label = QLabel("BOOT LIST")
+        super().__init__("SETUP", "CHECKLIST", tone="warning")
+        self.setup_progress_label = QLabel("First run")
         self.setup_progress_label.setProperty("sectionLabel", True)
         self.setup_steps_label = QLabel()
         self.setup_steps_label.setWordWrap(True)
         self.setup_steps_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.open_setup_button = QPushButton("BOOT PHASES")
+        self.open_setup_button = QPushButton("Set up profile")
         self.open_setup_button.setProperty("buttonRole", "secondary")
-        self.view_docs_button = QPushButton("DOCS")
+        self.view_docs_button = QPushButton("Setup guide")
         self.view_docs_button.setProperty("buttonRole", "ghost")
         button_row = QHBoxLayout()
         button_row.setSpacing(8)
@@ -98,8 +98,8 @@ class ObjectivePanel(PixelPanel):
 
 class ActionPanel(PixelPanel):
     def __init__(self) -> None:
-        super().__init__("SLOT 02", "COMMAND DECK", tone="active")
-        self.primary_action_hint = QLabel("BOOT IS THE ONLY LIVE COMMAND UNTIL A SAMPLE LANDS.")
+        super().__init__("ACTION", "RUN", tone="active")
+        self.primary_action_hint = QLabel("Run recorder is the only active command until a sample lands.")
         self.primary_action_hint.setObjectName("heroText")
         self.primary_action_hint.setWordWrap(True)
         self.risk_badge = RiskBadge()
@@ -110,8 +110,8 @@ class ActionPanel(PixelPanel):
 
         primary_row = QHBoxLayout()
         primary_row.setSpacing(8)
-        self.start_button = QPushButton("BOOT RECORDER")
-        self.stop_button = QPushButton("STOP")
+        self.start_button = QPushButton("Run recorder")
+        self.stop_button = QPushButton("Stop")
         self.stop_button.setProperty("buttonRole", "secondary")
         primary_row.addWidget(self.start_button, 1)
         primary_row.addWidget(self.stop_button, 1)
@@ -121,13 +121,13 @@ class ActionPanel(PixelPanel):
         secondary_row.setContentsMargins(0, 0, 0, 0)
         secondary_row.setHorizontalSpacing(8)
         secondary_row.setVerticalSpacing(8)
-        self.replay_button = QPushButton("REPLAY")
+        self.replay_button = QPushButton("Replay")
         self.replay_button.setProperty("buttonRole", "ghost")
-        self.verify_button = QPushButton("VERIFY")
+        self.verify_button = QPushButton("Verify")
         self.verify_button.setProperty("buttonRole", "ghost")
-        self.scan_button = QPushButton("SCAN")
+        self.scan_button = QPushButton("Scan routes")
         self.scan_button.setProperty("buttonRole", "secondary")
-        self.paper_button = QPushButton("START RUN")
+        self.paper_button = QPushButton("Start practice")
         self.paper_button.setProperty("buttonRole", "secondary")
         secondary_row.addWidget(self.replay_button, 0, 0)
         secondary_row.addWidget(self.verify_button, 0, 1)
@@ -142,12 +142,12 @@ class ActionPanel(PixelPanel):
 
 class StatusPanel(PixelPanel):
     def __init__(self) -> None:
-        super().__init__("BUS A0", "SYSTEM ZONE", tone="idle")
+        super().__init__("SYSTEM", "STATUS", tone="idle")
         tile_row = QHBoxLayout()
         tile_row.setSpacing(8)
-        self.recorder_tile = StatusModule("REC")
-        self.scanner_tile = StatusModule("SCAN")
-        self.route_tile = StatusModule("ARB")
+        self.recorder_tile = StatusModule("Recorder")
+        self.scanner_tile = StatusModule("Scanner")
+        self.route_tile = StatusModule("Route")
         tile_row.addWidget(self.recorder_tile)
         tile_row.addWidget(self.scanner_tile)
         tile_row.addWidget(self.route_tile)
@@ -156,7 +156,7 @@ class StatusPanel(PixelPanel):
 
 class ProgressPanel(PixelPanel):
     def __init__(self) -> None:
-        super().__init__("TRACK 03", "SCORE PATH", tone="success")
+        super().__init__("PROGRESS", "MILESTONES", tone="success")
         self.loop_label = QLabel("CLEAR 0/4")
         self.loop_label.setObjectName("heroText")
         self.loop_meter = MeterBar()
@@ -170,11 +170,11 @@ class ProgressPanel(PixelPanel):
 
 class TelemetryPanelGroup(PixelPanel):
     def __init__(self) -> None:
-        super().__init__("BUS B2", "TELEMETRY", tone="idle")
+        super().__init__("DETAILS", "STATE", tone="idle")
         grid = QGridLayout()
         grid.setHorizontalSpacing(8)
         grid.setVerticalSpacing(8)
-        labels = ("BRAND", "PROFILE", "MISSION", "RECORDER", "DATA", "RISK", "WARN")
+        labels = ("APP", "PROFILE", "GOAL", "RECORDER", "DATA", "RISK", "WARNING")
         self._cells: dict[str, StatCell] = {}
         for index, label in enumerate(labels):
             cell = StatCell(label)
@@ -187,23 +187,23 @@ class TelemetryPanelGroup(PixelPanel):
         self.body_layout.addLayout(grid)
         self.body_layout.addWidget(self.capability_text)
         self.body_layout.addWidget(self.connections_text)
-        self.brand_label = self._cells["BRAND"].value_label
+        self.brand_label = self._cells["APP"].value_label
         self.profile_label = self._cells["PROFILE"].value_label
-        self.goal_label = self._cells["MISSION"].value_label
+        self.goal_label = self._cells["GOAL"].value_label
         self.engine_label = self._cells["RECORDER"].value_label
         self.data_label = self._cells["DATA"].value_label
         self.risk_label = self._cells["RISK"].value_label
-        self.warning_label = self._cells["WARN"].value_label
+        self.warning_label = self._cells["WARNING"].value_label
 
     def set_telemetry(self, stats: list[tuple[str, str, str, SemanticStateColor]]) -> None:
         key_map = {
-            "Brand": "BRAND",
+            "Brand": "APP",
             "Profile": "PROFILE",
-            "Goal": "MISSION",
+            "Goal": "GOAL",
             "Recorder": "RECORDER",
             "Data": "DATA",
             "Risk preset": "RISK",
-            "Latest warning": "WARN",
+            "Latest warning": "WARNING",
         }
         for label, value, detail, tone in stats:
             mapped = key_map.get(label)
@@ -213,17 +213,17 @@ class TelemetryPanelGroup(PixelPanel):
 
 class ConsoleFooter(PixelPanel):
     def __init__(self) -> None:
-        super().__init__("CONSOLE", "SYSTEM FEED", tone="active")
+        super().__init__("LOG", "RECENT EVENTS", tone="active")
         self.boot_ticker = BootTicker()
         self.system_log = InsetConsolePanel()
         self.system_log.setMaximumHeight(136)
         self.command_footer = CommandFooter(
             [
-                ("B", "BACK"),
-                ("A", "BOOT"),
-                ("X", "SCAN"),
-                ("START", "RUN"),
-                ("SELECT", "DIAG"),
+                ("ESC", "BACK"),
+                ("SETUP", "PROFILE"),
+                ("R", "RUN"),
+                ("S", "SCAN"),
+                ("D", "DIAG"),
             ]
         )
         self.body_layout.addWidget(self.boot_ticker)
@@ -289,32 +289,39 @@ class HomeTab(QWidget):
 
         mission_field = QHBoxLayout()
         mission_field.setSpacing(16)
-        left_col = QVBoxLayout()
+
+        self.left_column = QWidget()
+        left_col = QVBoxLayout(self.left_column)
+        left_col.setContentsMargins(0, 0, 0, 0)
         left_col.setSpacing(16)
         left_col.addWidget(self.objective_panel)
         left_col.addWidget(self.progress_panel)
 
-        middle_col = QVBoxLayout()
+        self.middle_column = QWidget()
+        middle_col = QVBoxLayout(self.middle_column)
+        middle_col.setContentsMargins(0, 0, 0, 0)
         middle_col.setSpacing(16)
         middle_col.addWidget(self.action_bar)
 
-        right_col = QVBoxLayout()
+        self.right_column = QWidget()
+        right_col = QVBoxLayout(self.right_column)
+        right_col.setContentsMargins(0, 0, 0, 0)
         right_col.setSpacing(16)
         right_col.addWidget(self.status_panel)
         right_col.addWidget(self.telemetry_panel)
 
-        mission_field.addLayout(left_col, 4)
-        mission_field.addLayout(middle_col, 4)
-        mission_field.addLayout(right_col, 5)
+        mission_field.addWidget(self.left_column, 4)
+        mission_field.addWidget(self.middle_column, 4)
+        mission_field.addWidget(self.right_column, 5)
         layout.addLayout(mission_field)
         layout.addWidget(self.console_footer)
         layout.addStretch(1)
 
     def apply_model(self, model: HangarViewModel) -> None:
-        self.safe_state_label.setText(model.title.upper())
-        self.next_step_label.setText(model.next_step.upper())
+        self.safe_state_label.setText(model.title)
+        self.next_step_label.setText(model.next_step)
         badge_map = {
-            "Paper mode": self.paper_state_badge,
+            "Practice mode": self.paper_state_badge,
             "Live gate": self.live_state_badge,
             "Lab": self.lab_state_badge,
         }
@@ -322,12 +329,12 @@ class HomeTab(QWidget):
             badge = badge_map.get(tile.label)
             if badge is not None:
                 badge.set_state(tile.value, tone=tile.tone)
-        self.mission_label.setText(model.mission.upper())
-        self.score_label.setText(model.paper_score.upper())
-        self.primary_action_hint.setText(model.primary_action_hint.upper())
-        self.setup_progress_label.setText(model.checklist_title.upper())
+        self.mission_label.setText(model.mission)
+        self.score_label.setText(model.paper_score)
+        self.primary_action_hint.setText(model.primary_action_hint)
+        self.setup_progress_label.setText(model.checklist_title)
         self.setup_steps_label.setText(self._render_checklist(model.checklist))
-        self.loop_label.setText(model.milestone_title.upper())
+        self.loop_label.setText(model.milestone_title)
         complete_count = sum(1 for item in model.milestones if item.complete)
         self.progress_panel.loop_meter.setValue(complete_count)
         self.loop_steps_label.setText(self._render_checklist(model.milestones))
@@ -356,6 +363,11 @@ class HomeTab(QWidget):
     def set_secondary_actions_visible(self, visible: bool) -> None:
         self.secondary_actions_widget.setVisible(visible)
 
+    def set_surface_mode(self, *, has_profile: bool, has_data: bool, score_ready: bool) -> None:
+        self.progress_panel.setVisible(has_profile)
+        self.right_column.setVisible(has_profile)
+        self.telemetry_panel.setVisible(has_profile and (has_data or score_ready))
+
     def update_view(
         self,
         *,
@@ -370,71 +382,72 @@ class HomeTab(QWidget):
         del checklist
         if profile is None:
             model = HangarViewModel(
-                title="NO CART INSERTED",
-                next_step="CREATE A PROFILE. ARM POLYMARKET. BOOT RECORDER.",
+                title="Home",
+                next_step="Set up or import a profile, keep Polymarket on, then run the recorder.",
                 status_tiles=[
-                    {"label": "Paper mode", "value": "active", "tone": "active"},
+                    {"label": "Practice mode", "value": "active", "tone": "active"},
                     {"label": "Live gate", "value": "locked", "tone": "locked"},
                     {"label": "Lab", "value": "offline", "tone": "idle"},
                 ],
-                mission="INSERT A PROFILE CART, THEN TAKE THE FIRST SAMPLE.",
-                paper_score="PAPER SCORE // WAITING",
-                primary_action_hint="BOOT STAYS DARK UNTIL A PROFILE CART EXISTS.",
-                checklist_title="BOOT LIST",
+                mission="Create a profile, take one local sample, then start one practice run.",
+                paper_score="Practice score: waiting",
+                primary_action_hint="Set up a profile first. Run recorder unlocks after the profile is saved.",
+                checklist_title="First run",
                 checklist=[
-                    ChecklistItem(id="profile", label="CREATE PROFILE CART.", current=True),
-                    ChecklistItem(id="recorder", label="BOOT RECORDER.", detail="RECORDER STAYS LOCKED UNTIL A CART EXISTS."),
-                    ChecklistItem(id="scan", label="START FIRST RUN.", detail="A RUN NEEDS LOCAL DATA AND ONE STAGED ROUTE."),
+                    ChecklistItem(id="profile", label="Set up profile.", current=True),
+                    ChecklistItem(id="recorder", label="Run recorder.", detail="Recorder stays locked until a profile exists."),
+                    ChecklistItem(id="scan", label="Start first practice run.", detail="A run needs local data and one staged route."),
                 ],
-                milestone_title="CLEAR TRACK 0/4",
+                milestone_title="Milestones 0/4",
                 milestones=[
-                    ChecklistItem(id="loadout", label="ARM LOADOUT", detail="CREATE A PROFILE WITH POLYMARKET ARMED."),
-                    ChecklistItem(id="record", label="TAKE SAMPLE", detail="RECORDER STAYS IDLE UNTIL A CART EXISTS."),
-                    ChecklistItem(id="inspect", label="STAGE ROUTE", detail="RADAR NEEDS LOCAL SAMPLE FIRST."),
-                    ChecklistItem(id="score", label="BANK SCORE", detail="SCORE LIGHTS UP AFTER THE FIRST RUN."),
+                    ChecklistItem(id="loadout", label="Save setup", detail="Create a profile with Polymarket armed."),
+                    ChecklistItem(id="record", label="Take sample", detail="Recorder stays idle until a profile exists."),
+                    ChecklistItem(id="inspect", label="Stage route", detail="Scan needs local sample first."),
+                    ChecklistItem(id="score", label="Bank score", detail="Score lights up after the first practice run."),
                 ],
                 machine_statuses=[
-                    MachineStatus(id="recorder", label="REC", value="blocked", detail="PROFILE CART REQUIRED.", tone="locked"),
-                    MachineStatus(id="scanner", label="SCAN", value="waiting", detail="LOCAL BOOKS NOT READY.", tone="idle"),
-                    MachineStatus(id="route", label="ARB", value="empty", detail="NO BOT SLOT STAGED.", tone="idle"),
+                    MachineStatus(id="recorder", label="REC", value="blocked", detail="Profile required.", tone="locked"),
+                    MachineStatus(id="scanner", label="SCAN", value="waiting", detail="Local books not ready.", tone="idle"),
+                    MachineStatus(id="route", label="ROUTE", value="empty", detail="No route staged.", tone="idle"),
                 ],
                 system_log=[
-                    "[BOOT] NO CART INSERTED.",
-                    "[REC] RECORDER LOCKED UNTIL PROFILE CART EXISTS.",
-                    "[SCAN] WAITING FOR FIRST LOCAL SAMPLE.",
-                    "[ARB] SCORE BUS IS DARK UNTIL FIRST RUN.",
+                    "[SYS] No profile selected.",
+                    "[REC] Recorder locked until a profile exists.",
+                    "[SCAN] Waiting for first local sample.",
+                    "[ROUTE] Score stays dark until the first practice run.",
                 ],
                 telemetry_stats=[
-                    {"label": "Brand", "value": "SUPERIOR", "detail": "", "tone": "active"},
-                    {"label": "Profile", "value": "NO CART", "detail": "", "tone": "warning"},
-                    {"label": "Goal", "value": "BOOT PHASE", "detail": "", "tone": "warning"},
+                    {"label": "Brand", "value": "Superior", "detail": "", "tone": "active"},
+                    {"label": "Profile", "value": "No profile", "detail": "", "tone": "warning"},
+                    {"label": "Goal", "value": "First run", "detail": "", "tone": "warning"},
                     {"label": "Recorder", "value": status.state.title(), "detail": status.last_message, "tone": "idle"},
-                    {"label": "Data", "value": "NO DB", "detail": "", "tone": "idle"},
-                    {"label": "Risk preset", "value": "STARTER", "detail": "", "tone": "idle"},
-                    {"label": "Latest warning", "value": "NONE", "detail": "", "tone": "idle"},
+                    {"label": "Data", "value": "No DB", "detail": "", "tone": "idle"},
+                    {"label": "Risk preset", "value": "Starter", "detail": "", "tone": "idle"},
+                    {"label": "Latest warning", "value": "None", "detail": "", "tone": "idle"},
                 ],
                 capability_rows=[
-                    {"id": "recorder", "label": "REC", "value": "blocked", "detail": "NEEDS PROFILE CART.", "tone": "locked"},
-                    {"id": "scanner", "label": "SCAN", "value": "blocked", "detail": "NEEDS LOCAL SAMPLE.", "tone": "locked"},
-                    {"id": "paper score", "label": "SCORE", "value": "blocked", "detail": "NEEDS FIRST RUN.", "tone": "locked"},
-                    {"id": "live gate", "label": "GATE", "value": "locked", "detail": "PAPER-FIRST ONLY.", "tone": "locked"},
+                    {"id": "recorder", "label": "REC", "value": "blocked", "detail": "Needs profile.", "tone": "locked"},
+                    {"id": "scanner", "label": "SCAN", "value": "blocked", "detail": "Needs local sample.", "tone": "locked"},
+                    {"id": "paper score", "label": "SCORE", "value": "blocked", "detail": "Needs first practice run.", "tone": "locked"},
+                    {"id": "live gate", "label": "GATE", "value": "locked", "detail": "Practice-first only.", "tone": "locked"},
                 ],
                 connector_rows=[
-                    {"id": "polymarket", "label": "POLYMARKET", "value": "disabled", "detail": "NOT ARMED.", "tone": "warning"},
-                    {"id": "kalshi", "label": "KALSHI", "value": "disabled", "detail": "OPTIONAL CART.", "tone": "idle"},
-                    {"id": "coach", "label": "COACH", "value": "disabled", "detail": "OPTIONAL LINK.", "tone": "idle"},
+                    {"id": "polymarket", "label": "POLYMARKET", "value": "disabled", "detail": "Not armed.", "tone": "warning"},
+                    {"id": "kalshi", "label": "KALSHI", "value": "disabled", "detail": "Optional feed.", "tone": "idle"},
+                    {"id": "coach", "label": "COACH", "value": "disabled", "detail": "Optional link.", "tone": "idle"},
                 ],
             )
             self.apply_model(model)
-            self.open_setup_button.setText("LOAD CART")
-            self.view_docs_button.setText("OPEN DOCS")
-            self.action_bar.risk_badge.set_state("LOCKED", "locked")
-            self._set_action_button(self.start_button, enabled=False, active_text="BOOT RECORDER", inactive_text="BOOT [LOCKED]")
-            self._set_action_button(self.stop_button, enabled=False, active_text="STOP", inactive_text="STOP [IDLE]")
-            self._set_action_button(self.replay_button, enabled=False, active_text="REPLAY", inactive_text="REPLAY [LOCKED]")
-            self._set_action_button(self.verify_button, enabled=False, active_text="VERIFY", inactive_text="VERIFY [LOCKED]")
-            self._set_action_button(self.scan_button, enabled=False, active_text="SCAN", inactive_text="SCAN [LOCKED]")
-            self._set_action_button(self.paper_button, enabled=False, active_text="START RUN", inactive_text="RUN [LOCKED]")
+            self.set_surface_mode(has_profile=False, has_data=False, score_ready=False)
+            self.open_setup_button.setText("Set up profile")
+            self.view_docs_button.setText("Setup guide")
+            self.action_bar.risk_badge.set_state("Locked", "locked")
+            self._set_action_button(self.start_button, enabled=False, active_text="Run recorder", inactive_text="Run recorder [locked]")
+            self._set_action_button(self.stop_button, enabled=False, active_text="Stop", inactive_text="Stop [idle]")
+            self._set_action_button(self.replay_button, enabled=False, active_text="Replay", inactive_text="Replay [locked]")
+            self._set_action_button(self.verify_button, enabled=False, active_text="Verify", inactive_text="Verify [locked]")
+            self._set_action_button(self.scan_button, enabled=False, active_text="Scan routes", inactive_text="Scan routes [locked]")
+            self._set_action_button(self.paper_button, enabled=False, active_text="Start practice", inactive_text="Practice [locked]")
             self.set_secondary_actions_visible(False)
             return
 
@@ -447,48 +460,48 @@ class HomeTab(QWidget):
         loadout_ready = "polymarket" in profile.equipped_connectors and bool(profile.equipped_modules)
         score_ready = score_snapshot.total_runs > 0
         if not loadout_ready:
-            next_step = "ARM POLYMARKET AND ONE MODULE."
+            next_step = "Turn on Polymarket and one play style."
         elif is_running:
-            next_step = "WAIT FOR SAMPLE COUNTS. DO NOT BREAK CAPTURE."
+            next_step = "Wait for sample counts. Do not interrupt capture."
         elif not has_data:
-            next_step = "BOOT RECORDER TO TAKE THE FIRST SAMPLE."
+            next_step = "Run recorder to take the first sample."
         elif candidate_count > 0 and not score_ready:
-            next_step = "START A PAPER RUN AND BANK THE FIRST SCORE."
+            next_step = "Start a practice run and bank the first score."
         elif not score_ready:
-            next_step = "SCAN AGAIN UNTIL ONE ROUTE STAGES."
+            next_step = "Refresh Scan until one route stages."
         elif profile.paper_gate_passed and profile.live_mode == "locked":
-            next_step = "KEEP BANKING PAPER SCORE. GATE STAYS LOCKED."
+            next_step = "Keep banking practice score. Live stays locked."
         else:
-            next_step = "HOLD THE LOOP: SAMPLE. SCAN. RUN. BANK."
+            next_step = "Keep the loop steady: sample, scan, practice, score."
 
         checklist_items = [
             ChecklistItem(
                 id="boot",
-                label="BOOT RECORDER.",
-                detail="TAKE THE FIRST LOCAL BOOK SAMPLE.",
+                label="Run recorder.",
+                detail="Take the first local book sample.",
                 complete=has_data or is_running,
                 current=loadout_ready and not (has_data or is_running),
             ),
             ChecklistItem(
                 id="wait",
-                label="WAIT FOR SAMPLE COUNTS.",
-                detail="WATCH RAW MSG AND BOOK TOTALS.",
+                label="Wait for sample counts.",
+                detail="Watch message and book totals.",
                 complete=has_data,
                 current=is_running,
             ),
             ChecklistItem(
                 id="scan",
-                label="START PAPER RUN.",
-                detail="ARM THE STARTER BOT WHEN ONE ROUTE STAGES.",
+                label="Start practice run.",
+                detail="Arm the starter bot when one route stages.",
                 complete=scanner_ready,
                 current=has_data and not scanner_ready,
             ),
         ]
         milestone_specs = [
-            ("loadout", "ARM LOADOUT", loadout_ready, "POLYMARKET AND ONE MODULE ARMED."),
-            ("record", "TAKE SAMPLE", has_data, "RECORDER HAS LOCAL DATA."),
-            ("inspect", "STAGE ROUTE", scanner_ready, "RADAR HAS AN EXPLAINABLE ROUTE."),
-            ("score", "BANK SCORE", score_ready, "PAPER LEDGER HAS ONE COMPLETED RUN."),
+            ("loadout", "Save setup", loadout_ready, "Polymarket and one play style are armed."),
+            ("record", "Take sample", has_data, "Recorder has local data."),
+            ("inspect", "Stage route", scanner_ready, "Scan has an explainable route."),
+            ("score", "Bank score", score_ready, "Practice ledger has one completed run."),
         ]
         first_current = False
         milestones: list[ChecklistItem] = []
@@ -510,7 +523,7 @@ class HomeTab(QWidget):
                 detail=(
                     f"{status.summary.raw_messages} MSG / {status.summary.book_snapshots} BOOKS"
                     if status.summary is not None
-                    else "NO SAMPLE YET."
+                    else "No sample yet."
                 ),
                 tone="active" if is_running or has_data else ("warning" if loadout_ready else "locked"),
             ),
@@ -519,60 +532,60 @@ class HomeTab(QWidget):
                 label="SCAN",
                 value="routes found" if candidate_count > 0 else ("ready" if scanner_ready else ("standby" if has_data else "waiting")),
                 detail=(
-                    f"{candidate_count} ROUTES CACHED."
+                    f"{candidate_count} routes cached."
                     if candidate_count > 0
-                    else ("RUN SCAN AFTER SAMPLE LANDS." if has_data else "WAITING FOR RECORDER.")
+                    else ("Run Scan after the sample lands." if has_data else "Waiting for recorder.")
                 ),
                 tone="active" if candidate_count > 0 else ("warning" if has_data else "locked"),
             ),
             MachineStatus(
                 id="route",
-                label="ARB",
+                label="ROUTE",
                 value="banked" if score_ready else ("staged" if candidate_count > 0 else "empty"),
                 detail=(
-                    f"{score_snapshot.completed_runs} RUNS BANKED."
+                    f"{score_snapshot.completed_runs} runs banked."
                     if score_ready
-                    else ("ONE ROUTE IS STAGED. START THE RUN." if candidate_count > 0 else "NO ROUTE STAGED.")
+                    else ("One route is staged. Start the practice run." if candidate_count > 0 else "No route staged.")
                 ),
                 tone="success" if score_ready else ("warning" if candidate_count > 0 else "locked"),
             ),
         ]
 
         model = HangarViewModel(
-            title="HANGAR // LIVE",
+            title="Home",
             next_step=next_step,
             status_tiles=[
-                {"label": "Paper mode", "value": "active", "tone": "active"},
+                    {"label": "Practice mode", "value": "active", "tone": "active"},
                 {"label": "Live gate", "value": "locked" if profile.live_mode == "locked" else profile.live_mode, "tone": "locked" if profile.live_mode == "locked" else "warning"},
                 {"label": "Lab", "value": "offline" if not profile.lab_enabled else "online", "tone": "idle" if not profile.lab_enabled else "warning"},
             ],
             mission=profile.primary_mission,
             paper_score=(
-                f"PAPER ${score_snapshot.paper_realized_pnl_cents / 100:.2f} // SCORE {score_snapshot.portfolio_score} // SLOTS {score_snapshot.available_bot_slots}"
+                f"Practice ${score_snapshot.paper_realized_pnl_cents / 100:.2f} / Score {score_snapshot.portfolio_score} / Slots {score_snapshot.available_bot_slots}"
                 if score_ready
-                else "PAPER SCORE // WAITING"
+                else "Practice score: waiting"
             ),
-            primary_action_hint="COMMAND DECK STAYS FOCUSED UNTIL SAMPLE DATA AND STAGED ROUTES EXIST.",
-            checklist_title="BOOT LIST",
+            primary_action_hint="Keep the action bar focused until sample data and a staged route exist.",
+            checklist_title="First run",
             checklist=checklist_items,
-            milestone_title=f"CLEAR TRACK {complete_count}/4",
+            milestone_title=f"Milestones {complete_count}/4",
             milestones=milestones,
             machine_statuses=machine_statuses,
             system_log=[
-                f"[CART] {profile.display_name.upper()} ONLINE.",
+                f"[SYS] {profile.display_name} online.",
                 f"[REC] {machine_statuses[0].value.upper()} :: {machine_statuses[0].detail}",
                 f"[SCAN] {machine_statuses[1].value.upper()} :: {machine_statuses[1].detail}",
-                f"[ARB] {machine_statuses[2].value.upper()} :: {machine_statuses[2].detail}",
-                f"[SAFE] PAPER=ACTIVE | GATE={profile.live_mode.upper()} | LAB={'ON' if profile.lab_enabled else 'OFF'}",
+                f"[ROUTE] {machine_statuses[2].value.upper()} :: {machine_statuses[2].detail}",
+                f"[SAFE] PRACTICE=ACTIVE | GATE={profile.live_mode.upper()} | LAB={'ON' if profile.lab_enabled else 'OFF'}",
             ],
             telemetry_stats=[
                 {"label": "Brand", "value": profile.brand_name, "detail": "", "tone": "active"},
                 {"label": "Profile", "value": profile.display_name, "detail": "", "tone": "active"},
-                {"label": "Goal", "value": profile.primary_goal.replace("_", " "), "detail": "", "tone": "idle"},
+                    {"label": "Goal", "value": profile.primary_goal.replace("_", " "), "detail": "", "tone": "idle"},
                 {"label": "Recorder", "value": status.state.title(), "detail": status.last_message, "tone": machine_statuses[0].tone},
-                {"label": "Data", "value": (f"{status.summary.raw_messages} RAW / {status.summary.book_snapshots} BOOKS" if status.summary is not None else "NO DB"), "detail": "", "tone": "warning" if has_data else "idle"},
+                    {"label": "Data", "value": (f"{status.summary.raw_messages} raw / {status.summary.book_snapshots} books" if status.summary is not None else "No DB"), "detail": "", "tone": "warning" if has_data else "idle"},
                 {"label": "Risk preset", "value": profile.risk_policy_id, "detail": "", "tone": "idle"},
-                {"label": "Latest warning", "value": status.summary.latest_warning if status.summary and status.summary.latest_warning else "NONE", "detail": "", "tone": "warning" if status.summary and status.summary.latest_warning else "idle"},
+                    {"label": "Latest warning", "value": status.summary.latest_warning if status.summary and status.summary.latest_warning else "None", "detail": "", "tone": "warning" if status.summary and status.summary.latest_warning else "idle"},
             ],
             capability_rows=[
                 {"id": state.capability_id, "label": state.label, "value": "ready" if state.ready else "blocked", "detail": state.message, "tone": "active" if state.ready else "locked"}
@@ -584,16 +597,17 @@ class HomeTab(QWidget):
             ],
         )
         self.apply_model(model)
-        self.open_setup_button.setText("EDIT CART")
-        self.view_docs_button.setText("OPEN DOCS")
-        self.action_bar.risk_badge.set_state("PAPER", "active")
-        primary_text = "START RUN" if candidate_count > 0 and has_data and not is_running else "BOOT RECORDER"
-        self._set_action_button(self.start_button, enabled=not is_running, active_text=primary_text, inactive_text=f"{primary_text} [BUSY]")
-        self._set_action_button(self.stop_button, enabled=is_running, active_text="STOP", inactive_text="STOP [IDLE]")
-        self._set_action_button(self.replay_button, enabled=has_store and not is_running, active_text="REPLAY", inactive_text="REPLAY [LOCKED]")
-        self._set_action_button(self.verify_button, enabled=has_store and not is_running, active_text="VERIFY", inactive_text="VERIFY [LOCKED]")
-        self._set_action_button(self.scan_button, enabled=has_data and not is_running, active_text="SCAN", inactive_text="SCAN [LOCKED]")
-        self._set_action_button(self.paper_button, enabled=candidate_count > 0, active_text="START RUN", inactive_text="RUN [LOCKED]")
+        self.set_surface_mode(has_profile=True, has_data=has_data, score_ready=score_ready)
+        self.open_setup_button.setText("Edit profile")
+        self.view_docs_button.setText("Setup guide")
+        self.action_bar.risk_badge.set_state("Paper", "active")
+        primary_text = "Start practice" if candidate_count > 0 and has_data and not is_running else "Run recorder"
+        self._set_action_button(self.start_button, enabled=not is_running, active_text=primary_text, inactive_text=f"{primary_text} [busy]")
+        self._set_action_button(self.stop_button, enabled=is_running, active_text="Stop", inactive_text="Stop [idle]")
+        self._set_action_button(self.replay_button, enabled=has_store and not is_running, active_text="Replay sample", inactive_text="Replay sample [locked]")
+        self._set_action_button(self.verify_button, enabled=has_store and not is_running, active_text="Verify sample", inactive_text="Verify sample [locked]")
+        self._set_action_button(self.scan_button, enabled=has_data and not is_running, active_text="Scan routes", inactive_text="Scan routes [locked]")
+        self._set_action_button(self.paper_button, enabled=candidate_count > 0, active_text="Start practice", inactive_text="Practice [locked]")
         self.set_secondary_actions_visible(has_data or candidate_count > 0 or score_ready or status.state in {"completed", "failed"})
 
     @staticmethod
@@ -613,14 +627,14 @@ class HomeTab(QWidget):
                 marker = "[!]"
             else:
                 marker = "[ ]"
-            lines.append(f"{marker} {item.label.upper()}")
+            lines.append(f"{marker} {item.label}")
             if item.detail:
-                lines.append(f"    {item.detail.upper()}")
+                lines.append(f"    {item.detail}")
         return "\n".join(lines)
 
     @staticmethod
     def _render_status_rows(items: list) -> str:
         return "\n".join(
-            f"{item.label.upper():<13} {item.value.upper():<10} {item.detail.upper()}".rstrip()
+            f"{item.label:<13} {item.value:<10} {item.detail}".rstrip()
             for item in items
         )

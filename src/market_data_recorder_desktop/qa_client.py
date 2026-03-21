@@ -620,7 +620,7 @@ def _benchmark_audit_marks_session_with_external_reference(sandbox: QASandbox) -
         [audit.model_dump(mode="json") for audit in audits],
     )
     return QAScenarioOutcome(
-        summary="A Lab-only benchmark link can audit a paper session against external reference bars without altering execution.",
+        summary="A Lab-only benchmark link can audit a practice run against external reference bars without altering execution.",
         evidence=[
             f"Audit verdict: {audits[0].verdict}",
             f"Benchmark symbol: {audits[0].symbol}",
@@ -644,12 +644,12 @@ def _unlock_track_progression(sandbox: QASandbox) -> QAScenarioOutcome:
     portfolio = sandbox.portfolio_engine.snapshot(profile)
     unlocks = {unlock.id: unlock for unlock in portfolio.unlocks}
     if not unlocks["slot-2"].unlocked:
-        raise AssertionError("Expected bot slot 2 to unlock after repeated paper sessions.")
+        raise AssertionError("Expected bot slot 2 to unlock after repeated practice runs.")
     if not unlocks["analytics"].unlocked:
-        raise AssertionError("Expected deep analytics to unlock after repeated paper sessions.")
+        raise AssertionError("Expected deep analytics to unlock after repeated practice runs.")
     artifact = sandbox.write_json_artifact("unlock-track.json", portfolio)
     return QAScenarioOutcome(
-        summary="Repeated paper sessions unlock more bot capacity and deeper score analysis without exposing live execution.",
+        summary="Repeated practice runs unlock more bot capacity and deeper score analysis without exposing live execution.",
         evidence=[
             f"Portfolio score: {portfolio.portfolio_score}",
             f"Slot 2 unlocked: {unlocks['slot-2'].unlocked}",
@@ -729,7 +729,7 @@ def _live_gate_stays_locked_by_default(sandbox: QASandbox) -> QAScenarioOutcome:
         credential_statuses=sandbox.credential_vault.statuses_for_profile(profile.id),
     )
     if checklist.live_ready:
-        raise AssertionError("Live gate should stay locked for a default paper-first profile.")
+        raise AssertionError("Live gate should stay locked for a default practice-first profile.")
     outstanding_ids = {check.id for check in checklist.outstanding}
     required = {"credentials", "rules", "risk", "paper", "venue"}
     if not required.issubset(outstanding_ids):
@@ -953,7 +953,7 @@ SCENARIOS: tuple[QAScenarioDefinition, ...] = (
         category="lab",
         acceptance_criteria=(
             "A Lab-enabled profile can save a manual benchmark link for a market slug.",
-            "A paper session can be audited against locally stored external reference bars.",
+                "A practice run can be audited against locally stored external reference bars.",
             "The benchmark verdict stays audit-only and does not alter execution or score banking.",
         ),
         runner=_benchmark_audit_marks_session_with_external_reference,
@@ -963,7 +963,7 @@ SCENARIOS: tuple[QAScenarioDefinition, ...] = (
         title="Unlock Track Progression",
         category="score-attack",
         acceptance_criteria=(
-            "Repeated paper sessions unlock more bot capacity.",
+                "Repeated practice runs unlock more bot capacity.",
             "Analytics-style progression surfaces should unlock from real paper evidence.",
             "Live execution must remain out of scope even as progression expands.",
         ),
@@ -987,7 +987,7 @@ SCENARIOS: tuple[QAScenarioDefinition, ...] = (
         acceptance_criteria=(
             "A default profile cannot clear the live gate.",
             "The checklist clearly surfaces missing credentials, acknowledgements, and paper history.",
-            "The venue readiness check stays blocked until the connector is configured beyond paper mode.",
+                "The venue readiness check stays blocked until the connector is configured beyond practice mode.",
         ),
         runner=_live_gate_stays_locked_by_default,
     ),

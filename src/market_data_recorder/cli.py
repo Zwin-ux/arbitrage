@@ -214,7 +214,7 @@ def benchmark_sync(
 
 @benchmark_app.command("audit")
 def benchmark_audit(
-    profile_id: str = typer.Option(..., help="Profile id that owns the paper session."),
+    profile_id: str = typer.Option(..., help="Profile id that owns the practice run."),
     run_id: str | None = typer.Option(default=None, help="Run id to audit."),
     session_id: str | None = typer.Option(default=None, help="Session id to read existing audits for."),
     profile_dir: Path | None = typer.Option(default=None, help="Profile data dir that owns DuckDB files."),

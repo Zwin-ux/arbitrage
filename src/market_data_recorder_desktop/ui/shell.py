@@ -170,22 +170,22 @@ class RuntimeDeck(TexturedFrame):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(8)
 
-        top_label = QLabel("SYSTEM BUS")
+        top_label = QLabel("SYSTEM")
         top_label.setProperty("sectionLabel", True)
         layout.addWidget(top_label)
 
         lamp_row = QHBoxLayout()
         lamp_row.setContentsMargins(0, 0, 0, 0)
         lamp_row.setSpacing(8)
-        self.cart_lamp = SignalLamp("Cart")
+        self.cart_lamp = SignalLamp("Profile")
         self.data_lamp = SignalLamp("Data")
-        self.safe_lamp = SignalLamp("Safe")
+        self.safe_lamp = SignalLamp("Live")
         self.lab_lamp = SignalLamp("Lab")
         for lamp in (self.cart_lamp, self.data_lamp, self.safe_lamp, self.lab_lamp):
             lamp_row.addWidget(lamp)
         layout.addLayout(lamp_row)
 
-        self.hint_label = QLabel("LOAD CART  |  BOOT REC  |  PAPER FIRST")
+        self.hint_label = QLabel("Set up profile  |  Run recorder  |  Practice first")
         self.hint_label.setObjectName("MachineHint")
         layout.addWidget(self.hint_label)
 
@@ -206,7 +206,7 @@ class RuntimeDeck(TexturedFrame):
         self.data_lamp.set_state(data_value, data_tone)
         self.safe_lamp.set_state(safe_value, safe_tone)
         self.lab_lamp.set_state(lab_value, lab_tone)
-        self.hint_label.setText(hint.upper())
+        self.hint_label.setText(hint)
 
 
 class ProfileBar(TexturedFrame):
@@ -216,11 +216,11 @@ class ProfileBar(TexturedFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(10)
-        label = QLabel("PROFILE SLOT")
+        label = QLabel("PROFILE")
         label.setProperty("sectionLabel", True)
         self.profile_selector = QComboBox()
         self.profile_selector.setObjectName("ProfileSelector")
-        self.setup_button = QPushButton("BOOT PHASES")
+        self.setup_button = QPushButton("Setup")
         self.setup_button.setProperty("buttonRole", "secondary")
         layout.addWidget(label)
         layout.addWidget(self.profile_selector, stretch=1)
@@ -244,10 +244,10 @@ class AppHeader(QFrame):
         marquee_layout = QVBoxLayout(marquee)
         marquee_layout.setContentsMargins(12, 10, 12, 10)
         marquee_layout.setSpacing(2)
-        self.eyebrow_label = QLabel("CARTRIDGE SIGNAL OS")
+        self.eyebrow_label = QLabel("WINDOWS DESKTOP APP")
         self.eyebrow_label.setObjectName("MarqueeEyebrow")
         self.title_label = FlickerLabel("SUPERIOR")
-        self.subtitle_label = QLabel("PAPER ARB FIRMWARE")
+        self.subtitle_label = QLabel("PRACTICE FIRST")
         self.subtitle_label.setObjectName("MarqueeSubtitle")
         marquee_layout.addWidget(self.eyebrow_label)
         marquee_layout.addWidget(self.title_label)
@@ -330,32 +330,32 @@ class ShellStateCard(QFrame):
 
 class EmptyState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("INSERT CART", "LOAD A PROFILE CART TO ARM THE REC BUS AND START THE PAPER LOOP.", "warning")
+        super().__init__("No profile yet", "Create or import a profile, then run the recorder.", "warning")
 
 
 class WaitingState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("REC WAIT", "BOOT RECORDER TO TAKE THE FIRST LOCAL SAMPLE.", "warning")
+        super().__init__("Ready for first sample", "Run recorder to capture the first local sample.", "warning")
 
 
 class RouteReadyState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("ROUTE STAGED", "A CLEAN ROUTE IS READY. START A PAPER RUN BEFORE TOUCHING THE GATE.", "active")
+        super().__init__("Route ready", "A practice session can start now. Live stays locked.", "active")
 
 
 class BlockedState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("BLOCKED", "ONE OR MORE DEPENDENCIES STILL HOLD THE NEXT COMMAND.", "locked")
+        super().__init__("Action blocked", "Finish the missing step, then try again.", "locked")
 
 
 class ErrorState(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("FAULT", "REVIEW DIAG AND LOCAL LOGS BEFORE RETRYING THE MACHINE.", "error")
+        super().__init__("Needs attention", "Check diagnostics and local logs before retrying.", "error")
 
 
 class SplashScreen(ShellStateCard):
     def __init__(self) -> None:
-        super().__init__("BOOTING SUPERIOR", "LOADING CART STATE, REC BUS, AND SCAN SURFACES.", "active")
+        super().__init__("Opening Superior", "Loading your profile, recorder state, and scanner.", "active")
 
 
 class StateOverlayHost(QFrame):

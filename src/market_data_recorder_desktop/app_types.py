@@ -814,8 +814,8 @@ class SetupStepState(BaseModel):
 
 class SetupCompletionRoute(BaseModel):
     target: Literal["hangar_recorder_highlight"] = "hangar_recorder_highlight"
-    title: str = "Launch into Hangar"
-    detail: str = "Superior will open in Hangar with Boot recorder highlighted as the first action."
+    title: str = "Open Home"
+    detail: str = "Superior will open in Home with Run recorder highlighted as the first action."
 
 
 def default_run_presets() -> list[RunPreset]:
@@ -899,7 +899,7 @@ def default_strategy_modules() -> list[StrategyModule]:
         StrategyModule(
             id="negative-risk-basket",
             label="Neg Risk Lab",
-            description="Track neg-risk surfaces and experimental basket opportunities in paper mode only.",
+            description="Track neg-risk surfaces and experimental basket opportunities in practice mode only.",
             tier="lab",
             guided_visible=False,
         ),

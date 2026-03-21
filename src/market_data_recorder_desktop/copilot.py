@@ -482,7 +482,7 @@ class CopilotRuntime:
             f"Skill: {request.skill_id}\n"
             f"User question: {request.question}\n"
             f"Selected route: {request.context.selected_route_summary or 'none'}\n"
-            f"Loadout: {request.context.loadout_summary or 'none'}\n"
+            f"Setup: {request.context.loadout_summary or 'none'}\n"
             f"Base answer:\n{base_text}\n\n"
             f"Draft summary:\n{draft_summary}"
         )
@@ -492,8 +492,8 @@ class CopilotRuntime:
                 base_url=request.provider_config.base_url,
                 api_key=api_key,
                 system_prompt=(
-                    "You are Superior Copilot, a read-only desktop helper for paper-first prediction-market bot testing. "
-                    "You explain, summarize, and draft safe paper-mode configuration changes. "
+                    "You are Superior Copilot, a read-only desktop helper for practice-first event-market bot testing. "
+                    "You explain, summarize, and draft safe practice-mode configuration changes. "
                     "Never suggest live execution or guaranteed profits."
                 ),
                 user_prompt=prompt,

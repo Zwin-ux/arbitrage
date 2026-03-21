@@ -152,8 +152,8 @@ def test_setup_wizard_creates_profile_and_keeps_secrets_out_of_json(
     assert created.copilot_model_name == "gpt-4o-mini"
     assert "coach" in created.equipped_connectors
     assert created.ai_coach_enabled is True
-    assert "CONNECTOR KEYS ENTERED NOW: Polymarket" in wizard.finish_page.summary_label.text()
-    assert "COPILOT: OpenAI-compatible / gpt-4o-mini" in wizard.finish_page.summary_label.text()
+    assert "Keys entered now: Polymarket" in wizard.finish_page.summary_label.text()
+    assert "Copilot: OpenAI-compatible / gpt-4o-mini" in wizard.finish_page.summary_label.text()
     profiles_json = store.profiles_path.read_text(encoding="utf-8")
     assert "secret-value" not in profiles_json
     assert "copilot-key" not in profiles_json
@@ -187,7 +187,7 @@ def test_setup_wizard_allows_first_run_without_credentials(
     assert created.enabled_venues == ["Polymarket"]
     assert created.copilot_provider_id == "none"
     assert created.ai_coach_enabled is False
-    assert "START ONE PAPER RUN AND USE SCORE AS THE MAIN PROGRESSION SURFACE." in wizard.finish_page.summary_label.text()
+    assert "- Start one practice run." in wizard.finish_page.summary_label.text()
     assert fake_keyring.store == {}
 
 
@@ -211,9 +211,9 @@ def test_setup_wizard_surfaces_recommended_plan(
     wizard.intent_page.goal_combo.setCurrentIndex(wizard.intent_page.goal_combo.findData("live_prepare"))
     wizard.intent_page.experience_combo.setCurrentIndex(wizard.intent_page.experience_combo.findData("advanced"))
 
-    assert "RECOMMENDED MODE: Research" in wizard.intent_page.plan_label.text()
-    assert "RECOMMENDED RISK POSTURE: Balanced" in wizard.intent_page.plan_label.text()
-    assert "CURRENT PRESET: Continuous recorder" in wizard.risk_page.recommendation_label.text()
+    assert "Recommended mode: Research" in wizard.intent_page.plan_label.text()
+    assert "Recommended risk posture: Balanced" in wizard.intent_page.plan_label.text()
+    assert "Current preset: Continuous recorder" in wizard.risk_page.recommendation_label.text()
 
 
 def test_main_window_runs_default_preset(
@@ -446,7 +446,7 @@ def test_score_summarize_button_primes_copilot_prompt(
     qtbot.mouseClick(window.score_tab.summarize_button, Qt.MouseButton.LeftButton)
 
     assert window.tabs.currentWidget() is window.learn_tab
-    assert window.learn_tab.prompt_edit.toPlainText() == "Summarize my last session."
+    assert window.learn_tab.prompt_edit.toPlainText() == "Summarize my last practice run."
     controller.shutdown()
 
 
@@ -467,18 +467,20 @@ def test_main_window_empty_state_surfaces_guided_setup(
     qtbot.addWidget(window)
     window.show()
 
-    assert window.home_tab.setup_progress_label.text() == "BOOT LIST"
-    assert "[>] CREATE PROFILE CART." in window.home_tab.setup_steps_label.text()
-    assert window.home_tab.open_setup_button.text() == "LOAD CART"
+    assert window.home_tab.setup_progress_label.text() == "First run"
+    assert "[>] Set up profile." in window.home_tab.setup_steps_label.text()
+    assert window.home_tab.open_setup_button.text() == "Set up profile"
     assert window.home_tab.start_button.isEnabled() is False
     assert window.home_tab.secondary_actions_widget.isVisible() is False
+    assert window.home_tab.progress_panel.isVisible() is False
+    assert window.home_tab.right_column.isVisible() is False
     assert window.home_tab.view_docs_button.isEnabled() is True
     label_text = " ".join(label.text() for label in window.findChildren(QLabel))
     assert "CONTROL  Hangar | Loadout" not in label_text
     assert "OPERATIONS  Scanner | Paper" not in label_text
-    assert window.shell.header.runtime_deck.cart_lamp.value_label.text() == "NO CART"
+    assert window.shell.header.runtime_deck.cart_lamp.value_label.text() == "NO PROFILE"
     assert window.shell.header.runtime_deck.data_lamp.value_label.text() == "IDLE"
-    assert "CREATE A PROFILE" in window.shell.header.runtime_deck.hint_label.text()
+    assert "Set up or import a profile" in window.shell.header.runtime_deck.hint_label.text()
     controller.shutdown()
 
 
@@ -567,19 +569,19 @@ def test_main_window_switches_primary_action_to_start_session(
     window._refresh_scanner()  # noqa: SLF001
     window._refresh_status_only()  # noqa: SLF001
 
-    assert window.home_tab.start_button.text() == "Start session"
-    assert "Start a paper session" in window.home_tab.primary_action_hint.text()
+    assert window.home_tab.start_button.text() == "Start practice"
+    assert "Start a practice run" in window.home_tab.next_step_label.text()
     controller.shutdown()
 
 
-def test_main_window_surfaces_starter_registry_and_scanner_tactical_board(
+def test_main_window_surfaces_starter_registry_and_scanner_route_board(
     qtbot: Any,
     app_paths: AppPaths,
     fake_keyring: Any,
 ) -> None:
     store = ProfileStore(app_paths)
     profile = store.create_profile(
-        display_name="Tactical Radar",
+        display_name="Route Radar",
         template="Recorder",
         enabled_venues=["Polymarket"],
         equipped_connectors=["polymarket"],
@@ -602,15 +604,15 @@ def test_main_window_surfaces_starter_registry_and_scanner_tactical_board(
     window._refresh_scanner()  # noqa: SLF001
     window._refresh_status_only()  # noqa: SLF001
 
-    assert "BOT GARAGE" in window.loadout_tab.registry_text.toPlainText()
+    assert "BOT LIBRARY" in window.loadout_tab.registry_text.toPlainText()
     assert "Scout Bot" in window.loadout_tab.registry_text.toPlainText()
-    assert "TACTICAL BOARD" in window.scanner_tab.route_board_text.toPlainText()
+    assert "ROUTE BOARD" in window.scanner_tab.route_board_text.toPlainText()
     assert "READY" in window.scanner_tab.route_board_text.toPlainText()
-    assert "TACTICAL READOUT" in window.scanner_tab.details_text.toPlainText()
+    assert "ROUTE READOUT" in window.scanner_tab.details_text.toPlainText()
     controller.shutdown()
 
 
-def test_main_window_paper_session_surfaces_decision_trace(
+def test_main_window_practice_run_surfaces_decision_trace(
     qtbot: Any,
     app_paths: AppPaths,
     fake_keyring: Any,
@@ -641,7 +643,7 @@ def test_main_window_paper_session_surfaces_decision_trace(
     window._start_paper_session()  # noqa: SLF001
 
     trace_text = window.paper_bots_tab.decision_trace_text.toPlainText()
-    assert "TACTICAL TRACE" in trace_text
+    assert "RUN TRACE" in trace_text
     assert "RESULT" in trace_text
     assert "SLOT 1" in window.paper_bots_tab.bot_slots_text.toPlainText().upper()
     controller.shutdown()
@@ -787,6 +789,6 @@ def test_desktop_window_has_arbitrage_tab(
     window.show()
 
     tab_titles = [window.tabs.tabText(i) for i in range(window.tabs.count())]
-    assert "Arbitrage" in tab_titles
+    assert "Routes" in tab_titles
     assert hasattr(window, "arb_tab")
     controller.shutdown()

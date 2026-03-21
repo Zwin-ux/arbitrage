@@ -148,7 +148,7 @@ class PolymarketVenueAdapter(VenueAdapter):
                 enabled=True,
                 configured=False,
                 mode="paper",
-                message="Connector equipped. Local recorder data is available for scanner and paper mode.",
+                message="Connector equipped. Local recorder data is available for scanner and practice mode.",
             )
         return VenueConnection(
             venue_id=self.venue_id,
@@ -317,7 +317,7 @@ class ConnectorLoadoutService:
             elif equipped:
                 message = "Module equipped and ready for scanner or lab surfaces."
             else:
-                message = "Available in loadout. Equip it when you want this strategy visible."
+                message = "Available in setup. Turn it on when you want this strategy visible."
             states.append(
                 CapabilityState(
                     capability_id=module.id,
@@ -1080,7 +1080,7 @@ class LiveExecutionEngine:
                 order_style="shadow",
                 max_position_cents=0,
                 max_daily_cap_cents=profile.live_daily_cap_cents,
-                message="Experimental live is locked. Finish the paper-first graduation steps first.",
+                message="Experimental live is locked. Finish the practice-first graduation steps first.",
                 blockers=["Current profile is still locked."],
             )
         if candidate.strategy_id not in profile.live_allowed_strategy_ids:
@@ -1555,7 +1555,7 @@ class AssistantService:
         if profile is None:
             return AgentResponse(
                 skill_id="draft_starter_bot",
-                response_text="Choose a profile first so Copilot can draft a bot for the active loadout.",
+                response_text="Choose a profile first so Copilot can draft a bot for the active setup.",
             )
         strategy_family = route.strategy_id if route is not None else (
             profile.equipped_modules[0] if profile.equipped_modules else "internal-binary"
@@ -1564,17 +1564,17 @@ class AssistantService:
         min_edge_bps = 25
         target_stake_cents = 1200
         route_preference = "highest_edge"
-        description = "Conservative copilot draft for paper-first route testing."
+        description = "Conservative copilot draft for practice-first route testing."
         if route is not None:
             min_edge_bps = max(25, min(route.net_edge_bps - 10 if route.net_edge_bps > 35 else route.net_edge_bps, 85))
             target_stake_cents = max(800, min(route.recommended_stake_cents or 1200, 1800))
             route_preference = "best_quality" if route.opportunity_quality_score >= 70 else "highest_edge"
-            description = f"Drafted from {route.strategy_label} so the first paper session stays narrow and explainable."
+            description = f"Drafted from {route.strategy_label} so the first practice run stays narrow and explainable."
         draft = AgentDraft(
             draft_id=str(uuid.uuid4()),
             title="Draft starter bot",
-            summary=f"Create {label} as a new local paper bot recipe.",
-            reason="This keeps the first paper session narrow, conservative, and easy to inspect before you fork anything more aggressive.",
+            summary=f"Create {label} as a new local practice bot recipe.",
+            reason="This keeps the first practice run narrow, conservative, and easy to inspect before you fork anything more aggressive.",
             affected_fields=[
                 "label",
                 "description",
@@ -1601,7 +1601,7 @@ class AssistantService:
                 )
             ],
         )
-        route_text = route.summary if route is not None else "No route is selected, so this draft uses the current loadout only."
+        route_text = route.summary if route is not None else "No route is selected, so this draft uses the current setup only."
         return AgentResponse(
             skill_id="draft_starter_bot",
             response_text=(
@@ -1639,7 +1639,7 @@ class AssistantService:
             draft_id=str(uuid.uuid4()),
             title="Adjust bot settings",
             summary=f"Fork {target.label} into a safer local variant.",
-            reason="This keeps the original recipe untouched and gives you a more conservative version for paper-only testing.",
+            reason="This keeps the original recipe untouched and gives you a more conservative version for practice-only testing.",
             affected_fields=["min_net_edge_bps", "target_stake_cents", "route_preference"],
             actions=[
                 DraftAction(
@@ -1675,14 +1675,14 @@ class AssistantService:
         if portfolio_summary is None or portfolio_summary.total_runs == 0:
             return AgentResponse(
                 skill_id="summarize_last_session",
-                response_text="No paper session has banked score yet. Start one session first and Copilot can summarize what happened.",
+                response_text="No practice run has banked score yet. Start one practice run first and Copilot can summarize what happened.",
             )
         return AgentResponse(
             skill_id="summarize_last_session",
             response_text=(
-                "Copilot summary of recent paper progress:\n\n"
+                "Copilot summary of recent practice progress:\n\n"
                 f"Completed runs: {portfolio_summary.completed_runs}/{portfolio_summary.total_runs}\n"
-                f"Paper PnL: ${portfolio_summary.total_realized_pnl_cents / 100:.2f}\n"
+                f"Practice PnL: ${portfolio_summary.total_realized_pnl_cents / 100:.2f}\n"
                 f"Portfolio score: {portfolio_summary.portfolio_score}\n"
                 f"Mastery score: {portfolio_summary.mastery_score}\n"
                 f"Available bot slots: {portfolio_summary.available_bot_slots}\n"

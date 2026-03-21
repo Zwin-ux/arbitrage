@@ -157,7 +157,7 @@ class ArcadeScannerWidget(QWidget):
         title_font = QFont("Cascadia Mono", 10)
         title_font.setBold(True)
         painter.setFont(title_font)
-        painter.drawText(rect.adjusted(18, 14, -18, -18), Qt.AlignmentFlag.AlignLeft, "SCANNER RADAR")
+        painter.drawText(rect.adjusted(18, 14, -18, -18), Qt.AlignmentFlag.AlignLeft, "ROUTE SCAN")
         painter.drawText(rect.adjusted(18, 14, -18, -18), Qt.AlignmentFlag.AlignRight, self._scan_state.upper())
 
         body_font = QFont("Cascadia Mono", 9)
@@ -165,7 +165,7 @@ class ArcadeScannerWidget(QWidget):
         metrics = [
             f"SIGNALS  {self._signals_found:02d}",
             f"ROUTES   {self._routes_ready:02d}",
-            f"TOP EDGE {self._top_edge_bps:+d} BPS",
+            f"TOP RETURN {self._top_edge_bps:+d} BPS",
             f"QUALITY  {self._top_quality:03d}",
             f"FOCUS    {self._top_label[:22].upper()}",
         ]
@@ -184,7 +184,7 @@ class ArcadeScannerWidget(QWidget):
         painter.drawText(
             int(rect.left()) + 20,
             int(rect.bottom()) - 18,
-            "PAPER-FIRST  |  NET EDGE  |  EXPLAINABLE ROUTES",
+            "PRACTICE FIRST  |  CLEAR RETURNS  |  EXPLAINABLE ROUTES",
         )
 
     @staticmethod
