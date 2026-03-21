@@ -32,6 +32,7 @@ export function buildBotComparisonResults(
         success: false,
         committed: false,
         reason: "preset waited",
+        focusScore: null,
       };
       return {
         preset: presetName,
@@ -71,13 +72,13 @@ export function findPrimaryOpportunityEvent(tape: Tape): TapeEvent | null {
 function resolvePresetOutcome(commitTimestamp: number, event: TapeEvent): RunOutcome {
   const window = event.window;
   if (!window) {
-    return { grade: "blocked", success: false, committed: false, reason: "no opportunity window" };
+    return { grade: "blocked", success: false, committed: false, reason: "no opportunity window", focusScore: null };
   }
   if (commitTimestamp < window.opensAt) {
-    return { grade: "early", success: false, committed: true, reason: "too early" };
+    return { grade: "early", success: false, committed: true, reason: "too early", focusScore: 1 };
   }
   if (commitTimestamp > window.closesAt) {
-    return { grade: "late", success: false, committed: true, reason: "too late" };
+    return { grade: "late", success: false, committed: true, reason: "too late", focusScore: 1 };
   }
-  return { grade: "clear", success: true, committed: true, reason: "inside the window" };
+  return { grade: "clear", success: true, committed: true, reason: "inside the window", focusScore: 1 };
 }

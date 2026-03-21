@@ -10,11 +10,8 @@ test("homepage renders one canonical machine screen", async ({ page }) => {
   await expect(page.getByRole("img", { name: "Superior", exact: true })).toBeVisible();
   await expect(page.getByAltText("Superior emblem")).toBeVisible();
   await expect(page.locator(".superior-screen__status-text")).toContainText(/windows \/ local \/ auto/i);
-  await expect(page.locator(".superior-promo__art-frame")).toHaveCount(0);
-  await expect(page.locator(".superior-promo__emblem")).toHaveCount(1);
-  await expect(page.locator(".superior-promo__badge")).toHaveCount(0);
-  await expect(page.getByText(/windows bot for kalshi\./i)).toHaveCount(0);
-  await expect(page.getByText(/local setup\. auto after checks\./i)).toHaveCount(0);
+  await expect(page.locator(".superior-demo")).toHaveAttribute("data-phase", "idle");
+  await expect(page.getByText(/bankroll \$100\.00/i)).toBeVisible();
   await expect(page.getByRole("link", { name: /download exe/i })).toHaveAttribute(
     "href",
     "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe"
@@ -28,12 +25,41 @@ test("homepage renders one canonical machine screen", async ({ page }) => {
 test("homepage keeps the controls minimal", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
-  await expect(page.getByRole("link", { name: /portable zip/i })).toHaveAttribute(
-    "href",
-    "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-app-portable.zip"
-  );
-  await expect(page.getByRole("link", { name: /^docs$/i })).toHaveAttribute("href", "/docs/");
+  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(4);
+  await expect(page.getByRole("button", { name: /^start$/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /hold to buy/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^reset$/i })).toBeVisible();
+});
+
+test("homepage resolves one focus-led buy run", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: /^start$/i }).click();
+  await page.waitForTimeout(560);
+
+  const lane = page.locator(".superior-demo__lane");
+  const box = await lane.boundingBox();
+  if (!box) {
+    throw new Error("lane box missing");
+  }
+
+  await page.mouse.move(box.x + box.width * 0.32, box.y + box.height * 0.5);
+
+  const hold = page.getByRole("button", { name: /hold to buy/i });
+  const holdBox = await hold.boundingBox();
+  if (!holdBox) {
+    throw new Error("hold button missing");
+  }
+
+  await page.mouse.move(holdBox.x + holdBox.width / 2, holdBox.y + holdBox.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(380);
+  await page.mouse.up();
+
+  await expect(page.locator(".superior-demo")).toHaveAttribute("data-phase", "resolved");
+  await expect(page.locator(".superior-demo__receipt")).toBeVisible();
+  await expect(page.locator(".superior-demo__receipt strong")).toContainText(/[+-]\$\d+\.\d\d/i);
+  await expect(page.locator(".superior-demo__receipt")).toContainText(/buy \d+c -> sell \d+c/i);
 });
 
 test("download page uses the same restrained machine screen", async ({ page }) => {
@@ -89,10 +115,10 @@ test("control and focus variants share the same canonical screen", async ({ page
   await page.goto("/lab/control/");
   await expect(page.locator(".superior-screen")).toHaveCount(1);
   await expect(page.locator(".superior-screen__status-text")).toContainText(/windows \/ local \/ auto/i);
-  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
+  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(4);
 
   await page.goto("/lab/focus/");
   await expect(page.locator(".superior-screen")).toHaveCount(1);
   await expect(page.locator(".superior-screen__status-text")).toContainText(/windows \/ local \/ auto/i);
-  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
+  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(4);
 });

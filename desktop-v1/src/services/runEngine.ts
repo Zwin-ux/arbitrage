@@ -10,6 +10,8 @@ import type {
   TapeEvent,
   UserActionLogEntry,
 } from "@domain/types";
+import type { FocusWindow } from "@shared/focusMechanics";
+import { resolveCommitGrade } from "@shared/focusMechanics";
 import { createPracticeMoneyReceipt, PRACTICE_STAKE, STARTING_BANKROLL } from "@services/practiceMoney";
 import { createDebrief } from "@services/routeEvaluator";
 
@@ -45,6 +47,7 @@ export class RunEngine {
     event: TapeEvent,
     startingBankroll = STARTING_BANKROLL,
     stake = PRACTICE_STAKE,
+    focusScore = 1,
   ): RunRecord {
     const snapshot = event.routeSnapshot;
     if (!snapshot || !event.window) {
@@ -52,7 +55,7 @@ export class RunEngine {
     }
 
     const commitOffset = this.commitTimestamp === null ? null : this.commitTimestamp - event.window.idealCommitAt;
-    const outcome = resolveOutcome(this.commitTimestamp, event);
+    const outcome = resolveOutcome(this.commitTimestamp, event.window, focusScore);
     const receipt = createPracticeMoneyReceipt(snapshot, outcome, startingBankroll, stake);
     const debrief: Debrief = createDebrief(snapshot, outcome, receipt, commitOffset);
 
@@ -71,6 +74,7 @@ export class RunEngine {
       success: false,
       committed: false,
       reason,
+      focusScore: null,
     };
     const receipt = createPracticeMoneyReceipt(
       {
@@ -136,19 +140,21 @@ export class RunEngine {
   }
 }
 
-function resolveOutcome(commitTimestamp: number | null, event: TapeEvent): RunOutcome {
-  const window = event.window;
-  if (!window) {
-    return { grade: "blocked", success: false, committed: false, reason: "no opportunity window" };
+function resolveOutcome(commitTimestamp: number | null, window: FocusWindow | undefined, focusScore: number): RunOutcome {
+  const grade = resolveCommitGrade(window, commitTimestamp, focusScore);
+
+  switch (grade) {
+    case "blocked":
+      return { grade, success: false, committed: false, reason: "no opportunity window", focusScore: null };
+    case "miss":
+      return { grade, success: false, committed: false, reason: "no commit registered", focusScore: null };
+    case "early":
+      return { grade, success: false, committed: true, reason: "too early", focusScore };
+    case "late":
+      return { grade, success: false, committed: true, reason: "too late", focusScore };
+    case "off_target":
+      return { grade, success: false, committed: true, reason: "focus missed the window", focusScore };
+    default:
+      return { grade: "clear", success: true, committed: true, reason: "inside the window", focusScore };
   }
-  if (commitTimestamp === null) {
-    return { grade: "miss", success: false, committed: false, reason: "no commit registered" };
-  }
-  if (commitTimestamp < window.opensAt) {
-    return { grade: "early", success: false, committed: true, reason: "too early" };
-  }
-  if (commitTimestamp > window.closesAt) {
-    return { grade: "late", success: false, committed: true, reason: "too late" };
-  }
-  return { grade: "clear", success: true, committed: true, reason: "inside the window" };
 }

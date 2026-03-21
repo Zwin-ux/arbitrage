@@ -7,6 +7,8 @@ interface RunScreenProps {
   tape: Tape;
   currentEvent: TapeEvent | null;
   currentTime: number;
+  focusPosition: number;
+  focusHot: boolean;
   holdProgress: number;
   isRunning: boolean;
   availableTapes: TapeSummary[];
@@ -17,6 +19,8 @@ interface RunScreenProps {
   practiceStake: number;
   selectedPack: PackStatus | null;
   starterBotLabel: string;
+  onMoveFocus: (ratio: number) => void;
+  onNudgeFocus: (delta: number) => void;
   onSelectTape: (tapeId: string) => void;
   onStartRun: () => void;
   onStep: () => void;
@@ -31,6 +35,8 @@ export function RunScreen({
   tape,
   currentEvent,
   currentTime,
+  focusPosition,
+  focusHot,
   holdProgress,
   isRunning,
   availableTapes,
@@ -41,6 +47,8 @@ export function RunScreen({
   practiceStake,
   selectedPack,
   starterBotLabel,
+  onMoveFocus,
+  onNudgeFocus,
   onSelectTape,
   onStartRun,
   onStep,
@@ -59,8 +67,17 @@ export function RunScreen({
   const scoreLabel = formatMoney(currentScore);
   const resultLabel = latestRun?.receipt.label ?? "Ready";
   const phaseLabel = phase === "commit_hold" ? "Hold" : formatPhaseLabel(phase);
+  const focusLabel = latestRun
+    ? latestRun.outcome.grade === "off_target"
+      ? "Off target"
+      : latestRun.outcome.grade === "clear"
+        ? "Clean"
+        : "Timed"
+    : focusHot
+      ? "Hot"
+      : "Track";
   const packProgressLabel = selectedPack ? `${selectedPack.clearedCount}/${selectedPack.totalCount}` : "--";
-  const guide = getGuide(phase, Boolean(currentEvent?.window), tape.mode);
+  const guide = getGuide(phase, Boolean(currentEvent?.window), focusHot, tape.mode);
 
   return (
     <section aria-label={`${tape.name} rehearsal`} className="run-surface">
@@ -112,7 +129,16 @@ export function RunScreen({
         </div>
       </div>
 
-      <DecisionLane tape={tape} currentTime={currentTime} currentEvent={currentEvent} phase={phase} />
+      <DecisionLane
+        tape={tape}
+        currentTime={currentTime}
+        currentEvent={currentEvent}
+        phase={phase}
+        focusPosition={focusPosition}
+        focusHot={focusHot}
+        onFocusChange={onMoveFocus}
+        onFocusNudge={onNudgeFocus}
+      />
 
       <div className="run-readout">
         <div className="run-readout__item">
@@ -124,12 +150,12 @@ export function RunScreen({
           <strong>{formatMoney(practiceStake)}</strong>
         </div>
         <div className="run-readout__item">
-          <span className="run-readout__label">Window</span>
-          <strong>{windowLabel}</strong>
+          <span className="run-readout__label">Focus</span>
+          <strong>{focusLabel}</strong>
         </div>
         <div className="run-readout__item">
-          <span className="run-readout__label">Pack progress</span>
-          <strong>{selectedPack ? packProgressLabel : String(clearStreak).padStart(2, "0")}</strong>
+          <span className="run-readout__label">Window</span>
+          <strong>{windowLabel}</strong>
         </div>
       </div>
 
@@ -147,7 +173,7 @@ export function RunScreen({
         </button>
         <button
           type="button"
-          className="command-button command-button-commit"
+          className={`command-button command-button-commit ${focusHot ? "command-button-commit--hot" : ""}`}
           onMouseDown={onHoldStart}
           onMouseUp={onHoldEnd}
           onMouseLeave={onHoldEnd}
@@ -168,7 +194,7 @@ export function RunScreen({
           disabled={!currentEvent?.window || phase === "afterimage"}
         >
           <span className="command-fill" style={{ transform: `scaleX(${holdProgress})` }} />
-          <span className="command-text">{`Hold to commit ${formatMoney(practiceStake)}`}</span>
+          <span className="command-text">{`Hold to buy ${formatMoney(practiceStake)}`}</span>
         </button>
         <button type="button" className="command-button" onClick={onReset}>
           Reset run
@@ -195,6 +221,7 @@ export function RunScreen({
             <span>
               {`Gross ${formatSignedMoney(latestRun.receipt.grossPnl)} / Fees ${formatSignedMoney(-latestRun.receipt.fees)} / Slip ${formatSignedMoney(-latestRun.receipt.slippage)}`}
             </span>
+            <span>{latestRun.outcome.grade === "off_target" ? "Focus Off Target" : `Focus ${latestRun.outcome.grade === "clear" ? "Clean" : "Timed"}`}</span>
             <span>{latestRun.debrief.recommendation}</span>
             {selectedPack ? <span>{selectedPack.completed ? "Ready for auto" : `${packProgressLabel} cleared`}</span> : null}
           </div>
@@ -226,32 +253,34 @@ function formatPhaseLabel(value: RunPhase): string {
     .join(" ");
 }
 
-function getGuide(phase: RunPhase, windowOpen: boolean, mode: Tape["mode"]) {
+function getGuide(phase: RunPhase, windowOpen: boolean, focusHot: boolean, mode: Tape["mode"]) {
   if (phase === "afterimage") {
     return {
       title: "Read the result before you run it again.",
-      body: "Look at the score change, the recommendation, and whether your timing was early, late, or clean.",
+      body: "Check the score, the buy line, and whether your focus stayed centered when the window was live.",
     };
   }
 
   if (windowOpen) {
     return {
-      title: "The gold window is open.",
-      body: "Hold the commit button once. If it still feels rushed, let it pass and learn from the debrief instead.",
+      title: focusHot ? "The window is hot." : "Lead the reticle into the window.",
+      body: focusHot
+        ? "Hold once while the reticle stays centered. Let it go if the lane drifts away."
+        : "Move the reticle until the line turns hot, then hold once. Timing and aim both matter now.",
     };
   }
 
   if (phase === "run" || phase === "pressure") {
     return {
-      title: "Watch the lane and wait for the window.",
-      body: "You do not need to act early. The point is to feel the rhythm, not to mash the button.",
+      title: "Track the lane before you buy.",
+      body: "Keep the reticle steady and let the lane come to you. Do not rush just because the motion started.",
     };
   }
 
   return {
     title: mode === "tutorial" ? "Start a learn run." : "Start a shadow run.",
     body: mode === "tutorial"
-      ? "This is the easiest place to learn the timing loop. Start once and watch the line before you commit."
-      : "Shadow asks you to replay the move cleanly. Treat it like a confidence check, not a speed test.",
+      ? "Start once, guide the reticle, and buy only when the window feels obvious."
+      : "Shadow asks you to replay the move cleanly. Keep the reticle calm and buy only when it holds center.",
   };
 }

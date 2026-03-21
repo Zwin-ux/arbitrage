@@ -86,6 +86,8 @@ export function App() {
                 tape={machine.currentTape}
                 currentEvent={machine.currentEvent}
                 currentTime={machine.currentTime}
+                focusPosition={machine.focusPosition}
+                focusHot={machine.focusHot}
                 holdProgress={machine.holdProgress}
                 isRunning={machine.isRunning}
                 availableTapes={machine.availableTapes}
@@ -96,6 +98,8 @@ export function App() {
                 practiceStake={machine.practiceStake}
                 selectedPack={machine.selectedPack}
                 starterBotLabel={machine.starterBot.label}
+                onMoveFocus={machine.moveFocus}
+                onNudgeFocus={machine.nudgeFocus}
                 onSelectTape={machine.selectTape}
                 onStartRun={machine.startRun}
                 onStep={machine.step}

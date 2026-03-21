@@ -146,7 +146,10 @@ function formatSignedMoney(value: number): string {
 }
 
 function formatGrade(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function getNextStep(phase: BotRuntime["phase"]) {

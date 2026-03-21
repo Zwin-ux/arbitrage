@@ -15,7 +15,7 @@ describe("run engine", () => {
     engine.transition("pressure", event.t, "window");
     engine.markCommit(event.window!.idealCommitAt);
 
-    const result = engine.finalize(tape, event);
+    const result = engine.finalize(tape, event, 100, 25, 1);
 
     expect(result.outcome.grade).toBe("clear");
     expect(result.outcome.success).toBe(true);
@@ -33,7 +33,7 @@ describe("run engine", () => {
     engine.transition("pressure", event.t, "window");
     engine.markCommit(event.window!.opensAt - 40);
 
-    const result = engine.finalize(tape, event);
+    const result = engine.finalize(tape, event, 100, 25, 1);
 
     expect(result.outcome.grade).toBe("early");
     expect(result.outcome.success).toBe(false);
@@ -49,7 +49,7 @@ describe("run engine", () => {
     engine.transition("pressure", event.t, "window");
     engine.markCommit(event.window!.closesAt + 40);
 
-    const result = engine.finalize(tape, event);
+    const result = engine.finalize(tape, event, 100, 25, 1);
 
     expect(result.outcome.grade).toBe("late");
     expect(result.outcome.success).toBe(false);
@@ -64,13 +64,28 @@ describe("run engine", () => {
     engine.transition("run", event.t, "motion");
     engine.transition("pressure", event.t, "window");
 
-    const result = engine.finalize(tape, event);
+    const result = engine.finalize(tape, event, 100, 25, 1);
 
     expect(result.outcome.grade).toBe("miss");
     expect(result.outcome.success).toBe(false);
     expect(result.outcome.committed).toBe(false);
     expect(result.receipt.label).toBe("NO TRADE");
     expect(result.debrief.recommendation).toBe("No entry");
+  });
+
+  it("resolves an off-target commit inside the time window", () => {
+    const engine = new RunEngine();
+    engine.transition("arm", 0, "start");
+    engine.transition("run", event.t, "motion");
+    engine.transition("pressure", event.t, "window");
+    engine.markCommit(event.window!.idealCommitAt);
+
+    const result = engine.finalize(tape, event, 100, 25, 0.32);
+
+    expect(result.outcome.grade).toBe("off_target");
+    expect(result.outcome.success).toBe(false);
+    expect(result.receipt.label).toBe("OFF TARGET");
+    expect(result.debrief.recommendation).toBe("Aim center");
   });
 
   it("produces an explicit blocked run instead of dying on invalid tape state", () => {

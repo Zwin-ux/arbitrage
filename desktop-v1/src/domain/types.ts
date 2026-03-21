@@ -12,7 +12,7 @@ export type RunPhase =
   | "reset";
 export type EventType = "baseline" | "shift" | "window_open" | "window_close" | "route_snapshot" | "hazard";
 export type Severity = "low" | "medium" | "high";
-export type OutcomeGrade = "clear" | "early" | "late" | "miss" | "blocked";
+export type OutcomeGrade = "clear" | "early" | "late" | "off_target" | "miss" | "blocked";
 export type BotPresetName = "Safe" | "Balanced" | "Aggressive";
 export type SourceType = "bundled-tutorial" | "bundled-replay" | "live-preview";
 export type PackUnlockType = "free" | "requires_pack_clear";
@@ -163,6 +163,7 @@ export interface RunOutcome {
   success: boolean;
   committed: boolean;
   reason: string;
+  focusScore: number | null;
 }
 
 export interface RunRecord {

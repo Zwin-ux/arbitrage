@@ -56,6 +56,8 @@ function resolveRecommendation(outcome: RunOutcome): string {
       return "Wait longer";
     case "late":
       return "Commit earlier";
+    case "off_target":
+      return "Aim center";
     case "miss":
       return "No entry";
     default:

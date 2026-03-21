@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { BotPresetName, PackStatus, RunPhase, RunRecord, ShellView, Tape, TapeEvent, TapeMode } from "@domain/types";
+import { analyzeFocus, clampRatio, FOCUS_DEFAULT_RATIO } from "@shared/focusMechanics";
 import { STARTER_BOTS } from "@presets/starterBots";
 import { evaluatePresetAgainstEvent } from "@services/botEngine";
 import { buildBotComparisonResults } from "@services/botComparisonService";
@@ -31,6 +32,8 @@ export function useRehearsalMachine() {
   const holdFrameRef = useRef<number | null>(null);
   const holdStartRef = useRef<number | null>(null);
   const playbackStartRef = useRef<number | null>(null);
+  const liveTimeRef = useRef(0);
+  const liveFocusScoreRef = useRef(0);
 
   const [progress, setProgress] = useState(() => progressStoreRef.current.load());
   const [mode, setMode] = useState<TapeMode>(progress.lastSelectedMode === "live-preview" ? "tutorial" : progress.lastSelectedMode);
@@ -44,6 +47,7 @@ export function useRehearsalMachine() {
   const [isRunning, setIsRunning] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const [selectedPreset, setSelectedPreset] = useState<BotPresetName>("Balanced");
+  const [focusPosition, setFocusPosition] = useState(FOCUS_DEFAULT_RATIO);
 
   const packStatuses = useMemo<PackStatus[]>(() => {
     return listPackStatuses(progress, toPackMode(mode));
@@ -71,6 +75,10 @@ export function useRehearsalMachine() {
 
   const practiceBankroll = progress.practiceBankroll;
   const practiceStake = Math.min(PRACTICE_STAKE, Math.max(0, practiceBankroll));
+  const tapeDuration = currentTape?.events[currentTape.events.length - 1]?.t ?? 1;
+  const focusState = useMemo(() => {
+    return analyzeFocus(focusPosition, currentEvent?.window, tapeDuration, currentTime);
+  }, [currentEvent, currentTime, focusPosition, tapeDuration]);
   const replayUnlocked = useMemo(() => canEnterMode(progress, "replay"), [progress]);
   const comparisonResults = useMemo(() => {
     if (!latestRun || !currentTape) {
@@ -131,6 +139,11 @@ export function useRehearsalMachine() {
   useEffect(() => {
     progressStoreRef.current.save(progress);
   }, [progress]);
+
+  useEffect(() => {
+    liveTimeRef.current = currentTime;
+    liveFocusScoreRef.current = focusState.score;
+  }, [currentTime, focusState.score]);
 
   function selectMode(nextMode: TapeMode): void {
     if (nextMode === "live-preview" || !canEnterMode(progress, nextMode)) {
@@ -263,13 +276,15 @@ export function useRehearsalMachine() {
       window.cancelAnimationFrame(holdFrameRef.current);
     }
     holdStartRef.current = null;
-    runEngineRef.current.markCommit(currentTime);
-    runEngineRef.current.transition("resolution", currentTime, "hold complete");
+    const resolvedAt = liveTimeRef.current;
+    const resolvedFocus = liveFocusScoreRef.current;
+    runEngineRef.current.markCommit(resolvedAt);
+    runEngineRef.current.transition("resolution", resolvedAt, "hold complete");
     setPhase("resolution");
     setIsRunning(false);
 
-    const run = runEngineRef.current.finalize(currentTape, currentEvent, practiceBankroll, practiceStake);
-    runEngineRef.current.transition("afterimage", currentTime, "resolved");
+    const run = runEngineRef.current.finalize(currentTape, currentEvent, practiceBankroll, practiceStake, resolvedFocus);
+    runEngineRef.current.transition("afterimage", resolvedAt, "resolved");
     setPhase("afterimage");
     setHoldProgress(0);
     setLatestRun(run);
@@ -293,6 +308,7 @@ export function useRehearsalMachine() {
     setCurrentEvent(nextTape?.events[0] ?? null);
     setLatestRun(null);
     setPhase("standby");
+    setFocusPosition(FOCUS_DEFAULT_RATIO);
   }
 
   function applyEvent(event: TapeEvent): void {
@@ -353,6 +369,15 @@ export function useRehearsalMachine() {
     setCurrentEvent(fresh.lastSelectedPackId ? listTapesForPack(fresh.lastSelectedPackId)[0]?.events[0] ?? null : null);
     setPhase("standby");
     setIsRunning(false);
+    setFocusPosition(FOCUS_DEFAULT_RATIO);
+  }
+
+  function moveFocus(nextRatio: number): void {
+    setFocusPosition(clampRatio(nextRatio));
+  }
+
+  function nudgeFocus(delta: number): void {
+    setFocusPosition((current) => clampRatio(current + delta));
   }
 
   function selectView(nextView: ShellView): void {
@@ -382,6 +407,10 @@ export function useRehearsalMachine() {
     currentTape,
     currentEvent,
     currentTime,
+    focusPosition,
+    focusHot: focusState.hot,
+    focusScore: focusState.score,
+    focusBand: focusState.band,
     isRunning,
     holdProgress,
     latestRun,
@@ -413,6 +442,8 @@ export function useRehearsalMachine() {
     step,
     startHold,
     cancelHold,
+    moveFocus,
+    nudgeFocus,
     reset,
     resetWorld,
     armBot,

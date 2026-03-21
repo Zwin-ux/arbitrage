@@ -1,4 +1,4 @@
-export type PracticeMoneyProfileId = "clear" | "early" | "late" | "no_trade";
+export type PracticeMoneyProfileId = "clear" | "early" | "late" | "off_target" | "no_trade";
 
 export interface PracticeMoneyProfile {
   id: PracticeMoneyProfileId;
@@ -54,6 +54,15 @@ export const PRACTICE_MONEY_PROFILES: Record<PracticeMoneyProfileId, PracticeMon
     exitPrice: 0.61,
     fees: 0.62,
     slippage: 1.02,
+  },
+  off_target: {
+    id: "off_target",
+    label: "OFF TARGET",
+    tone: "negative",
+    entryPrice: 0.57,
+    exitPrice: 0.55,
+    fees: 0.62,
+    slippage: 0.94,
   },
   no_trade: {
     id: "no_trade",

@@ -638,6 +638,11 @@ main {
   background: rgba(244, 200, 102, 0.08);
 }
 
+.command-button-commit--hot {
+  border-color: rgba(244, 200, 102, 0.5);
+  background: rgba(244, 200, 102, 0.16);
+}
+
 .command-button:active {
   transform: translateY(1px);
 }
@@ -717,10 +722,9 @@ main {
   min-height: 282px;
   padding: var(--space-6) var(--space-5);
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(circle at 50% 50%, rgba(129, 221, 255, 0.08), transparent 44%),
-    rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.02);
   overflow: hidden;
+  outline: none;
 }
 
 .lane-surface::before {
@@ -731,18 +735,17 @@ main {
     linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
   background-size: 32px 32px;
-  opacity: 0.4;
+  opacity: 0.22;
   pointer-events: none;
 }
 
 .lane-surface::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(129, 221, 255, 0.06) 50%, transparent 100%);
-  opacity: 0.45;
-  transform: translateY(-100%);
-  animation: lane-scan 4.8s linear infinite;
+  inset: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: calc(var(--radius-lg) - 8px);
+  opacity: 1;
   pointer-events: none;
 }
 
@@ -765,8 +768,7 @@ main {
 .lane-motion {
   position: absolute;
   inset: 0;
-  width: 144%;
-  will-change: transform;
+  width: 100%;
 }
 
 .lane-anchor {
@@ -780,10 +782,8 @@ main {
   border: 2px solid var(--gold);
   background: rgba(244, 200, 102, 0.14);
   box-shadow:
-    0 0 0 6px rgba(244, 200, 102, 0.08),
-    0 0 0 16px rgba(244, 200, 102, 0.03);
+    0 0 0 6px rgba(244, 200, 102, 0.06);
   z-index: 2;
-  animation: anchor-pulse 2s ease-in-out infinite;
 }
 
 .lane-anchor::before {
@@ -794,7 +794,7 @@ main {
   width: 2px;
   height: 252px;
   transform: translateX(-50%);
-  background: linear-gradient(180deg, transparent, rgba(244, 200, 102, 0.36), transparent);
+  background: linear-gradient(180deg, transparent, rgba(244, 200, 102, 0.18), transparent);
 }
 
 .lane-anchor::after {
@@ -809,9 +809,9 @@ main {
   position: absolute;
   top: 50%;
   width: 2px;
-  height: 34px;
+  height: 28px;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .lane-event-active {
@@ -821,16 +821,104 @@ main {
 .lane-window-bar {
   position: absolute;
   top: 50%;
-  height: 8px;
+  height: 10px;
   transform: translateY(-50%);
-  border-radius: 999px;
   background: rgba(244, 200, 102, 0.16);
   border: 1px solid rgba(244, 200, 102, 0.28);
 }
 
 .lane-window-bar-active {
-  background: rgba(244, 200, 102, 0.32);
+  background: rgba(244, 200, 102, 0.28);
   border-color: rgba(244, 200, 102, 0.5);
+}
+
+.lane-focus-line,
+.lane-focus-reticle,
+.lane-focus-head {
+  position: absolute;
+  z-index: 3;
+  transition:
+    left 110ms linear,
+    transform 110ms linear,
+    border-color 110ms linear,
+    background-color 110ms linear,
+    opacity 110ms linear;
+  pointer-events: none;
+}
+
+.lane-focus-line {
+  top: calc(50% - 92px);
+  width: 2px;
+  height: 184px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(129, 221, 255, 0), rgba(129, 221, 255, 0.24), rgba(129, 221, 255, 0));
+}
+
+.lane-focus-line--hot {
+  background: linear-gradient(180deg, rgba(244, 200, 102, 0), rgba(244, 200, 102, 0.28), rgba(244, 200, 102, 0));
+}
+
+.lane-focus-reticle {
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--cyan);
+  background: rgba(129, 221, 255, 0.12);
+  color: var(--cyan);
+}
+
+.lane-focus-reticle::before,
+.lane-focus-reticle::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+.lane-focus-reticle::before {
+  left: 50%;
+  top: -6px;
+  width: 1px;
+  height: 30px;
+  transform: translateX(-50%);
+}
+
+.lane-focus-reticle::after {
+  top: 50%;
+  left: -6px;
+  width: 30px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.lane-focus-reticle--hot {
+  border-color: var(--gold);
+  background: rgba(244, 200, 102, 0.16);
+  color: var(--gold);
+}
+
+.lane-focus-head {
+  top: calc(50% - 118px);
+  width: 38px;
+  transform: translateX(-50%);
+}
+
+.lane-focus-head img {
+  width: 100%;
+  image-rendering: pixelated;
+}
+
+.lane-focus-head--left {
+  transform: translateX(-50%) translateX(-10px);
+}
+
+.lane-focus-head--right {
+  transform: translateX(-50%) translateX(10px);
+}
+
+.lane-focus-head--hot {
+  filter: saturate(1.15);
 }
 
 .run-readout {

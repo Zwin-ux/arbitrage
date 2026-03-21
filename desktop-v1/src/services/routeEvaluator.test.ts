@@ -43,10 +43,11 @@ describe("route evaluator", () => {
     });
   });
 
-  it("maps debrief recommendations for clear, early, late, and miss outcomes", () => {
+  it("maps debrief recommendations for clear, early, late, off-target, and miss outcomes", () => {
     expect(createDebriefFor("clear").recommendation).toBe("Hold center");
     expect(createDebriefFor("early").recommendation).toBe("Wait longer");
     expect(createDebriefFor("late").recommendation).toBe("Commit earlier");
+    expect(createDebriefFor("off_target").recommendation).toBe("Aim center");
     expect(createDebriefFor("miss").recommendation).toBe("No entry");
   });
 });
@@ -57,6 +58,7 @@ function createDebriefFor(grade: RunOutcome["grade"]) {
     success: grade === "clear",
     committed: grade !== "miss" && grade !== "blocked",
     reason: grade,
+    focusScore: grade === "miss" || grade === "blocked" ? null : grade === "off_target" ? 0.32 : 1,
   };
   const receipt: PracticeMoneyReceipt = createPracticeMoneyReceipt(snapshot, outcome, 100, 25);
 
