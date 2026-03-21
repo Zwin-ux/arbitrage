@@ -7,12 +7,11 @@ test("homepage renders one canonical machine screen", async ({ page }) => {
   await expect(page.locator(".superior-screen__header")).toHaveCount(1);
   await expect(page.locator(".superior-screen__playfield")).toHaveCount(1);
   await expect(page.locator(".superior-screen__controls")).toHaveCount(1);
-  await expect(page.getByAltText("Superior")).toBeVisible();
-  await expect(page.locator(".superior-screen__status")).toContainText("PRACTICE MONEY");
-  await expect(page.getByText("$100.00")).toBeVisible();
-  await expect(page.getByRole("button", { name: /^START$/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /HOLD TO BUY \$25\.00/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /^DOWNLOAD$/ })).toHaveAttribute(
+  await expect(page.getByRole("img", { name: "Superior", exact: true })).toBeVisible();
+  await expect(page.getByAltText("Superior emblem")).toBeVisible();
+  await expect(page.locator(".superior-screen__status-text")).toContainText(/shadow first \/ auto after arm/i);
+  await expect(page.getByText(/one tight kalshi starter bot\./i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /download exe/i })).toHaveAttribute(
     "href",
     "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe"
   );
@@ -22,25 +21,12 @@ test("homepage renders one canonical machine screen", async ({ page }) => {
   await expect(page.locator(".download-frame")).toHaveCount(0);
 });
 
-test("homepage resolves a practice-money run and resets cleanly", async ({ page }) => {
+test("homepage keeps the controls minimal", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: /^START$/ }).click();
-  await page.waitForTimeout(2100);
-
-  const commitButton = page.locator(".machine-control--commit");
-  await commitButton.dispatchEvent("mousedown");
-  await page.waitForTimeout(430);
-  await commitButton.dispatchEvent("mouseup");
-
-  const result = page.locator(".decision-lane__result");
-  await expect(result).toBeVisible();
-  await expect(result).toContainText("BANKROLL $");
-  await expect(result).toContainText(/BUY \d+c -> SELL \d+c|NO POSITION OPENED/i);
-
-  await page.getByRole("button", { name: /^RESET$/ }).click();
-  await expect(page.getByText("$100.00")).toBeVisible();
-  await expect(page.locator(".decision-lane__result")).toHaveCount(0);
+  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
+  await expect(page.getByRole("link", { name: /install notes/i })).toHaveAttribute("href", "/download/");
+  await expect(page.getByRole("link", { name: /^docs$/i })).toHaveAttribute("href", "/docs/");
 });
 
 test("download page uses the same restrained machine screen", async ({ page }) => {
@@ -48,9 +34,9 @@ test("download page uses the same restrained machine screen", async ({ page }) =
 
   await expect(page.locator(".machine-page")).toHaveCount(1);
   await expect(page.locator(".machine-page__label")).toContainText("Download");
-  await expect(page.getByText(/market-data-recorder-setup\.exe/i)).toBeVisible();
-  await expect(page.getByText(/start with \$100\. practice money is the default loop\./i)).toBeVisible();
-  await expect(page.getByText(/start\. hold to buy\. see the bankroll move\. reset\./i)).toBeVisible();
+  await expect(page.getByText(/get the setup exe/i)).toBeVisible();
+  await expect(page.getByText(/learn first, then clear one shadow run before you arm auto\./i)).toBeVisible();
+  await expect(page.getByText(/they teach the timing loop before you turn on the kalshi starter bot\./i)).toBeVisible();
   await expect(page.getByRole("link", { name: /sha256sums/i })).toHaveAttribute(
     "href",
     "https://github.com/Zwin-ux/arbitrage/releases/latest/download/SHA256SUMS.txt"
@@ -62,8 +48,8 @@ test("docs page keeps repo guidance inside one machine screen", async ({ page })
 
   await expect(page.locator(".machine-page")).toHaveCount(1);
   await expect(page.locator(".machine-page__label")).toContainText("Docs");
-  await expect(page.getByText(/start with fake money\. keep live off until local progress passes\./i)).toBeVisible();
-  await expect(page.getByRole("link", { name: /first practice run/i })).toBeVisible();
+  await expect(page.getByText(/clear the learn ladder and one shadow run before you arm the starter bot\./i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /first shadow run/i })).toBeVisible();
   await expect(page.getByText(/npm --prefix desktop-v1 run dev/i)).toBeVisible();
   await expect(page.getByRole("link", { name: /release checklist/i })).toHaveAttribute(
     "href",
@@ -76,10 +62,10 @@ test("roadmap page uses the same machine shell and release ladder", async ({ pag
 
   await expect(page.locator(".machine-page")).toHaveCount(1);
   await expect(page.locator(".machine-page__label")).toContainText("Roadmap");
-  await expect(page.getByText(/practice world \/ release ladder/i)).toBeVisible();
-  await expect(page.getByText(/tape packs/i)).toBeVisible();
-  await expect(page.getByText(/daily run/i)).toBeVisible();
-  await expect(page.getByText(/no hosted live bot/i)).toBeVisible();
+  await expect(page.getByText(/starter bot \/ release ladder/i)).toBeVisible();
+  await expect(page.getByText(/trust ramp/i)).toBeVisible();
+  await expect(page.getByText(/kalshi starter bot/i)).toBeVisible();
+  await expect(page.locator(".machine-page__strip-body strong", { hasText: /no multi-venue live bot/i })).toBeVisible();
 });
 
 test("variant lab exposes both control and focus routes inside the same machine shell", async ({ page }) => {
@@ -95,11 +81,11 @@ test("variant lab exposes both control and focus routes inside the same machine 
 test("control and focus variants share the same canonical screen", async ({ page }) => {
   await page.goto("/lab/control/");
   await expect(page.locator(".superior-screen")).toHaveCount(1);
-  await expect(page.locator(".superior-screen__status")).toContainText("PRACTICE MONEY");
-  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(4);
+  await expect(page.locator(".superior-screen__status-text")).toContainText(/shadow first \/ auto after arm/i);
+  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
 
   await page.goto("/lab/focus/");
   await expect(page.locator(".superior-screen")).toHaveCount(1);
-  await expect(page.locator(".superior-screen__status")).toContainText("PRACTICE MONEY");
-  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(4);
+  await expect(page.locator(".superior-screen__status-text")).toContainText(/shadow first \/ auto after arm/i);
+  await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
 });
