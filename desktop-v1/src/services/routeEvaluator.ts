@@ -37,7 +37,7 @@ export function createDebrief(
         ? "No position opened."
         : `Buy ${formatPrice(receipt.entryPrice)} -> Sell ${formatPrice(receipt.exitPrice ?? receipt.entryPrice)}`,
       `Gross ${formatMoney(receipt.grossPnl)} / Fees ${formatMoney(receipt.fees)} / Slip ${formatMoney(receipt.slippage)}`,
-      `Net ${formatMoney(receipt.netPnl)} / Bankroll ${formatMoney(receipt.endingBankroll)}`,
+      `Net ${formatMoney(receipt.netPnl)} / Score ${formatMoney(receipt.endingBankroll)}`,
     ],
     metrics,
     recommendation: resolveRecommendation(outcome),

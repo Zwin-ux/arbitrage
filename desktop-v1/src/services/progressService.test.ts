@@ -4,7 +4,15 @@ import type { Tape, TapeEvent } from "@domain/types";
 import replayTapeJson from "@tapes/replay/opening-window.json";
 import tutorialTapeJson from "@tapes/tutorial/intro-route.json";
 import steadyWindowTapeJson from "@tapes/tutorial/steady-window.json";
-import { canEnterMode, createInitialProgress, listPackStatuses, recordRun } from "@services/progressService";
+import {
+  armStarterBot,
+  canEnterMode,
+  createInitialProgress,
+  haltStarterBot,
+  listPackStatuses,
+  recordRun,
+  startStarterBot,
+} from "@services/progressService";
 import { RunEngine } from "@services/runEngine";
 
 const tutorialTape = tutorialTapeJson as Tape;
@@ -51,6 +59,27 @@ describe("progress service", () => {
     expect(replayPacks[1]?.unlocked).toBe(true);
     expect(canEnterMode(progressed, "replay")).toBe(true);
     expect(progressed.liveGate.unlocked).toBe(true);
+    expect(progressed.botRuntime.phase).toBe("shadow");
+    expect(progressed.botRuntime.shadowRuns).toBe(1);
+  });
+
+  it("supports the starter bot arm, auto, and halt ladder after shadow is cleared", () => {
+    const tutorialRun = createClearRun(tutorialTape, tutorialTape.events[3] as TapeEvent);
+    const first = recordRun(createInitialProgress(), tutorialRun);
+    const second = recordRun(first, createClearRun(steadyWindowTape, steadyWindowTape.events[3] as TapeEvent, first.practiceBankroll));
+    const replayRun = createClearRun(replayTape, replayTape.events[2] as TapeEvent, second.practiceBankroll);
+    const progressed = recordRun(second, replayRun);
+
+    const armed = armStarterBot(progressed);
+    const started = startStarterBot(armed);
+    const halted = haltStarterBot(started, "Manual halt");
+
+    expect(armed.botRuntime.phase).toBe("armed");
+    expect(started.botRuntime.phase).toBe("auto_running");
+    expect(started.botRuntime.autoRuns).toBe(1);
+    expect(halted.botRuntime.phase).toBe("halted");
+    expect(halted.botRuntime.haltReason).toBe("Manual halt");
+    expect(halted.decisionAudit[0]?.title).toContain("Bot halted");
   });
 });
 

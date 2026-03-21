@@ -1,5 +1,6 @@
 export type TapeMode = "tutorial" | "replay" | "live-preview";
 export type PackMode = Exclude<TapeMode, "live-preview">;
+export type ShellView = "home" | "practice" | "bot" | "live";
 export type RunPhase =
   | "standby"
   | "arm"
@@ -15,6 +16,9 @@ export type OutcomeGrade = "clear" | "early" | "late" | "miss" | "blocked";
 export type BotPresetName = "Safe" | "Balanced" | "Aggressive";
 export type SourceType = "bundled-tutorial" | "bundled-replay" | "live-preview";
 export type PackUnlockType = "free" | "requires_pack_clear";
+export type BotRuntimePhase = "setup" | "learn" | "shadow" | "armed" | "auto_running" | "halted";
+export type AuditTone = "neutral" | "positive" | "warning";
+export type DecisionAuditKind = "practice" | "shadow" | "state" | "auto";
 
 export interface TapeSource {
   type: SourceType;
@@ -207,9 +211,47 @@ export interface LiveGate {
   unlockRequirements: UnlockRequirement[];
 }
 
+export interface StarterBotProfile {
+  id: string;
+  label: string;
+  venue: "Kalshi";
+  strategyFamily: "internal-binary";
+  marketScope: string;
+  cadence: string;
+  perTradeCap: number;
+  dailyLossCap: number;
+  maxOpenPositions: number;
+}
+
+export interface ExecutionPolicy {
+  staleDataWindowSeconds: number;
+  orderErrorLimit: number;
+  authFailureHalts: boolean;
+  manualKillSwitch: boolean;
+}
+
+export interface DecisionAuditEvent {
+  id: string;
+  kind: DecisionAuditKind;
+  tone: AuditTone;
+  title: string;
+  detail: string;
+  createdAt: string;
+}
+
+export interface BotRuntime {
+  phase: BotRuntimePhase;
+  shadowRuns: number;
+  autoRuns: number;
+  haltReason: string | null;
+  lastAction: string;
+  lastEventAt: string | null;
+}
+
 export interface ProgressSnapshot {
   lastSelectedMode: TapeMode;
   lastSelectedPackId: string | null;
+  selectedView: ShellView;
   recentRuns: RunRecord[];
   practiceBankroll: number;
   bestBankroll: number;
@@ -218,4 +260,8 @@ export interface ProgressSnapshot {
   replayClearedTapeIds: string[];
   packProgress: PackProgress[];
   liveGate: LiveGate;
+  starterBot: StarterBotProfile;
+  executionPolicy: ExecutionPolicy;
+  botRuntime: BotRuntime;
+  decisionAudit: DecisionAuditEvent[];
 }

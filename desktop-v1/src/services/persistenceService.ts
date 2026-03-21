@@ -1,18 +1,24 @@
 import type {
+  BotRuntime,
   Debrief,
+  DecisionAuditEvent,
+  ExecutionPolicy,
   LiveGate,
   PackProgress,
   PracticeMoneyReceipt,
   ProgressSnapshot,
   RunOutcome,
+  ShellView,
+  StarterBotProfile,
   RunRecord,
   TapeMode,
   UnlockRequirement,
 } from "@domain/types";
 import { createInitialProgress, rehydrateProgressSnapshot } from "@services/progressService";
 
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
 const MODE_SET = new Set<TapeMode>(["tutorial", "replay", "live-preview"]);
+const VIEW_SET = new Set<ShellView>(["home", "practice", "bot", "live"]);
 
 interface ProgressEnvelopeV2 {
   version: typeof STORAGE_VERSION;
@@ -82,6 +88,7 @@ function isProgressSnapshot(value: unknown): value is ProgressSnapshot {
   return isRecord(value)
     && isTapeMode(value.lastSelectedMode)
     && (value.lastSelectedPackId === null || typeof value.lastSelectedPackId === "string")
+    && isShellView(value.selectedView)
     && Array.isArray(value.recentRuns)
     && value.recentRuns.every(isRunRecord)
     && typeof value.practiceBankroll === "number"
@@ -93,7 +100,12 @@ function isProgressSnapshot(value: unknown): value is ProgressSnapshot {
     && value.replayClearedTapeIds.every((item) => typeof item === "string")
     && Array.isArray(value.packProgress)
     && value.packProgress.every(isPackProgress)
-    && isLiveGate(value.liveGate);
+    && isLiveGate(value.liveGate)
+    && isStarterBotProfile(value.starterBot)
+    && isExecutionPolicy(value.executionPolicy)
+    && isBotRuntime(value.botRuntime)
+    && Array.isArray(value.decisionAudit)
+    && value.decisionAudit.every(isDecisionAuditEvent);
 }
 
 function readLegacyProgressSnapshot(value: unknown): ProgressSnapshot | null {
@@ -186,6 +198,47 @@ function isLiveGate(value: unknown): value is LiveGate {
     && value.unlockRequirements.every(isUnlockRequirement);
 }
 
+function isStarterBotProfile(value: unknown): value is StarterBotProfile {
+  return isRecord(value)
+    && typeof value.id === "string"
+    && typeof value.label === "string"
+    && value.venue === "Kalshi"
+    && value.strategyFamily === "internal-binary"
+    && typeof value.marketScope === "string"
+    && typeof value.cadence === "string"
+    && typeof value.perTradeCap === "number"
+    && typeof value.dailyLossCap === "number"
+    && typeof value.maxOpenPositions === "number";
+}
+
+function isExecutionPolicy(value: unknown): value is ExecutionPolicy {
+  return isRecord(value)
+    && typeof value.staleDataWindowSeconds === "number"
+    && typeof value.orderErrorLimit === "number"
+    && typeof value.authFailureHalts === "boolean"
+    && typeof value.manualKillSwitch === "boolean";
+}
+
+function isBotRuntime(value: unknown): value is BotRuntime {
+  return isRecord(value)
+    && typeof value.phase === "string"
+    && typeof value.shadowRuns === "number"
+    && typeof value.autoRuns === "number"
+    && (value.haltReason === null || typeof value.haltReason === "string")
+    && typeof value.lastAction === "string"
+    && (value.lastEventAt === null || typeof value.lastEventAt === "string");
+}
+
+function isDecisionAuditEvent(value: unknown): value is DecisionAuditEvent {
+  return isRecord(value)
+    && typeof value.id === "string"
+    && typeof value.kind === "string"
+    && typeof value.tone === "string"
+    && typeof value.title === "string"
+    && typeof value.detail === "string"
+    && typeof value.createdAt === "string";
+}
+
 function isUnlockRequirement(value: unknown): value is UnlockRequirement {
   return isRecord(value)
     && typeof value.label === "string"
@@ -196,6 +249,10 @@ function isUnlockRequirement(value: unknown): value is UnlockRequirement {
 
 function isTapeMode(value: unknown): value is TapeMode {
   return typeof value === "string" && MODE_SET.has(value as TapeMode);
+}
+
+function isShellView(value: unknown): value is ShellView {
+  return typeof value === "string" && VIEW_SET.has(value as ShellView);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

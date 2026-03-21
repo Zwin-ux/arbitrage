@@ -1,17 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { BotPresetName, PackStatus, RunPhase, RunRecord, Tape, TapeEvent, TapeMode } from "@domain/types";
+import type { BotPresetName, PackStatus, RunPhase, RunRecord, ShellView, Tape, TapeEvent, TapeMode } from "@domain/types";
 import { STARTER_BOTS } from "@presets/starterBots";
 import { evaluatePresetAgainstEvent } from "@services/botEngine";
 import { buildBotComparisonResults } from "@services/botComparisonService";
 import { getTapeById, listTapeSummariesForPack, listTapesForPack } from "@services/datasetLoader";
 import { LocalProgressStore } from "@services/persistenceService";
 import { PRACTICE_STAKE, STARTING_BANKROLL } from "@services/practiceMoney";
-import { canEnterMode, createInitialProgress, listPackStatuses, recordRun } from "@services/progressService";
+import {
+  armStarterBot,
+  canEnterMode,
+  createInitialProgress,
+  haltStarterBot,
+  listPackStatuses,
+  recordRun,
+  setSelectedView,
+  startStarterBot,
+} from "@services/progressService";
 import { RunEngine } from "@services/runEngine";
 import { TapeEngine } from "@services/tapeEngine";
 
 const HOLD_FALLBACK_MS = 500;
+const toPackMode = (mode: TapeMode) => (mode === "replay" ? "replay" : "tutorial");
 
 export function useRehearsalMachine() {
   const progressStoreRef = useRef(new LocalProgressStore());
@@ -23,8 +33,9 @@ export function useRehearsalMachine() {
   const playbackStartRef = useRef<number | null>(null);
 
   const [progress, setProgress] = useState(() => progressStoreRef.current.load());
-  const [mode, setMode] = useState<TapeMode>(progress.lastSelectedMode);
+  const [mode, setMode] = useState<TapeMode>(progress.lastSelectedMode === "live-preview" ? "tutorial" : progress.lastSelectedMode);
   const [selectedPackId, setSelectedPackId] = useState<string | null>(progress.lastSelectedPackId);
+  const [selectedView, setSelectedViewState] = useState<ShellView>(progress.selectedView);
   const [selectedTapeId, setSelectedTapeId] = useState<string | null>(null);
   const [phase, setPhase] = useState<RunPhase>("standby");
   const [currentTime, setCurrentTime] = useState(0);
@@ -35,7 +46,7 @@ export function useRehearsalMachine() {
   const [selectedPreset, setSelectedPreset] = useState<BotPresetName>("Balanced");
 
   const packStatuses = useMemo<PackStatus[]>(() => {
-    return mode === "live-preview" ? [] : listPackStatuses(progress, mode);
+    return listPackStatuses(progress, toPackMode(mode));
   }, [mode, progress]);
 
   const selectedPack = useMemo(() => {
@@ -69,16 +80,6 @@ export function useRehearsalMachine() {
   }, [currentTape, latestRun]);
 
   useEffect(() => {
-    if (mode === "live-preview") {
-      if (selectedPackId !== null) {
-        setSelectedPackId(null);
-      }
-      if (selectedTapeId !== null) {
-        setSelectedTapeId(null);
-      }
-      return;
-    }
-
     const nextPackId = selectedPack?.pack.id ?? null;
     if (nextPackId !== selectedPackId) {
       setSelectedPackId(nextPackId);
@@ -132,13 +133,11 @@ export function useRehearsalMachine() {
   }, [progress]);
 
   function selectMode(nextMode: TapeMode): void {
-    if (!canEnterMode(progress, nextMode)) {
+    if (nextMode === "live-preview" || !canEnterMode(progress, nextMode)) {
       return;
     }
 
-    const nextPack = nextMode === "live-preview"
-      ? null
-      : listPackStatuses(progress, nextMode)[0]?.pack.id ?? null;
+    const nextPack = listPackStatuses(progress, nextMode)[0]?.pack.id ?? null;
     const nextTape = nextPack ? listTapesForPack(nextPack)[0] : null;
 
     setMode(nextMode);
@@ -157,10 +156,6 @@ export function useRehearsalMachine() {
   }
 
   function selectPack(packId: string): void {
-    if (mode === "live-preview") {
-      return;
-    }
-
     const pack = packStatuses.find((entry) => entry.pack.id === packId);
     if (!pack || !pack.unlocked) {
       return;
@@ -348,8 +343,9 @@ export function useRehearsalMachine() {
       ...createInitialProgress(),
     };
     setProgress(fresh);
-    setMode(fresh.lastSelectedMode);
+    setMode(fresh.lastSelectedMode === "live-preview" ? "tutorial" : fresh.lastSelectedMode);
     setSelectedPackId(fresh.lastSelectedPackId);
+    setSelectedViewState(fresh.selectedView);
     setSelectedTapeId(fresh.lastSelectedPackId ? listTapesForPack(fresh.lastSelectedPackId)[0]?.id ?? null : null);
     setLatestRun(null);
     setHoldProgress(0);
@@ -359,8 +355,29 @@ export function useRehearsalMachine() {
     setIsRunning(false);
   }
 
+  function selectView(nextView: ShellView): void {
+    setSelectedViewState(nextView);
+    setProgress((current) => setSelectedView(current, nextView));
+  }
+
+  function armBot(): void {
+    setSelectedViewState("bot");
+    setProgress((current) => armStarterBot(current));
+  }
+
+  function startBot(): void {
+    setSelectedViewState("live");
+    setProgress((current) => startStarterBot(current));
+  }
+
+  function haltBot(): void {
+    setSelectedViewState("live");
+    setProgress((current) => haltStarterBot(current));
+  }
+
   return {
     mode,
+    selectedView,
     phase,
     currentTape,
     currentEvent,
@@ -383,7 +400,12 @@ export function useRehearsalMachine() {
     availableTapes,
     selectedPackId,
     selectedTapeId,
+    starterBot: progress.starterBot,
+    executionPolicy: progress.executionPolicy,
+    botRuntime: progress.botRuntime,
+    decisionAudit: progress.decisionAudit,
     selectMode,
+    selectView,
     selectPack,
     selectPreset,
     selectTape,
@@ -393,5 +415,8 @@ export function useRehearsalMachine() {
     cancelHold,
     reset,
     resetWorld,
+    armBot,
+    startBot,
+    haltBot,
   };
 }

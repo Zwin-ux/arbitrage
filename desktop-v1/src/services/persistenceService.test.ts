@@ -45,6 +45,10 @@ describe("local progress store", () => {
     expect(loaded.clearStreak).toBe(3);
     expect(loaded.lastSelectedPackId).toBe("pack-tutorial-open");
     expect(loaded.packProgress).toHaveLength(4);
+    expect(loaded.selectedView).toBe("home");
+    expect(loaded.starterBot.venue).toBe("Kalshi");
+    expect(loaded.botRuntime.phase).toBe("shadow");
+    expect(loaded.decisionAudit[0]?.title).toContain("Cleared replay run");
   });
 
   it("saves snapshots inside a versioned envelope", () => {
@@ -55,7 +59,7 @@ describe("local progress store", () => {
     store.save(snapshot);
 
     expect(JSON.parse(storage.getItem("sup-v1-progress") ?? "{}")).toEqual({
-      version: 2,
+      version: 3,
       snapshot,
     });
   });

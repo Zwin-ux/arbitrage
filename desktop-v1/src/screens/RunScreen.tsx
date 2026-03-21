@@ -1,4 +1,4 @@
-import type { BotComparisonResult, BotPresetName, PackStatus, RunPhase, RunRecord, Tape, TapeEvent } from "@domain/types";
+import type { PackStatus, RunPhase, RunRecord, Tape, TapeEvent } from "@domain/types";
 import type { TapeSummary } from "@services/datasetLoader";
 import { DecisionLane } from "@ui/DecisionLane";
 
@@ -9,17 +9,14 @@ interface RunScreenProps {
   currentTime: number;
   holdProgress: number;
   isRunning: boolean;
-  selectedPreset: BotPresetName;
   availableTapes: TapeSummary[];
   selectedTapeId: string | null;
   latestRun: RunRecord | null;
-  comparisonResults: BotComparisonResult[];
-  startingBankroll: number;
-  currentBankroll: number;
+  currentScore: number;
   clearStreak: number;
   practiceStake: number;
   selectedPack: PackStatus | null;
-  onSelectPreset: (preset: BotPresetName) => void;
+  starterBotLabel: string;
   onSelectTape: (tapeId: string) => void;
   onStartRun: () => void;
   onStep: () => void;
@@ -29,8 +26,6 @@ interface RunScreenProps {
   onResetWorld: () => void;
 }
 
-const PRESETS: BotPresetName[] = ["Safe", "Balanced", "Aggressive"];
-
 export function RunScreen({
   phase,
   tape,
@@ -38,17 +33,14 @@ export function RunScreen({
   currentTime,
   holdProgress,
   isRunning,
-  selectedPreset,
   availableTapes,
   selectedTapeId,
   latestRun,
-  comparisonResults,
-  startingBankroll,
-  currentBankroll,
+  currentScore,
   clearStreak,
   practiceStake,
   selectedPack,
-  onSelectPreset,
+  starterBotLabel,
   onSelectTape,
   onStartRun,
   onStep,
@@ -59,52 +51,51 @@ export function RunScreen({
 }: RunScreenProps) {
   const windowLabel = currentEvent?.window
     ? phase === "commit_hold"
-      ? "HOLD TO BUY"
-      : "BUY WINDOW OPEN"
+      ? "Hold now"
+      : "Window open"
     : phase === "afterimage"
-      ? "RUN COMPLETE"
-      : "WAIT";
-  const bankrollLabel = formatMoney(currentBankroll);
-  const resultLabel = latestRun?.receipt.label ?? "READY";
-  const phaseLabel = phase === "commit_hold" ? "HOLD" : phase.toUpperCase();
+      ? "Run complete"
+      : "Wait";
+  const scoreLabel = formatMoney(currentScore);
+  const resultLabel = latestRun?.receipt.label ?? "Ready";
+  const phaseLabel = phase === "commit_hold" ? "Hold" : formatPhaseLabel(phase);
   const packProgressLabel = selectedPack ? `${selectedPack.clearedCount}/${selectedPack.totalCount}` : "--";
+  const guide = getGuide(phase, Boolean(currentEvent?.window), tape.mode);
 
   return (
-    <section aria-label={`${tape.name} run`} className="run-surface">
+    <section aria-label={`${tape.name} rehearsal`} className="run-surface">
       <header className="run-header">
-        <span>{tape.market.symbol}</span>
-        <strong>{tape.name.toUpperCase()}</strong>
+        <div className="surface-heading">
+          <span className="surface-heading__eyebrow">{tape.mode === "tutorial" ? "Learn" : "Shadow"}</span>
+          <strong>{tape.name}</strong>
+        </div>
         <span>{phaseLabel}</span>
       </header>
 
       {selectedPack ? (
         <div className="run-packline">
-          <span>{`PACK ${selectedPack.pack.label} ${selectedPack.pack.name.toUpperCase()}`}</span>
-          <span>{`${packProgressLabel} CLEARED`}</span>
-          <span>{selectedPack.completed ? "PACK CLEAR" : "IN PROGRESS"}</span>
+          <span>{`${selectedPack.pack.label} / ${selectedPack.pack.name}`}</span>
+          <span>{`${packProgressLabel} cleared`}</span>
+          <span>{selectedPack.completed ? "Ready for auto" : "Still in progress"}</span>
         </div>
       ) : null}
 
+      <div className="run-guide">
+        <span className="run-guide__label">What to do</span>
+        <strong className="run-guide__title">{guide.title}</strong>
+        <p className="run-guide__body">{guide.body}</p>
+      </div>
+
       <div className="run-menu">
-        <div className="selection-strip" aria-label="Starter presets">
-          <span className="selection-strip__label">Preset</span>
+        <div className="selection-strip selection-strip--readout" aria-label="Starter bot">
+          <span className="selection-strip__label">Current bot</span>
           <div className="selection-strip__group">
-            {PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                className="preset-button"
-                aria-pressed={selectedPreset === preset}
-                onClick={() => onSelectPreset(preset)}
-              >
-                {preset}
-              </button>
-            ))}
+            <span className="selection-strip__text">{starterBotLabel}</span>
           </div>
         </div>
 
         <div className="selection-strip" aria-label="Tape select">
-          <span className="selection-strip__label">Tape</span>
+          <span className="selection-strip__label">{tape.mode === "tutorial" ? "Pick a learn tape" : "Pick a shadow tape"}</span>
           <div className="selection-strip__group">
             {availableTapes.map((tapeOption) => (
               <button
@@ -114,7 +105,7 @@ export function RunScreen({
                 aria-pressed={selectedTapeId === tapeOption.id}
                 onClick={() => onSelectTape(tapeOption.id)}
               >
-                {tapeOption.name.toUpperCase()}
+                {tapeOption.name}
               </button>
             ))}
           </div>
@@ -125,19 +116,19 @@ export function RunScreen({
 
       <div className="run-readout">
         <div className="run-readout__item">
-          <span className="run-readout__label">BANKROLL</span>
-          <strong>{bankrollLabel}</strong>
+          <span className="run-readout__label">Practice score</span>
+          <strong>{scoreLabel}</strong>
         </div>
         <div className="run-readout__item">
-          <span className="run-readout__label">STAKE</span>
+          <span className="run-readout__label">Stake</span>
           <strong>{formatMoney(practiceStake)}</strong>
         </div>
         <div className="run-readout__item">
-          <span className="run-readout__label">BUY WINDOW</span>
+          <span className="run-readout__label">Window</span>
           <strong>{windowLabel}</strong>
         </div>
         <div className="run-readout__item">
-          <span className="run-readout__label">PACK</span>
+          <span className="run-readout__label">Pack progress</span>
           <strong>{selectedPack ? packProgressLabel : String(clearStreak).padStart(2, "0")}</strong>
         </div>
       </div>
@@ -149,10 +140,10 @@ export function RunScreen({
           onClick={onStartRun}
           disabled={isRunning || practiceStake <= 0}
         >
-          {isRunning ? "RUNNING" : practiceStake > 0 ? "START" : "BANK EMPTY"}
+          {isRunning ? "Running" : practiceStake > 0 ? "Start run" : "Stake empty"}
         </button>
         <button type="button" className="command-button command-button--secondary" onClick={onStep} disabled={isRunning}>
-          STEP
+          Step
         </button>
         <button
           type="button"
@@ -162,59 +153,51 @@ export function RunScreen({
           onMouseLeave={onHoldEnd}
           onTouchStart={onHoldStart}
           onTouchEnd={onHoldEnd}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onHoldStart();
+            }
+          }}
+          onKeyUp={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onHoldEnd();
+            }
+          }}
           disabled={!currentEvent?.window || phase === "afterimage"}
         >
           <span className="command-fill" style={{ transform: `scaleX(${holdProgress})` }} />
-          <span className="command-text">{`HOLD TO BUY ${formatMoney(practiceStake)}`}</span>
+          <span className="command-text">{`Hold to commit ${formatMoney(practiceStake)}`}</span>
         </button>
         <button type="button" className="command-button" onClick={onReset}>
-          RESET
+          Reset run
         </button>
         <button type="button" className="command-button command-button--secondary" onClick={onResetWorld}>
-          NEW $100
+          Reset score
         </button>
       </footer>
 
       {latestRun ? (
         <div className={`afterimage afterimage--${latestRun.receipt.tone}`}>
           <div className="afterimage__main">
-            <span className="afterimage__label">RESULT</span>
+            <span className="afterimage__label">Result</span>
             <strong>{formatSignedMoney(latestRun.receipt.netPnl)}</strong>
-            <span className="afterimage__bankroll">BANKROLL {formatMoney(latestRun.receipt.endingBankroll)}</span>
+            <span className="afterimage__bankroll">Score {formatMoney(latestRun.receipt.endingBankroll)}</span>
           </div>
           <div className="afterimage__receipt">
             <span>{resultLabel}</span>
             <span>
               {latestRun.receipt.entryPrice === null
-                ? "NO POSITION OPENED"
-                : `BUY ${formatPrice(latestRun.receipt.entryPrice)} -> SELL ${formatPrice(latestRun.receipt.exitPrice)}`}
+                ? "No position opened"
+                : `Entry ${formatPrice(latestRun.receipt.entryPrice)} -> Exit ${formatPrice(latestRun.receipt.exitPrice)}`}
             </span>
             <span>
-              {`GROSS ${formatSignedMoney(latestRun.receipt.grossPnl)} / FEES ${formatSignedMoney(-latestRun.receipt.fees)} / SLIP ${formatSignedMoney(-latestRun.receipt.slippage)}`}
+              {`Gross ${formatSignedMoney(latestRun.receipt.grossPnl)} / Fees ${formatSignedMoney(-latestRun.receipt.fees)} / Slip ${formatSignedMoney(-latestRun.receipt.slippage)}`}
             </span>
-            <span>{latestRun.debrief.recommendation.toUpperCase()}</span>
-            {selectedPack ? <span>{selectedPack.completed ? "PACK CLEAR" : `${packProgressLabel} CLEARED`}</span> : null}
+            <span>{latestRun.debrief.recommendation}</span>
+            {selectedPack ? <span>{selectedPack.completed ? "Ready for auto" : `${packProgressLabel} cleared`}</span> : null}
           </div>
-          {comparisonResults.length > 0 ? (
-            <div className="comparison-grid" aria-label="Bot comparison">
-              <div className="comparison-grid__row">
-                <span className="comparison-grid__header">YOU</span>
-                <div className={`comparison-grid__cell comparison-grid__cell--${latestRun.receipt.tone}`}>
-                  <strong>{formatSignedMoney(latestRun.receipt.netPnl)}</strong>
-                  <span>{latestRun.receipt.label}</span>
-                </div>
-              </div>
-              {comparisonResults.map((result) => (
-                <div key={result.preset} className="comparison-grid__row">
-                  <span className="comparison-grid__header">{result.preset.toUpperCase()}</span>
-                  <div className={`comparison-grid__cell comparison-grid__cell--${result.receipt.tone}`}>
-                    <strong>{formatSignedMoney(result.receipt.netPnl)}</strong>
-                    <span>{result.verdict.toUpperCase()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </div>
       ) : null}
     </section>
@@ -234,4 +217,41 @@ function formatPrice(value: number | null): string {
     return "--";
   }
   return `${Math.round(value * 100)}c`;
+}
+
+function formatPhaseLabel(value: RunPhase): string {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getGuide(phase: RunPhase, windowOpen: boolean, mode: Tape["mode"]) {
+  if (phase === "afterimage") {
+    return {
+      title: "Read the result before you run it again.",
+      body: "Look at the score change, the recommendation, and whether your timing was early, late, or clean.",
+    };
+  }
+
+  if (windowOpen) {
+    return {
+      title: "The gold window is open.",
+      body: "Hold the commit button once. If it still feels rushed, let it pass and learn from the debrief instead.",
+    };
+  }
+
+  if (phase === "run" || phase === "pressure") {
+    return {
+      title: "Watch the lane and wait for the window.",
+      body: "You do not need to act early. The point is to feel the rhythm, not to mash the button.",
+    };
+  }
+
+  return {
+    title: mode === "tutorial" ? "Start a learn run." : "Start a shadow run.",
+    body: mode === "tutorial"
+      ? "This is the easiest place to learn the timing loop. Start once and watch the line before you commit."
+      : "Shadow asks you to replay the move cleanly. Treat it like a confidence check, not a speed test.",
+  };
 }

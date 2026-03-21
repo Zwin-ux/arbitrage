@@ -1,10 +1,25 @@
-import type { LiveGate, PackMode, PackProgress, PackStatus, ProgressSnapshot, RunRecord, TapeMode, UnlockRequirement } from "@domain/types";
+import type {
+  BotRuntime,
+  DecisionAuditEvent,
+  ExecutionPolicy,
+  LiveGate,
+  PackMode,
+  PackProgress,
+  PackStatus,
+  ProgressSnapshot,
+  RunRecord,
+  ShellView,
+  StarterBotProfile,
+  TapeMode,
+  UnlockRequirement,
+} from "@domain/types";
 import { STARTING_BANKROLL } from "@services/practiceMoney";
 import { getFirstPackId, getPackById, listPackManifest } from "@services/packManifest";
 
 const TUTORIAL_CLEAR_TARGET = 1;
 const REPLAY_CLEAR_TARGET = 1;
 const CONSISTENCY_TARGET = 65;
+const MAX_AUDIT_EVENTS = 14;
 
 export function createInitialProgress(): ProgressSnapshot {
   return rehydrateProgressSnapshot("tutorial", [], getFirstPackId("tutorial"));
@@ -12,13 +27,17 @@ export function createInitialProgress(): ProgressSnapshot {
 
 export function recordRun(progress: ProgressSnapshot, run: RunRecord): ProgressSnapshot {
   const recentRuns = [run, ...progress.recentRuns].slice(0, 24);
-  return rehydrateProgressSnapshot(progress.lastSelectedMode, recentRuns, progress.lastSelectedPackId);
+  return rehydrateProgressSnapshot(progress.lastSelectedMode, recentRuns, progress.lastSelectedPackId, progress);
 }
 
 export function rehydrateProgressSnapshot(
   lastSelectedMode: ProgressSnapshot["lastSelectedMode"],
   recentRuns: RunRecord[],
   lastSelectedPackId: string | null = getFirstPackId(lastSelectedMode),
+  previous?: Pick<
+    ProgressSnapshot,
+    "selectedView" | "starterBot" | "executionPolicy" | "botRuntime" | "decisionAudit"
+  >,
 ): ProgressSnapshot {
   const successfulRuns = recentRuns.filter((entry) => entry.outcome.success).length;
   const consistencyScore = computeConsistencyScore(recentRuns);
@@ -30,10 +49,16 @@ export function rehydrateProgressSnapshot(
   const liveGate = buildLiveGate(successfulRuns, consistencyScore, tutorialClears, replayClears);
   const resolvedMode = resolveMode(lastSelectedMode, packProgress, liveGate.unlocked);
   const resolvedPackId = resolvePackId(resolvedMode, lastSelectedPackId, packProgress);
+  const selectedView = previous?.selectedView ?? "home";
+  const starterBot = previous?.starterBot ?? createStarterBotProfile();
+  const executionPolicy = previous?.executionPolicy ?? createExecutionPolicy();
+  const botRuntime = buildBotRuntime(previous?.botRuntime, recentRuns, liveGate);
+  const decisionAudit = appendRunAudit(previous?.decisionAudit ?? [], runAuditEvent(recentRuns[0], liveGate, botRuntime));
 
   return {
     lastSelectedMode: resolvedMode,
     lastSelectedPackId: resolvedPackId,
+    selectedView,
     recentRuns,
     practiceBankroll: recentRuns[0]?.receipt.endingBankroll ?? STARTING_BANKROLL,
     bestBankroll: Math.max(STARTING_BANKROLL, ...recentRuns.map((entry) => entry.receipt.endingBankroll)),
@@ -42,7 +67,69 @@ export function rehydrateProgressSnapshot(
     replayClearedTapeIds,
     packProgress,
     liveGate,
+    starterBot,
+    executionPolicy,
+    botRuntime,
+    decisionAudit,
   };
+}
+
+export function createStarterBotProfile(): StarterBotProfile {
+  return {
+    id: "starter-bot-kalshi",
+    label: "Kalshi Starter Bot",
+    venue: "Kalshi",
+    strategyFamily: "internal-binary",
+    marketScope: "Curated liquid yes/no markets only",
+    cadence: "Low-frequency, cap-first autopilot",
+    perTradeCap: 10,
+    dailyLossCap: 25,
+    maxOpenPositions: 2,
+  };
+}
+
+export function createExecutionPolicy(): ExecutionPolicy {
+  return {
+    staleDataWindowSeconds: 25,
+    orderErrorLimit: 3,
+    authFailureHalts: true,
+    manualKillSwitch: true,
+  };
+}
+
+export function setSelectedView(progress: ProgressSnapshot, selectedView: ShellView): ProgressSnapshot {
+  return {
+    ...progress,
+    selectedView,
+  };
+}
+
+export function armStarterBot(progress: ProgressSnapshot): ProgressSnapshot {
+  if (!progress.liveGate.unlocked || progress.botRuntime.shadowRuns <= 0) {
+    return progress;
+  }
+  return applyBotState(progress, "armed", "Starter bot armed. Auto stays capped until you turn it on.", null, "positive");
+}
+
+export function startStarterBot(progress: ProgressSnapshot): ProgressSnapshot {
+  if (progress.botRuntime.phase !== "armed" && progress.botRuntime.phase !== "halted") {
+    return progress;
+  }
+  return {
+    ...applyBotState(progress, "auto_running", "Starter bot is running under the current caps.", null, "positive"),
+    botRuntime: {
+      ...progress.botRuntime,
+      phase: "auto_running",
+      autoRuns: progress.botRuntime.autoRuns + 1,
+      haltReason: null,
+      lastAction: "Auto running under tight caps.",
+      lastEventAt: new Date().toISOString(),
+    },
+  };
+}
+
+export function haltStarterBot(progress: ProgressSnapshot, reason = "Manual halt"): ProgressSnapshot {
+  return applyBotState(progress, "halted", `Bot halted: ${reason}.`, reason, "warning");
 }
 
 export function listPackStatuses(progress: ProgressSnapshot, mode: PackMode): PackStatus[] {
@@ -77,6 +164,107 @@ function computeConsistencyScore(runs: RunRecord[]): number {
   }
   const clearRuns = runs.filter((entry) => entry.outcome.grade === "clear").length;
   return Math.round((clearRuns / runs.length) * 100);
+}
+
+function buildBotRuntime(previous: BotRuntime | undefined, runs: RunRecord[], liveGate: LiveGate): BotRuntime {
+  const successfulRuns = runs.filter((entry) => entry.outcome.success).length;
+  const shadowRuns = runs.filter((entry) => entry.mode === "replay" && entry.outcome.success).length;
+  const now = previous?.lastEventAt ?? null;
+
+  if (successfulRuns === 0) {
+    return {
+      phase: "setup",
+      shadowRuns,
+      autoRuns: previous?.autoRuns ?? 0,
+      haltReason: null,
+      lastAction: "Run the guided trust ramp first.",
+      lastEventAt: now,
+    };
+  }
+
+  if (!liveGate.unlocked) {
+    return {
+      phase: "learn",
+      shadowRuns,
+      autoRuns: previous?.autoRuns ?? 0,
+      haltReason: null,
+      lastAction: "Clear learn and replay before auto can unlock.",
+      lastEventAt: now,
+    };
+  }
+
+  if (previous?.phase === "armed" || previous?.phase === "auto_running" || previous?.phase === "halted") {
+    return {
+      ...previous,
+      shadowRuns,
+    };
+  }
+
+  return {
+    phase: "shadow",
+    shadowRuns,
+    autoRuns: previous?.autoRuns ?? 0,
+    haltReason: null,
+    lastAction: shadowRuns > 0 ? "Shadow check passed. Arm the bot when ready." : "Run one replay clear to complete the shadow check.",
+    lastEventAt: now,
+  };
+}
+
+function applyBotState(
+  progress: ProgressSnapshot,
+  phase: BotRuntime["phase"],
+  title: string,
+  haltReason: string | null,
+  tone: DecisionAuditEvent["tone"],
+): ProgressSnapshot {
+  const createdAt = new Date().toISOString();
+  return {
+    ...progress,
+    botRuntime: {
+      ...progress.botRuntime,
+      phase,
+      haltReason,
+      lastAction: title,
+      lastEventAt: createdAt,
+    },
+    decisionAudit: appendRunAudit(progress.decisionAudit, {
+      id: `audit-${createdAt}`,
+      kind: phase === "auto_running" ? "auto" : "state",
+      tone,
+      title,
+      detail: phase === "halted" ? "Auto is off until you re-arm the starter bot." : "The consumer shell keeps every bot state change visible.",
+      createdAt,
+    }),
+  };
+}
+
+function appendRunAudit(audit: DecisionAuditEvent[], event: DecisionAuditEvent | null): DecisionAuditEvent[] {
+  if (!event) {
+    return audit;
+  }
+  return [event, ...audit].slice(0, MAX_AUDIT_EVENTS);
+}
+
+function runAuditEvent(run: RunRecord | undefined, liveGate: LiveGate, botRuntime: BotRuntime): DecisionAuditEvent | null {
+  if (!run) {
+    return null;
+  }
+  const createdAt = run.startTimestamp;
+  const cleared = run.outcome.success ? "Cleared" : "Missed";
+  const detail = liveGate.unlocked
+    ? botRuntime.shadowRuns > 0
+      ? "Shadow qualification is complete. The starter bot can be armed."
+      : "Live is unlocked. Run one replay clear to finish the shadow check."
+    : "Keep moving through the learn ladder before auto can unlock.";
+
+  return {
+    id: `audit-${run.id}`,
+    kind: run.mode === "replay" ? "shadow" : "practice",
+    tone: run.outcome.success ? "positive" : "warning",
+    title: `${cleared} ${run.mode === "tutorial" ? "learn" : "replay"} run`,
+    detail,
+    createdAt,
+  };
 }
 
 function uniqueTapeIds(runs: RunRecord[], mode: RunRecord["mode"]): string[] {
