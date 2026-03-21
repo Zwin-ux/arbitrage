@@ -1,9 +1,6 @@
 export default function SuperiorLanding({ variant }) {
   const installerUrl = variant?.windowsInstallerUrl ?? "/download/";
   const portableUrl = variant?.portableUrl ?? "/download/";
-  const heroLine = variant?.heroLine ?? "ENGINE PREDICTION BOT";
-  const heroSupport = variant?.heroSupport ?? "Windows bot for Kalshi.";
-  const heroNote = variant?.heroNote ?? "Local setup. Auto after checks.";
   const statusText = variant?.statusText ?? "WINDOWS / LOCAL / AUTO";
 
   return (
@@ -41,57 +38,16 @@ export default function SuperiorLanding({ variant }) {
         </header>
 
         <section className="superior-screen__playfield superior-screen__playfield--hero" aria-label="Superior hero">
-          <div className="superior-promo">
-            <div className="superior-promo__art-frame">
-              <div className="superior-promo__art-header">
-                <span>SUP.EXE</span>
-                <span>WIN BUILD</span>
-              </div>
-              <div className="superior-promo__art-body">
-                <img
-                  className="superior-promo__art"
-                  src="/assets/superior-head.png"
-                  alt="Superior mascot"
-                  width="256"
-                  height="256"
-                  loading="eager"
-                  decoding="async"
-                />
-              </div>
-            </div>
-
-            <div className="superior-promo__copy">
-              <img
-                className="superior-promo__wordmark"
-                src="/assets/superior-wordmark.png"
-                alt=""
-                width="398"
-                height="122"
-                loading="eager"
-                decoding="async"
-              />
-              <div className="superior-promo__badge">{heroLine}</div>
-              <p className="superior-promo__lead">{heroSupport}</p>
-              <p className="superior-promo__note">{heroNote}</p>
-              <dl className="superior-promo__specs">
-                <div>
-                  <dt>BUILD</dt>
-                  <dd>WINDOWS</dd>
-                </div>
-                <div>
-                  <dt>VENUE</dt>
-                  <dd>KALSHI</dd>
-                </div>
-                <div>
-                  <dt>MODE</dt>
-                  <dd>LOCAL</dd>
-                </div>
-                <div>
-                  <dt>STATE</dt>
-                  <dd>AUTO</dd>
-                </div>
-              </dl>
-            </div>
+          <div className="superior-promo superior-promo--logo-only">
+            <img
+              className="superior-promo__emblem"
+              src="/assets/superior-emblem.png"
+              alt="Superior emblem"
+              width="640"
+              height="640"
+              loading="eager"
+              decoding="async"
+            />
           </div>
         </section>
 

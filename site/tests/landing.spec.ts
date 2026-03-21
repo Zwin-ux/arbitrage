@@ -8,11 +8,13 @@ test("homepage renders one canonical machine screen", async ({ page }) => {
   await expect(page.locator(".superior-screen__playfield")).toHaveCount(1);
   await expect(page.locator(".superior-screen__controls")).toHaveCount(1);
   await expect(page.getByRole("img", { name: "Superior", exact: true })).toBeVisible();
-  await expect(page.getByAltText("Superior mascot")).toBeVisible();
+  await expect(page.getByAltText("Superior emblem")).toBeVisible();
   await expect(page.locator(".superior-screen__status-text")).toContainText(/windows \/ local \/ auto/i);
-  await expect(page.locator(".superior-promo__badge")).toContainText(/engine prediction bot/i);
-  await expect(page.getByText(/windows bot for kalshi\./i)).toBeVisible();
-  await expect(page.getByText(/local setup\. auto after checks\./i)).toBeVisible();
+  await expect(page.locator(".superior-promo__art-frame")).toHaveCount(0);
+  await expect(page.locator(".superior-promo__emblem")).toHaveCount(1);
+  await expect(page.locator(".superior-promo__badge")).toHaveCount(0);
+  await expect(page.getByText(/windows bot for kalshi\./i)).toHaveCount(0);
+  await expect(page.getByText(/local setup\. auto after checks\./i)).toHaveCount(0);
   await expect(page.getByRole("link", { name: /download exe/i })).toHaveAttribute(
     "href",
     "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe"

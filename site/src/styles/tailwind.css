@@ -191,7 +191,7 @@
 
   .superior-screen__playfield--hero {
     display: grid;
-    align-items: center;
+    place-items: center;
   }
 
   .superior-promo {
@@ -200,128 +200,18 @@
     width: min(840px, 100%);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-    align-items: center;
-    gap: 36px;
-  }
-
-  .superior-promo__art-frame {
-    background: #0b0f15;
-    border: 1px solid var(--chrome-dark);
-    box-shadow:
-      0 0 0 1px var(--chrome-mid),
-      inset 1px 1px 0 rgba(255, 255, 255, 0.08),
-      inset -1px -1px 0 rgba(0, 0, 0, 0.7);
-  }
-
-  .superior-promo__art-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 9px 10px 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background: #161c25;
-    color: var(--text-dim);
-    font-size: 0.61rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
-
-  .superior-promo__art-body {
-    min-height: 308px;
-    display: grid;
     place-items: center;
-    padding: 24px;
   }
 
-  .superior-promo__art {
-    width: min(188px, 100%);
+  .superior-promo--logo-only {
+    min-height: 100%;
+  }
+
+  .superior-promo__emblem {
+    width: min(420px, 72vw);
     height: auto;
     display: block;
     image-rendering: pixelated;
-  }
-
-  .superior-promo__copy {
-    display: grid;
-    justify-items: start;
-    gap: 14px;
-  }
-
-  .superior-promo__wordmark {
-    width: min(388px, 100%);
-    height: auto;
-    display: block;
-    image-rendering: pixelated;
-  }
-
-  .superior-promo__badge {
-    display: inline-flex;
-    align-items: center;
-    min-height: 28px;
-    padding: 0 11px;
-    border: 1px solid rgba(120, 188, 255, 0.34);
-    background: rgba(24, 31, 41, 0.96);
-    color: var(--accent-blue);
-    font-size: 0.74rem;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-
-  .superior-promo__lead,
-  .superior-promo__note {
-    margin: 0;
-    max-width: 30rem;
-    color: var(--text);
-    font-size: 0.95rem;
-    line-height: 1.45;
-  }
-
-  .superior-promo__note {
-    color: var(--text-dim);
-  }
-
-  .superior-promo__specs {
-    width: min(420px, 100%);
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin: 2px 0 0;
-  }
-
-  .superior-promo__specs div {
-    min-height: 56px;
-    display: grid;
-    align-content: center;
-    gap: 4px;
-    padding: 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(23, 28, 36, 0.72);
-    box-shadow:
-      inset 1px 1px 0 rgba(255, 255, 255, 0.04),
-      inset -1px -1px 0 rgba(0, 0, 0, 0.48);
-  }
-
-  .superior-promo__specs dt,
-  .superior-promo__specs dd {
-    margin: 0;
-    text-transform: uppercase;
-  }
-
-  .superior-promo__specs dt {
-    color: var(--text-dim);
-    font-size: 0.58rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-  }
-
-  .superior-promo__specs dd {
-    color: var(--text);
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
   }
 
   .superior-screen__controls {
@@ -400,24 +290,8 @@
       flex-wrap: wrap;
     }
 
-    .superior-promo {
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-
-    .superior-promo__art-frame {
-      width: min(320px, 100%);
-      margin: 0 auto;
-    }
-
-    .superior-promo__copy {
-      justify-items: center;
-      text-align: center;
-    }
-
-    .superior-promo__lead,
-    .superior-promo__note {
-      max-width: 28rem;
+    .superior-promo__emblem {
+      width: min(360px, 82vw);
     }
   }
 
@@ -449,28 +323,8 @@
       inset: 12px;
     }
 
-    .superior-promo__art-body {
-      min-height: 244px;
-      padding: 18px;
-    }
-
-    .superior-promo__art {
-      width: min(156px, 100%);
-    }
-
-    .superior-promo__badge {
-      min-height: 26px;
-      font-size: 0.68rem;
-      letter-spacing: 0.16em;
-    }
-
-    .superior-promo__lead,
-    .superior-promo__note {
-      font-size: 0.88rem;
-    }
-
-    .superior-promo__specs {
-      grid-template-columns: 1fr;
+    .superior-promo__emblem {
+      width: min(280px, 78vw);
     }
 
     .superior-screen__controls {
