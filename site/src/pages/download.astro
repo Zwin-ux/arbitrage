@@ -9,66 +9,76 @@ const sourceUrl = "https://github.com/Zwin-ux/arbitrage";
 
 <BaseLayout
   title="Download | Superior"
-  description="Download the Superior Windows build, start with practice money, and keep live locked."
+  description="Download the Superior Windows build and set up the Kalshi starter bot path: learn, shadow, arm, and auto under tight caps."
 >
   <section class="machine-page">
     <header class="machine-page__header">
       <div class="machine-page__title">
         <span class="machine-page__label">Download</span>
-        <strong>Windows build / practice money first</strong>
+        <strong>Windows EXE / first install</strong>
       </div>
-      <div class="machine-page__status">LOCAL / LIVE LOCKED</div>
+      <div class="machine-page__status">WINDOWS / KALSHI / SHADOW FIRST</div>
     </header>
 
-    <div class="machine-page__body">
+    <div class="machine-page__body machine-page__body--single">
       <div class="machine-page__column">
-        <div class="machine-page__stack">
-          <div class="machine-page__block">
-            <span>Installer</span>
-            <strong>market-data-recorder-setup.exe</strong>
-            <p>Best path for first setup. Shortcuts and uninstall support included.</p>
-          </div>
-          <div class="machine-page__block">
+        <div class="machine-page__rail">
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">1</span>
+            <div class="machine-page__strip-body">
+              <strong>Get the setup EXE</strong>
+              <p>Use <code>market-data-recorder-setup.exe</code> for the normal Windows install.</p>
+            </div>
+          </article>
+
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">2</span>
+            <div class="machine-page__strip-body">
+              <strong>Start with the trust ramp</strong>
+              <p>Learn first, then clear one shadow run before you arm auto.</p>
+            </div>
+          </article>
+
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">3</span>
+            <div class="machine-page__strip-body">
+              <strong>Use the bundled tapes</strong>
+              <p>They teach the timing loop before you turn on the Kalshi starter bot.</p>
+            </div>
+          </article>
+
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">4</span>
+            <div class="machine-page__strip-body">
+              <strong>Add venue keys when ready</strong>
+              <p>Secrets stay in the OS keychain and stay out of profile exports and logs.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="machine-page__list">
+          <div class="machine-page__row">
             <span>Portable</span>
-            <strong>market-data-recorder-app-portable.zip</strong>
-            <p>Folder build. No installer. Good for demos and isolated runs.</p>
+            <strong><code>market-data-recorder-app-portable.zip</code> for demos or isolated runs.</strong>
           </div>
-          <div class="machine-page__block">
+          <div class="machine-page__row">
+            <span>Safety</span>
+            <strong>The shipped path is one Kalshi starter bot with visible caps, a kill switch, and a local activity log.</strong>
+          </div>
+          <div class="machine-page__row">
             <span>Verify</span>
-            <strong>SHA256SUMS.txt</strong>
-            <p>Compare the hash before launch if SmartScreen blocks the run.</p>
+            <strong><code>SHA256SUMS.txt</code> if Windows warns on download and you want to confirm the hash.</strong>
+          </div>
+          <div class="machine-page__row">
+            <span>Source</span>
+            <strong>Build from source if you want a local dev install instead.</strong>
           </div>
         </div>
 
         <div class="machine-page__code-wrap">
-          <span class="machine-page__code-title">Source path</span>
+          <span class="machine-page__code-title">Source install</span>
           <pre class="machine-page__code"><code>python -m pip install -e ".[dev]"
 market-data-recorder-app</code></pre>
-        </div>
-      </div>
-
-      <div class="machine-page__column">
-        <div class="machine-page__list">
-          <div class="machine-page__row">
-            <span>First run</span>
-            <strong>Start with $100. Practice Money is the default loop.</strong>
-          </div>
-          <div class="machine-page__row">
-            <span>Live</span>
-            <strong>Leave live off. It stays locked while you practice.</strong>
-          </div>
-          <div class="machine-page__row">
-            <span>Data</span>
-            <strong>Bundled tutorial and replay tapes are enough for the first run.</strong>
-          </div>
-          <div class="machine-page__row">
-            <span>Loop</span>
-            <strong>Start. Hold to buy. See the bankroll move. Reset.</strong>
-          </div>
-          <div class="machine-page__row">
-            <span>Secrets</span>
-            <strong>Use the OS keychain. Not JSON. Not DuckDB. Not logs.</strong>
-          </div>
         </div>
       </div>
     </div>

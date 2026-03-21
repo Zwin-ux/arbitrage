@@ -5,53 +5,44 @@ const sourceUrl = "https://github.com/Zwin-ux/arbitrage";
 const docsRoot = "https://github.com/Zwin-ux/arbitrage/tree/main/docs";
 ---
 
-<BaseLayout title="Docs | Superior" description="Repo docs, build commands, and quality gates for Superior.">
+<BaseLayout title="Docs | Superior" description="Repo docs, build commands, and quality gates for Superior's Windows Kalshi starter bot shell.">
   <section class="machine-page">
     <header class="machine-page__header">
       <div class="machine-page__title">
         <span class="machine-page__label">Docs</span>
-        <strong>Repo / guides / operations</strong>
+        <strong>Repo docs / local build</strong>
       </div>
-      <div class="machine-page__status">SOURCE / LOCAL / PUBLIC</div>
+      <div class="machine-page__status">SOURCE / BUILD / SHADOW / AUTO</div>
     </header>
 
-    <div class="machine-page__body">
+    <div class="machine-page__body machine-page__body--single">
       <div class="machine-page__column">
-        <div class="machine-page__stack">
-          <div class="machine-page__block">
-            <span>Docs root</span>
-            <strong>GitHub repo docs are the source of truth.</strong>
-            <p>Use the repo for practice money, replay tapes, and release procedures.</p>
-          </div>
-          <div class="machine-page__block">
-            <span>Trust</span>
-            <strong>Practice first / live locked / local storage.</strong>
-            <p>Start with fake money. Keep live off until local progress passes.</p>
-          </div>
-          <div class="machine-page__block">
-            <span>Desktop</span>
-            <strong>desktop-v1 is the current consumer app.</strong>
-            <p>Keep the app local. Bundle the replay tapes. Ship the Tauri build.</p>
-          </div>
+        <div class="machine-page__rail">
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">First run</span>
+            <div class="machine-page__strip-body">
+              <strong>Shadow before anything auto</strong>
+              <p>Clear the learn ladder and one shadow run before you arm the starter bot.</p>
+            </div>
+          </article>
+
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">Build</span>
+            <div class="machine-page__strip-body">
+              <strong>Desktop shell and site live in this repo</strong>
+              <p>Use the repo docs for local dev, packaging, and the staged live path.</p>
+            </div>
+          </article>
+
+          <article class="machine-page__strip">
+            <span class="machine-page__strip-label">Checks</span>
+            <div class="machine-page__strip-body">
+              <strong>Build, test, then ship</strong>
+              <p>The public site and Windows app should pass the same local checks before release.</p>
+            </div>
+          </article>
         </div>
 
-        <div class="machine-page__list">
-          <div class="machine-page__row">
-            <span>Guide</span>
-            <strong>First practice run</strong>
-          </div>
-          <div class="machine-page__row">
-            <span>Release</span>
-            <strong>Release checklist</strong>
-          </div>
-          <div class="machine-page__row">
-            <span>Support</span>
-            <strong>Issue templates shorten diagnosis.</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="machine-page__column">
         <div class="machine-page__code-wrap">
           <span class="machine-page__code-title">Quick start</span>
           <pre class="machine-page__code"><code>npm --prefix desktop-v1 install
@@ -84,7 +75,7 @@ npm --prefix site run test:browser</code></pre>
         target="_blank"
         rel="noreferrer"
       >
-        <span>First practice run</span>
+        <span>First shadow run</span>
       </a>
       <a
         class="machine-page__control machine-page__control--commit"

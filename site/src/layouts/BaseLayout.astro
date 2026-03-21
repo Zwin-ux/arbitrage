@@ -1,14 +1,13 @@
 ---
 const {
   title = "Superior",
-  description = "Open-source Windows app for practice-money replay, local progress, and a locked live path."
+  description = "Open-source Windows app for practicing event-market timing with replay, local progress, and a locked live path."
 } = Astro.props;
 
 const nav = [
   { href: "/", label: "Home" },
   { href: "/download", label: "Download" },
-  { href: "/docs", label: "Docs" },
-  { href: "/roadmap", label: "Roadmap" }
+  { href: "/docs", label: "Docs" }
 ];
 ---
 
@@ -28,21 +27,21 @@ const nav = [
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles/global.css" />
   </head>
   <body>
-    <div class="site-shell">
-      <header class="site-header">
+    <div class="site-frame">
+      <header class="site-rail site-rail--top">
         <a class="brand" href="/">
           <span class="brand-mark">
             <img src="/assets/superior-head.png" alt="Superior mark" />
           </span>
           <span>
             <strong>Superior</strong>
-            <small>windows / practice money / live locked</small>
+            <small>Windows desktop app</small>
           </span>
         </a>
         <nav class="site-nav" aria-label="Primary navigation">
@@ -53,12 +52,13 @@ const nav = [
             GitHub
           </a>
         </nav>
+        <p class="site-status">Practice first / local data / live locked</p>
       </header>
-      <main>
+      <main class="site-main">
         <slot />
       </main>
-      <footer class="site-footer">
-        <p>MIT / LOCAL / LIVE LOCKED</p>
+      <footer class="site-rail site-rail--bottom">
+        <p>Open source / local data / practice first</p>
         <div class="footer-links">
           <a href="https://github.com/Zwin-ux/arbitrage/releases" target="_blank" rel="noreferrer">Releases</a>
           <a href="https://github.com/Zwin-ux/arbitrage" target="_blank" rel="noreferrer">Source</a>
