@@ -50,13 +50,13 @@
         "routeSnapshotId": "tr2-route"
       },
       "routeSnapshot": {
-        "grossEdgeBps": 305,
+        "grossEdgeBps": 275,
         "feesBps": 72,
         "slippageBps": 108,
-        "netEdgeBps": 125,
+        "netEdgeBps": 95,
         "path": ["BUY YES", "SELL NO"],
-        "assumptions": ["thin size", "fast reversal"],
-        "qualityBand": "usable"
+        "assumptions": ["thin size", "reversal too fast"],
+        "qualityBand": "weak"
       }
     },
     {
@@ -76,13 +76,13 @@
         "routeSnapshotId": "tr2-route"
       },
       "routeSnapshot": {
-        "grossEdgeBps": 305,
+        "grossEdgeBps": 275,
         "feesBps": 72,
         "slippageBps": 108,
-        "netEdgeBps": 125,
+        "netEdgeBps": 95,
         "path": ["BUY YES", "SELL NO"],
-        "assumptions": ["thin size", "fast reversal"],
-        "qualityBand": "usable"
+        "assumptions": ["thin size", "reversal too fast"],
+        "qualityBand": "weak"
       }
     },
     {

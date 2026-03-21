@@ -7,8 +7,12 @@ export interface RouteEvaluation {
   qualityBand: RouteSnapshot["qualityBand"];
 }
 
+export function computeNetEdgeBps(snapshot: RouteSnapshot): number {
+  return snapshot.grossEdgeBps - snapshot.feesBps - snapshot.slippageBps;
+}
+
 export function evaluateRoute(snapshot: RouteSnapshot): RouteEvaluation {
-  const netEdgeBps = snapshot.grossEdgeBps - snapshot.feesBps - snapshot.slippageBps;
+  const netEdgeBps = computeNetEdgeBps(snapshot);
   const passes = netEdgeBps > 0;
   return {
     netEdgeBps,

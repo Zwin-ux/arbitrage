@@ -50,12 +50,12 @@
         "routeSnapshotId": "r2-snapshot"
       },
       "routeSnapshot": {
-        "grossEdgeBps": 290,
-        "feesBps": 60,
-        "slippageBps": 105,
-        "netEdgeBps": 125,
+        "grossEdgeBps": 360,
+        "feesBps": 70,
+        "slippageBps": 95,
+        "netEdgeBps": 195,
         "path": ["BUY YES", "SELL NO"],
-        "assumptions": ["thin volume", "faster decay"],
+        "assumptions": ["thin volume", "balanced timing only"],
         "qualityBand": "usable"
       }
     },
@@ -76,12 +76,12 @@
         "routeSnapshotId": "r2-snapshot"
       },
       "routeSnapshot": {
-        "grossEdgeBps": 290,
-        "feesBps": 60,
-        "slippageBps": 105,
-        "netEdgeBps": 125,
+        "grossEdgeBps": 360,
+        "feesBps": 70,
+        "slippageBps": 95,
+        "netEdgeBps": 195,
         "path": ["BUY YES", "SELL NO"],
-        "assumptions": ["thin volume", "faster decay"],
+        "assumptions": ["thin volume", "balanced timing only"],
         "qualityBand": "usable"
       }
     },

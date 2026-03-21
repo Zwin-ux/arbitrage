@@ -1,28 +1,42 @@
 import { describe, expect, it } from "vitest";
 
 import type { Tape } from "@domain/types";
+import { BUNDLED_TAPE_EXPECTATIONS } from "@services/bundledTapeExpectations";
+import { buildBotComparisonResults, findPrimaryOpportunityEvent } from "@services/botComparisonService";
 import openingWindowTapeJson from "@tapes/replay/opening-window.json";
+import thinReversalTapeJson from "@tapes/replay/thin-reversal.json";
 import introRouteTapeJson from "@tapes/tutorial/intro-route.json";
-import { buildBotComparisonResults } from "@services/botComparisonService";
+import steadyWindowTapeJson from "@tapes/tutorial/steady-window.json";
 
-const introRouteTape = introRouteTapeJson as Tape;
-const openingWindowTape = openingWindowTapeJson as Tape;
+const bundledTapes: Tape[] = [
+  introRouteTapeJson as Tape,
+  steadyWindowTapeJson as Tape,
+  openingWindowTapeJson as Tape,
+  thinReversalTapeJson as Tape,
+];
 
 describe("bot comparison service", () => {
-  it("shows different preset outcomes on the clean tutorial tape", () => {
-    const results = buildBotComparisonResults(introRouteTape, 100, 25);
+  it("locks primary opportunity selection to the bundled tape matrix", () => {
+    for (const tape of bundledTapes) {
+      const expectation = BUNDLED_TAPE_EXPECTATIONS.find((entry) => entry.tapeId === tape.id);
+      expect(expectation, `missing expectation for ${tape.id}`).toBeDefined();
 
-    expect(results).toHaveLength(3);
-    expect(results.find((item) => item.preset === "Safe")?.verdict).toBe("clean");
-    expect(results.find((item) => item.preset === "Balanced")?.verdict).toBe("clean");
-    expect(results.find((item) => item.preset === "Aggressive")?.verdict).toBe("early");
+      const event = findPrimaryOpportunityEvent(tape);
+
+      expect(event?.id).toBe(expectation?.primaryOpportunityEventId);
+    }
   });
 
-  it("keeps safer presets out of thin replay setups", () => {
-    const results = buildBotComparisonResults(openingWindowTape, 100, 25);
+  it("matches the expected preset verdicts for every bundled tape", () => {
+    for (const tape of bundledTapes) {
+      const expectation = BUNDLED_TAPE_EXPECTATIONS.find((entry) => entry.tapeId === tape.id);
+      expect(expectation, `missing expectation for ${tape.id}`).toBeDefined();
 
-    expect(results.find((item) => item.preset === "Safe")?.verdict).toBe("wait");
-    expect(results.find((item) => item.preset === "Balanced")?.verdict).toBe("wait");
-    expect(results.find((item) => item.preset === "Aggressive")?.verdict).toBe("early");
+      const verdicts = Object.fromEntries(
+        buildBotComparisonResults(tape, 100, 25).map((result) => [result.preset, result.verdict]),
+      );
+
+      expect(verdicts).toEqual(expectation?.expectedBotVerdicts);
+    }
   });
 });
