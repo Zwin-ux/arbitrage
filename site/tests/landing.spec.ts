@@ -8,9 +8,11 @@ test("homepage renders one canonical machine screen", async ({ page }) => {
   await expect(page.locator(".superior-screen__playfield")).toHaveCount(1);
   await expect(page.locator(".superior-screen__controls")).toHaveCount(1);
   await expect(page.getByRole("img", { name: "Superior", exact: true })).toBeVisible();
-  await expect(page.getByAltText("Superior emblem")).toBeVisible();
-  await expect(page.locator(".superior-screen__status-text")).toContainText(/shadow first \/ auto after arm/i);
-  await expect(page.getByText(/one tight kalshi starter bot\./i)).toBeVisible();
+  await expect(page.getByAltText("Superior mascot")).toBeVisible();
+  await expect(page.locator(".superior-screen__status-text")).toContainText(/windows \/ local \/ auto/i);
+  await expect(page.locator(".superior-promo__badge")).toContainText(/engine prediction bot/i);
+  await expect(page.getByText(/windows bot for kalshi\./i)).toBeVisible();
+  await expect(page.getByText(/local setup\. auto after checks\./i)).toBeVisible();
   await expect(page.getByRole("link", { name: /download exe/i })).toHaveAttribute(
     "href",
     "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-setup.exe"
@@ -25,7 +27,10 @@ test("homepage keeps the controls minimal", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
-  await expect(page.getByRole("link", { name: /install notes/i })).toHaveAttribute("href", "/download/");
+  await expect(page.getByRole("link", { name: /portable zip/i })).toHaveAttribute(
+    "href",
+    "https://github.com/Zwin-ux/arbitrage/releases/latest/download/market-data-recorder-app-portable.zip"
+  );
   await expect(page.getByRole("link", { name: /^docs$/i })).toHaveAttribute("href", "/docs/");
 });
 
@@ -81,11 +86,11 @@ test("variant lab exposes both control and focus routes inside the same machine 
 test("control and focus variants share the same canonical screen", async ({ page }) => {
   await page.goto("/lab/control/");
   await expect(page.locator(".superior-screen")).toHaveCount(1);
-  await expect(page.locator(".superior-screen__status-text")).toContainText(/shadow first \/ auto after arm/i);
+  await expect(page.locator(".superior-screen__status-text")).toContainText(/windows \/ local \/ auto/i);
   await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
 
   await page.goto("/lab/focus/");
   await expect(page.locator(".superior-screen")).toHaveCount(1);
-  await expect(page.locator(".superior-screen__status-text")).toContainText(/shadow first \/ auto after arm/i);
+  await expect(page.locator(".superior-screen__status-text")).toContainText(/windows \/ local \/ auto/i);
   await expect(page.locator(".superior-screen__controls .machine-control")).toHaveCount(3);
 });
