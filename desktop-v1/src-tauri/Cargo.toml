@@ -1,8 +1,8 @@
 [package]
-name = "sup-v1-desktop-shell"
+name = "superior"
 version = "0.1.0"
 edition = "2021"
-description = "SUP desktop rehearsal machine"
+description = "Superior desktop app"
 authors = ["Zwin"]
 
 [build-dependencies]
