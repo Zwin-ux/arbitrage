@@ -108,6 +108,16 @@ jobs:
       - name: Run desktop tests
         run: npm run test
 
+      - name: Run headless practice sweep
+        run: npm run test:headless:report
+
+      - name: Upload headless practice report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-v1-headless-report
+          path: desktop-v1/.tmp/headless-report.json
+
       - name: Build desktop shell
         run: npm run build
 

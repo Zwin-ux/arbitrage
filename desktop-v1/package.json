@@ -9,6 +9,9 @@
     "preview": "vite preview",
     "check": "tsc --noEmit",
     "test": "vitest run",
+    "test:headless": "vitest run src/headless/headlessHarness.test.ts",
+    "test:headless:watch": "vitest src/headless/headlessHarness.test.ts",
+    "test:headless:report": "node -e \"require('node:fs').mkdirSync('.tmp',{recursive:true})\" && vitest run src/headless/headlessHarness.test.ts --reporter=json > .tmp/headless-report.json",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   },

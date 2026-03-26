@@ -1,0 +1,40 @@
+name: Desktop V1 Headless Nightly
+
+on:
+  schedule:
+    - cron: "0 10 * * *"
+  workflow_dispatch:
+
+jobs:
+  headless-sweep:
+    name: Headless Practice Sweep
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop-v1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: desktop-v1/package-lock.json
+
+      - name: Install desktop dependencies
+        run: npm ci
+
+      - name: Run TypeScript check
+        run: npm run check
+
+      - name: Run headless practice report
+        run: npm run test:headless:report
+
+      - name: Upload headless practice report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-v1-headless-report-nightly
+          path: desktop-v1/.tmp/headless-report.json
